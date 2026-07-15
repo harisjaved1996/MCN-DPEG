@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Investment__c</fullName>
+    <label>Investment</label>
+    <type>Lookup</type>
+    <referenceTo>Investment__c</referenceTo>
+    <relationshipLabel>Send Exclusions</relationshipLabel>
+    <relationshipName>Send_Exclusions</relationshipName>
+    <deleteConstraint>SetNull</deleteConstraint>
+    <required>false</required>
+</CustomField>

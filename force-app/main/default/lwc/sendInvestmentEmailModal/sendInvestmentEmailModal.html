@@ -1,0 +1,151 @@
+<template>
+    <div class="wrap">
+        <!-- Hero header -->
+        <div class="hero">
+            <div class="hero-icon">
+                <lightning-icon icon-name="utility:send" variant="inverse" size="small"></lightning-icon>
+            </div>
+            <div class="hero-text">
+                <p class="hero-eyebrow">Investor Communication</p>
+                <h1 class="hero-title">{investmentName}</h1>
+            </div>
+        </div>
+
+        <!-- Stepper -->
+        <div class="stepper">
+            <div class={step1Class}>
+                <span class="step-dot">1</span>
+                <span class="step-label">Choose Email</span>
+            </div>
+            <div class="step-line"></div>
+            <div class={step2Class}>
+                <span class="step-dot">2</span>
+                <span class="step-label">Review Investors</span>
+            </div>
+        </div>
+
+        <!-- Body -->
+        <div class="body">
+            <template lwc:if={isLoading}>
+                <div class="center-pad">
+                    <lightning-spinner alternative-text="Loading" size="medium"></lightning-spinner>
+                    <p class="muted slds-m-top_medium">Gathering investors…</p>
+                </div>
+            </template>
+
+            <template lwc:else>
+                <template lwc:if={errorMessage}>
+                    <div class="banner banner_error">
+                        <lightning-icon icon-name="utility:error" size="x-small" variant="inverse"></lightning-icon>
+                        <span>{errorMessage}</span>
+                    </div>
+                </template>
+
+                <!-- STEP 1 -->
+                <template lwc:if={isChooseStep}>
+                    <p class="intro">What would you like to send to the investors of <strong>{investmentName}</strong>?</p>
+                    <template for:each={optionsWithState} for:item="opt">
+                        <div key={opt.value} class={opt.cardClass} data-value={opt.value} onclick={handleChoose}>
+                            <div class="option-icon">
+                                <lightning-icon icon-name={opt.icon} size="small"></lightning-icon>
+                            </div>
+                            <div class="option-body">
+                                <p class="option-title">{opt.title}</p>
+                                <p class="option-desc">{opt.description}</p>
+                            </div>
+                            <div class="option-radio">
+                                <template lwc:if={opt.selected}>
+                                    <lightning-icon icon-name="utility:success" size="x-small" variant="success"></lightning-icon>
+                                </template>
+                            </div>
+                        </div>
+                    </template>
+                </template>
+
+                <!-- STEP 2 -->
+                <template lwc:if={isReviewStep}>
+                    <div class="review-head">
+                        <span class="pill">{chosenEmailLabel}</span>
+                        <p class="muted">Untick anyone to skip them for this send only.</p>
+                    </div>
+
+                    <template lwc:if={hasInvestors}>
+                        <div class="toolbar">
+                            <div class="search">
+                                <lightning-icon icon-name="utility:search" size="x-small" class="search-icon"></lightning-icon>
+                                <input
+                                    type="text"
+                                    class="search-input"
+                                    placeholder="Search name or email"
+                                    value={searchTerm}
+                                    oninput={handleSearch} />
+                            </div>
+                            <button class="link-btn" onclick={handleSelectAll}>{selectAllLabel}</button>
+                        </div>
+
+                        <div class="list">
+                            <template for:each={displayInvestors} for:item="inv">
+                                <div key={inv.id} class={inv.rowClass} data-id={inv.id} onclick={handleToggle}>
+                                    <span class={inv.avatarClass}>{inv.initials}</span>
+                                    <div class="investor-meta">
+                                        <p class="investor-name">{inv.name}</p>
+                                        <p class="investor-email">{inv.email}</p>
+                                    </div>
+                                    <span class={inv.checkClass}>
+                                        <template lwc:if={inv.selected}>
+                                            <lightning-icon icon-name="utility:check" size="xx-small" variant="inverse"></lightning-icon>
+                                        </template>
+                                    </span>
+                                </div>
+                            </template>
+
+                            <template lwc:if={noSearchResults}>
+                                <p class="muted center-pad">No investors match “{searchTerm}”.</p>
+                            </template>
+                        </div>
+
+                        <div class="summary">
+                            <span class="summary-chip summary-chip_go">{selectedCount} selected</span>
+                            <span class="summary-chip summary-chip_skip">{deselectedCount} skipped</span>
+                            <span class="summary-total">of {totalCount} investors</span>
+                        </div>
+                    </template>
+
+                    <template lwc:else>
+                        <div class="empty">
+                            <lightning-icon icon-name="utility:people" size="small"></lightning-icon>
+                            <p class="muted slds-m-top_small">No investors found for this Investment.</p>
+                        </div>
+                    </template>
+                </template>
+            </template>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <template lwc:if={isChooseStep}>
+                <button class="btn btn_neutral" onclick={handleCancel}>Cancel</button>
+                <button class="btn btn_brand" disabled={nextDisabled} onclick={handleNext}>
+                    Next
+                    <lightning-icon icon-name="utility:forward" size="xx-small" variant="inverse" class="slds-m-left_xx-small"></lightning-icon>
+                </button>
+            </template>
+            <template lwc:if={isReviewStep}>
+                <button class="btn btn_neutral" onclick={handleBack}>Back</button>
+                <div class="footer-right">
+                    <button class="btn btn_neutral" onclick={handleCancel}>Cancel</button>
+                    <button class="btn btn_brand" disabled={sendDisabled} onclick={handleSend}>
+                        <template lwc:if={isSending}>Sending…</template>
+                        <template lwc:else>Send Emails</template>
+                    </button>
+                </div>
+            </template>
+        </div>
+
+        <template lwc:if={isSending}>
+            <div class="overlay">
+                <lightning-spinner alternative-text="Sending" size="medium"></lightning-spinner>
+            </div>
+        </template>
+    </div>
+</template>

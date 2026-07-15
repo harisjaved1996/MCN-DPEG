@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">
+    <deploymentStatus>Deployed</deploymentStatus>
+    <description>Per-send-run exclusion records. One row = one contact deliberately skipped for one send run of the Investment Broadcast Flow. Kept as audit trail; rows are never reused because each send generates a unique Send Run Id.</description>
+    <enableActivities>false</enableActivities>
+    <enableHistory>false</enableHistory>
+    <enableReports>true</enableReports>
+    <enableSearch>true</enableSearch>
+    <label>Send Exclusion</label>
+    <pluralLabel>Send Exclusions</pluralLabel>
+    <nameField>
+        <displayFormat>EXC-{00000}</displayFormat>
+        <label>Exclusion Number</label>
+        <type>AutoNumber</type>
+    </nameField>
+    <sharingModel>ReadWrite</sharingModel>
+    <visibility>Public</visibility>
+</CustomObject>
