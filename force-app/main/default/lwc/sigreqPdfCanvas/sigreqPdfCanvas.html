@@ -1,0 +1,70 @@
+<template>
+    <div class="canvas-root">
+        <template if:true={isLoading}>
+            <div class="slds-p-around_large slds-text-align_center">
+                <lightning-spinner alternative-text={loadingLabel} size="medium"></lightning-spinner>
+                <p class="slds-p-top_x-large slds-text-body_small">{loadingLabel}</p>
+            </div>
+        </template>
+
+        <template if:true={errorMessage}>
+            <div class="slds-scoped-notification slds-media slds-media_center slds-theme_error" role="alert">
+                <div class="slds-media__body"><p>{errorMessage}</p></div>
+            </div>
+        </template>
+
+        <template if:true={rotationWarning}>
+            <div class="slds-text-color_weak slds-text-body_small slds-p-bottom_x-small">
+                Some pages are rotated; field placement on rotated pages may be inaccurate.
+            </div>
+        </template>
+
+        <template if:true={showCanvas}>
+            <div class="canvas-scroll">
+                <template for:each={decoratedPages} for:item="p">
+                    <div key={p.num} class="page-wrap" style={p.wrapStyle} data-page={p.num}>
+                        <canvas data-page={p.num} style={p.canvasStyle}></canvas>
+                        <div
+                            class="overlay"
+                            data-page={p.num}
+                            ondragover={handleDragOver}
+                            ondrop={handleDrop}
+                        >
+                            <template for:each={p.chips} for:item="c">
+                                <div
+                                    key={c.clientId}
+                                    class={c.chipClass}
+                                    style={c.style}
+                                    data-id={c.clientId}
+                                    onpointerdown={handleChipPointerDown}
+                                    oncontextmenu={handleChipContextMenu}
+                                >
+                                    <span class="chip-label">{c.label}</span>
+                                    <template if:true={c.hasFilter}>
+                                        <lightning-icon
+                                            icon-name="utility:filterList"
+                                            size="xx-small"
+                                            class="chip-filter-icon"
+                                            title="Restricted to specific entity types"
+                                        ></lightning-icon>
+                                    </template>
+                                </div>
+                            </template>
+                        </div>
+                        <div class="page-number">Page {p.num}</div>
+                    </div>
+                </template>
+
+                <template if:true={menuVisible}>
+                    <div class="ctx-menu" style={menuStyle}>
+                        <button class="ctx-item" data-action="specify" onclick={handleMenuClick}>
+                            Specify Entity Types
+                        </button>
+                        <button class="ctx-item" data-action="copy" onclick={handleMenuClick}>Copy</button>
+                        <button class="ctx-item" data-action="delete" onclick={handleMenuClick}>Delete</button>
+                    </div>
+                </template>
+            </div>
+        </template>
+    </div>
+</template>

@@ -1,0 +1,46 @@
+<template>
+    <div class="palette">
+        <template if:true={errorMessage}>
+            <div class="slds-text-color_error slds-p-vertical_x-small">{errorMessage}</div>
+        </template>
+
+        <h3 class="palette-heading">Merge Fields:</h3>
+        <template for:each={decoratedMergeGroups} for:item="g">
+            <div key={g.objectApiName} class="slds-p-bottom_x-small">
+                <div class="palette-group-label">{g.objectLabel}</div>
+                <template for:each={g.fields} for:item="f">
+                    <div
+                        key={f.key}
+                        class="palette-item palette-item_merge"
+                        draggable="true"
+                        data-payload={f.payload}
+                        ondragstart={handleDragStart}
+                    >{f.label}</div>
+                </template>
+            </div>
+        </template>
+        <a class="palette-toggle" onclick={handleToggleMerge}>{toggleLabel}</a>
+
+        <h3 class="palette-heading slds-p-top_small">Entry Fields:</h3>
+        <template for:each={entryFields} for:item="f">
+            <div
+                key={f.key}
+                class="palette-item palette-item_entry"
+                draggable="true"
+                data-payload={f.payload}
+                ondragstart={handleDragStart}
+            >{f.label}</div>
+        </template>
+
+        <h3 class="palette-heading slds-p-top_small">Recipients:</h3>
+        <template for:each={recipientFields} for:item="f">
+            <div
+                key={f.key}
+                class="palette-item palette-item_recipient"
+                draggable="true"
+                data-payload={f.payload}
+                ondragstart={handleDragStart}
+            >{f.label}</div>
+        </template>
+    </div>
+</template>

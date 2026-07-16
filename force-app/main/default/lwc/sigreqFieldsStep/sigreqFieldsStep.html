@@ -1,0 +1,49 @@
+<template>
+    <div>
+        <p class="slds-text-title slds-p-bottom_small">
+            Step 2: Review the document and drag fields onto the pages.
+            Right-click any placed field to filter which entity types see it (e.g. a separate
+            signature block per entity type).
+        </p>
+
+        <template if:true={isTemplate}>
+            <div class="slds-scoped-notification slds-media slds-media_center slds-theme_info slds-m-vertical_medium" role="status">
+                <div class="slds-media__figure">
+                    <lightning-icon icon-name="utility:info" size="small" variant="inverse"></lightning-icon>
+                </div>
+                <div class="slds-media__body">
+                    <p>
+                        <strong>{documentName}</strong> is a DocuSign template — its signing fields are already
+                        defined in DocuSign, so there is nothing to place here. Continue to Prospects.
+                    </p>
+                </div>
+            </div>
+        </template>
+
+        <template if:false={isTemplate}>
+            <div class="slds-grid slds-gutters">
+                <div class="slds-col slds-size_1-of-4">
+                    <c-sigreq-field-palette></c-sigreq-field-palette>
+                </div>
+                <div class="slds-col slds-size_3-of-4">
+                    <c-sigreq-pdf-canvas
+                        content-version-id={contentVersionId}
+                        fields={fields}
+                        onfieldadd={handleFieldAdd}
+                        onfieldmove={handleFieldMove}
+                        onfieldaction={handleFieldAction}
+                    ></c-sigreq-pdf-canvas>
+                </div>
+            </div>
+        </template>
+
+        <template if:true={modalOpen}>
+            <c-sigreq-entity-types-modal
+                client-id={modalClientId}
+                selected={modalSelected}
+                onsave={handleModalSave}
+                oncancel={handleModalCancel}
+            ></c-sigreq-entity-types-modal>
+        </template>
+    </div>
+</template>

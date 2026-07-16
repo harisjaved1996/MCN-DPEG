@@ -1,0 +1,48 @@
+<template>
+    <div>
+        <p class="slds-text-title slds-p-bottom_small">
+            Step 4: Confirm and send. Each selected prospect receives their own copy of the master document via DocuSign.
+        </p>
+
+        <div class="slds-box slds-box_x-small slds-m-bottom_small">
+            <div class="slds-grid slds-grid_vertical-align-center">
+                <lightning-icon icon-name="utility:file" size="small" class="slds-m-right_small"></lightning-icon>
+                <div>
+                    <p class="slds-text-heading_small">{documentName}</p>
+                    <p class="slds-text-body_small slds-text-color_weak">{documentSourceLabel} · {fieldSummary}</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="slds-box slds-box_x-small slds-m-bottom_small">
+            <p class="slds-text-heading_small slds-p-bottom_x-small">Recipients ({recipientCount})</p>
+            <template for:each={selectedProspects} for:item="p">
+                <div key={p.contactId} class="slds-grid slds-p-vertical_xx-small recipient-row">
+                    <span class="slds-size_1-of-3">{p.name}</span>
+                    <span class="slds-size_1-of-3 slds-text-color_weak">{p.email}</span>
+                    <span class="slds-size_1-of-3 slds-text-color_weak">{p.entityName} ({p.entityType})</span>
+                </div>
+            </template>
+        </div>
+
+        <lightning-input
+            label="Email subject"
+            value={emailSubject}
+            onchange={handleSubjectChange}
+            class="slds-m-bottom_x-small"
+        ></lightning-input>
+        <lightning-textarea
+            label="Email message"
+            value={emailMessage}
+            onchange={handleMessageChange}
+            class="slds-m-bottom_small"
+        ></lightning-textarea>
+
+        <lightning-button
+            variant="brand"
+            label={sendLabel}
+            disabled={sendDisabled}
+            onclick={handleSend}
+        ></lightning-button>
+    </div>
+</template>

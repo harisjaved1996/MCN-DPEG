@@ -1,0 +1,13 @@
+.doc-row {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    margin-bottom: 0.25rem;
+}
+.doc-row:hover {
+    background: var(--slds-g-color-neutral-base-95, #f3f3f3);
+}
+.doc-row_selected {
+    border-color: var(--slds-g-color-brand-base-50, #0176d3);
+    background: var(--slds-g-color-brand-base-95, #eef4ff);
+}

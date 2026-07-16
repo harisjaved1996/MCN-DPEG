@@ -1,0 +1,6 @@
+.master-row a {
+    cursor: pointer;
+}
+.metrics .slds-badge {
+    margin-right: 0.25rem;
+}

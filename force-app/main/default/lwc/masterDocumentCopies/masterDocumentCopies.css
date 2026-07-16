@@ -1,0 +1,9 @@
+.copy-row a {
+    cursor: pointer;
+}
+.copy-row_reset {
+    opacity: 0.6;
+}
+.actions-cell {
+    white-space: nowrap;
+}

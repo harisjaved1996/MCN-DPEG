@@ -1,0 +1,36 @@
+<template>
+    <div>
+        <div class="slds-grid slds-grid_vertical-align-center slds-p-bottom_small">
+            <p class="slds-text-title">Step 3: {headline}. All prospects are selected by default — deselect anyone who should not receive a copy.</p>
+            <span class="slds-col_bump-left slds-badge">{counter}</span>
+        </div>
+
+        <template if:true={isLoading}>
+            <lightning-spinner alternative-text="Loading prospects" size="small"></lightning-spinner>
+        </template>
+
+        <template if:true={errorMessage}>
+            <div class="slds-text-color_error slds-p-vertical_small">{errorMessage}</div>
+        </template>
+
+        <template if:true={hasProspects}>
+            <lightning-datatable
+                key-field="contactId"
+                data={prospects}
+                columns={columns}
+                selected-rows={selectedRowIds}
+                onrowselection={handleRowSelection}
+            ></lightning-datatable>
+        </template>
+
+        <template if:true={showEmpty}>
+            <p class="slds-text-body_small slds-text-color_weak">
+                No investor contacts found for this investment (positions → investing entities → contacts).
+            </p>
+        </template>
+
+        <template if:true={showSkipped}>
+            <p class="slds-text-body_small slds-text-color_weak slds-p-top_x-small">{skippedNote}</p>
+        </template>
+    </div>
+</template>

@@ -1,0 +1,78 @@
+<template>
+    <div>
+        <p class="slds-text-title slds-p-bottom_small">
+            Step 1: Select the master document. A copy will be sent to every selected prospect.
+        </p>
+
+        <lightning-button-group>
+            <template for:each={sourceOptions} for:item="s">
+                <lightning-button
+                    key={s.value}
+                    data-value={s.value}
+                    label={s.label}
+                    variant={s.variant}
+                    onclick={handleSourceClick}
+                ></lightning-button>
+            </template>
+        </lightning-button-group>
+
+        <template if:true={errorMessage}>
+            <div class="slds-text-color_error slds-p-vertical_small">{errorMessage}</div>
+        </template>
+
+        <div class="slds-p-top_medium">
+            <template if:true={isFilesSource}>
+                <template if:true={isLoadingFiles}>
+                    <lightning-spinner alternative-text="Loading files" size="small"></lightning-spinner>
+                </template>
+                <template for:each={decoratedFiles} for:item="f">
+                    <div
+                        key={f.contentVersionId}
+                        class={f.rowClass}
+                        data-id={f.contentVersionId}
+                        onclick={handleFileClick}
+                    >
+                        <lightning-icon icon-name={f.iconName} size="x-small" class="slds-m-right_small"></lightning-icon>
+                        <span class="slds-text-body_regular">{f.title}.{f.extension}</span>
+                        <span class="slds-text-body_small slds-text-color_weak slds-m-left_small">{f.meta}</span>
+                    </div>
+                </template>
+                <template if:true={showNoFiles}>
+                    <p class="slds-text-body_small slds-text-color_weak">
+                        No PDF files are linked to this investment yet. Use the Upload source to add one.
+                    </p>
+                </template>
+            </template>
+
+            <template if:true={isTemplatesSource}>
+                <template if:true={isLoadingTemplates}>
+                    <lightning-spinner alternative-text="Loading templates" size="small"></lightning-spinner>
+                </template>
+                <template for:each={decoratedTemplates} for:item="t">
+                    <div
+                        key={t.templateId}
+                        class={t.rowClass}
+                        data-id={t.templateId}
+                        onclick={handleTemplateClick}
+                    >
+                        <lightning-icon icon-name={t.iconName} size="x-small" class="slds-m-right_small"></lightning-icon>
+                        <span class="slds-text-body_regular">{t.name}</span>
+                    </div>
+                </template>
+                <template if:true={showNoTemplates}>
+                    <p class="slds-text-body_small slds-text-color_weak">No templates found in your DocuSign account.</p>
+                </template>
+            </template>
+
+            <template if:true={isUploadSource}>
+                <lightning-file-upload
+                    label="Upload a PDF (it will be linked to this investment)"
+                    name="masterDocUpload"
+                    accept={acceptedFormats}
+                    record-id={recordId}
+                    onuploadfinished={handleUploadFinished}
+                ></lightning-file-upload>
+            </template>
+        </div>
+    </div>
+</template>

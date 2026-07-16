@@ -1,0 +1,63 @@
+<template>
+    <lightning-card title="Master Documents" icon-name="standard:document">
+        <lightning-button-icon
+            slot="actions"
+            icon-name="utility:refresh"
+            alternative-text="Refresh"
+            onclick={handleRefresh}
+        ></lightning-button-icon>
+
+        <div class="slds-p-horizontal_medium slds-p-bottom_small">
+            <template if:true={isLoading}>
+                <lightning-spinner alternative-text="Loading" size="small"></lightning-spinner>
+            </template>
+
+            <template if:true={errorMessage}>
+                <div class="slds-text-color_error slds-p-vertical_small">{errorMessage}</div>
+            </template>
+
+            <template for:each={masters} for:item="m">
+                <div key={m.id} class="master-row slds-box slds-box_x-small slds-m-bottom_x-small">
+                    <div class="slds-grid slds-grid_vertical-align-center slds-gutters_x-small">
+                        <div class="slds-col slds-grow">
+                            <a data-id={m.id} onclick={handleOpenMaster} class="slds-text-heading_small">{m.name}</a>
+                            <p class="slds-text-body_small slds-text-color_weak">
+                                {m.sourceLabel} ·
+                                <lightning-formatted-date-time
+                                    value={m.createdDate}
+                                    year="numeric" month="short" day="2-digit"
+                                    hour="2-digit" minute="2-digit"
+                                ></lightning-formatted-date-time>
+                            </p>
+                        </div>
+                        <div class="slds-col slds-no-flex slds-grid slds-gutters_xx-small metrics">
+                            <span class="slds-badge">Sent: {m.sentCount}</span>
+                            <span class="slds-badge">Opened: {m.openedCount}</span>
+                            <span class="slds-badge slds-theme_success">Completed: {m.completedCount}</span>
+                            <template if:true={m.hasFailures}>
+                                <span class="slds-badge slds-theme_error">Failed: {m.failedCount}</span>
+                            </template>
+                        </div>
+                        <div class="slds-col slds-no-flex">
+                            <template if:true={m.hasFile}>
+                                <lightning-button-icon
+                                    icon-name="utility:preview"
+                                    alternative-text="View master document"
+                                    title="View master document"
+                                    data-docid={m.contentDocumentId}
+                                    onclick={handlePreviewFile}
+                                ></lightning-button-icon>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+            </template>
+
+            <template if:true={showEmpty}>
+                <p class="slds-text-body_small slds-text-color_weak">
+                    No signature requests have been sent from this investment yet.
+                </p>
+            </template>
+        </div>
+    </lightning-card>
+</template>

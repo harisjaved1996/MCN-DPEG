@@ -1,0 +1,101 @@
+<template>
+    <lightning-card>
+        <div class="slds-p-horizontal_medium slds-p-bottom_medium">
+            <h2 class="slds-text-heading_medium slds-p-bottom_small">Add Signature Request</h2>
+
+            <lightning-progress-indicator
+                current-step={currentStep}
+                type="base"
+                variant="base"
+            >
+                <template for:each={steps} for:item="s">
+                    <lightning-progress-step key={s.value} label={s.label} value={s.value}>
+                    </lightning-progress-step>
+                </template>
+            </lightning-progress-indicator>
+
+            <div class="slds-p-top_medium">
+                <template if:true={isStep1}>
+                    <c-sigreq-document-step
+                        record-id={recordId}
+                        document={document}
+                        ondocumentchange={handleDocumentChange}
+                    ></c-sigreq-document-step>
+                </template>
+
+                <template if:true={isStep2}>
+                    <c-sigreq-fields-step
+                        document={document}
+                        fields={fields}
+                        onfieldschange={handleFieldsChange}
+                    ></c-sigreq-fields-step>
+                </template>
+
+                <template if:true={isStep3}>
+                    <c-sigreq-prospects-step
+                        record-id={recordId}
+                        selected-contact-ids={selectedContactIds}
+                        onselectionchange={handleSelectionChange}
+                    ></c-sigreq-prospects-step>
+                </template>
+
+                <template if:true={isStep4}>
+                    <c-sigreq-confirm-step
+                        document={document}
+                        fields={fields}
+                        prospects={prospects}
+                        selected-contact-ids={selectedContactIds}
+                        email-subject={emailSubject}
+                        email-message={emailMessage}
+                        is-sending={isSending}
+                        onmetachange={handleMetaChange}
+                        onsend={handleSend}
+                    ></c-sigreq-confirm-step>
+                </template>
+
+                <template if:true={isDone}>
+                    <div class="slds-illustration slds-illustration_small slds-p-vertical_large slds-text-align_center">
+                        <lightning-icon icon-name="action:approval" size="large"></lightning-icon>
+                        <h3 class="slds-text-heading_medium slds-p-top_medium">{doneMessage}</h3>
+                        <p class="slds-text-body_regular slds-p-top_x-small">
+                            You will receive a bell notification when sending completes.
+                            Envelope status records appear on this investment.
+                        </p>
+                        <div class="slds-p-top_medium">
+                            <lightning-button
+                                variant="brand"
+                                label="View master document &amp; statuses"
+                                onclick={handleViewMaster}
+                            ></lightning-button>
+                            <lightning-button
+                                class="slds-m-left_small"
+                                label="Start another request"
+                                onclick={handleStartOver}
+                            ></lightning-button>
+                        </div>
+                    </div>
+                </template>
+            </div>
+
+            <template if:false={isDone}>
+                <div class="slds-p-top_medium slds-grid">
+                    <div>
+                        <template if:true={showBack}>
+                            <lightning-button label="Back" onclick={handleBack}></lightning-button>
+                        </template>
+                    </div>
+                    <div class="slds-col_bump-left">
+                        <template if:true={showNext}>
+                            <lightning-button
+                                variant="brand"
+                                label="Next"
+                                disabled={nextDisabled}
+                                onclick={handleNext}
+                            ></lightning-button>
+                        </template>
+                    </div>
+                </div>
+            </template>
+        </div>
+    </lightning-card>
+</template>

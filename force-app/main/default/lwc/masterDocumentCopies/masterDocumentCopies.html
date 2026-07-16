@@ -1,0 +1,128 @@
+<template>
+    <lightning-card title="Copies &amp; Signing Status" icon-name="standard:file">
+        <lightning-button-group slot="actions">
+            <template if:true={hasMasterFile}>
+                <lightning-button
+                    label="View Master Document"
+                    icon-name="utility:preview"
+                    onclick={handleViewMaster}
+                ></lightning-button>
+            </template>
+            <lightning-button
+                label="Refresh Statuses"
+                icon-name="utility:refresh"
+                onclick={handleRefresh}
+                disabled={isRefreshing}
+            ></lightning-button>
+        </lightning-button-group>
+
+        <div class="slds-p-horizontal_medium slds-p-bottom_small">
+            <template if:true={isLoading}>
+                <lightning-spinner alternative-text="Loading copies" size="small"></lightning-spinner>
+            </template>
+            <template if:true={isRefreshing}>
+                <lightning-spinner alternative-text="Refreshing statuses" size="small"></lightning-spinner>
+            </template>
+
+            <template if:true={errorMessage}>
+                <div class="slds-text-color_error slds-p-vertical_small">{errorMessage}</div>
+            </template>
+
+            <template if:true={hasCopies}>
+                <table class="slds-table slds-table_bordered slds-table_cell-buffer">
+                    <thead>
+                        <tr class="slds-line-height_reset">
+                            <th scope="col">Contact</th>
+                            <th scope="col">Investing Entity</th>
+                            <th scope="col">Status</th>
+                            <th scope="col">Sent</th>
+                            <th scope="col">Opened</th>
+                            <th scope="col">Completed</th>
+                            <th scope="col">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <template for:each={decoratedCopies} for:item="c">
+                            <tr key={c.id} class={c.rowClass}>
+                                <td>
+                                    <a data-id={c.contactId} onclick={handleOpenContact}>{c.contactName}</a>
+                                </td>
+                                <td>
+                                    <span>{c.entityName}</span>
+                                    <template if:true={c.entityType}>
+                                        <span class="slds-text-body_small slds-text-color_weak"> ({c.entityType})</span>
+                                    </template>
+                                </td>
+                                <td>
+                                    <span class={c.badgeClass}>{c.status}</span>
+                                    <template if:true={c.errorMessage}>
+                                        <lightning-helptext
+                                            content={c.errorMessage}
+                                            icon-name="utility:warning"
+                                        ></lightning-helptext>
+                                    </template>
+                                </td>
+                                <td>
+                                    <lightning-formatted-date-time value={c.sentAt} year="2-digit" month="short" day="2-digit" hour="2-digit" minute="2-digit"></lightning-formatted-date-time>
+                                </td>
+                                <td>
+                                    <lightning-formatted-date-time value={c.openedAt} year="2-digit" month="short" day="2-digit" hour="2-digit" minute="2-digit"></lightning-formatted-date-time>
+                                </td>
+                                <td>
+                                    <lightning-formatted-date-time value={c.completedAt} year="2-digit" month="short" day="2-digit" hour="2-digit" minute="2-digit"></lightning-formatted-date-time>
+                                </td>
+                                <td class="actions-cell">
+                                    <template if:false={c.confirming}>
+                                        <template if:true={c.viewable}>
+                                            <lightning-button
+                                                label="View"
+                                                variant="base"
+                                                data-id={c.id}
+                                                disabled={c.busy}
+                                                onclick={handleView}
+                                            ></lightning-button>
+                                        </template>
+                                        <template if:true={c.resettable}>
+                                            <lightning-button
+                                                label="Reset &amp; Resend"
+                                                variant="base"
+                                                class="slds-m-left_x-small"
+                                                data-id={c.id}
+                                                disabled={c.busy}
+                                                onclick={handleResetClick}
+                                            ></lightning-button>
+                                        </template>
+                                    </template>
+                                    <template if:true={c.confirming}>
+                                        <span class="slds-text-body_small slds-m-right_x-small">Void &amp; resend?</span>
+                                        <lightning-button
+                                            label="Confirm"
+                                            variant="destructive"
+                                            data-id={c.id}
+                                            onclick={handleResetConfirm}
+                                        ></lightning-button>
+                                        <lightning-button
+                                            label="Cancel"
+                                            variant="base"
+                                            class="slds-m-left_x-small"
+                                            onclick={handleResetCancel}
+                                        ></lightning-button>
+                                    </template>
+                                </td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+            </template>
+
+            <template if:true={showEmpty}>
+                <p class="slds-text-body_small slds-text-color_weak">No copies yet — sending may still be in progress.</p>
+            </template>
+
+            <p class="slds-text-body_small slds-text-color_weak slds-p-top_small">
+                Statuses come from DocuSign (Sent → Delivered = opened → Completed; Declined/Voided when applicable).
+                Use Refresh Statuses to pull the latest from DocuSign on demand.
+            </p>
+        </div>
+    </lightning-card>
+</template>

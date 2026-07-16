@@ -1,0 +1,54 @@
+<template>
+    <section role="dialog" tabindex="-1" class="slds-modal slds-fade-in-open slds-modal_small">
+        <div class="slds-modal__container">
+            <header class="slds-modal__header">
+                <button
+                    class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse"
+                    title="Close"
+                    onclick={handleCancel}
+                >
+                    <lightning-icon icon-name="utility:close" size="small" variant="inverse"></lightning-icon>
+                </button>
+                <h2 class="slds-modal__title slds-hyphenate">Specify Entity Types</h2>
+            </header>
+            <div class="slds-modal__content slds-p-around_medium">
+                <p class="slds-p-bottom_small">This field will only be visible for the selected entity types:</p>
+
+                <template if:true={loadError}>
+                    <p class="slds-text-color_error">Could not load entity type values.</p>
+                </template>
+
+                <div class="slds-form-element slds-p-bottom_x-small">
+                    <label class="slds-checkbox_toggle-off">
+                        <input type="checkbox" checked={allChecked} onchange={handleAllChange} />
+                        <span class="slds-p-left_x-small">All Entities</span>
+                    </label>
+                </div>
+
+                <template for:each={rows} for:item="r">
+                    <div key={r.value} class="slds-form-element slds-p-bottom_x-small">
+                        <label>
+                            <input
+                                type="checkbox"
+                                data-value={r.value}
+                                checked={r.checked}
+                                onchange={handleTypeChange}
+                            />
+                            <span class="slds-p-left_x-small">{r.value}</span>
+                        </label>
+                    </div>
+                </template>
+            </div>
+            <footer class="slds-modal__footer slds-text-align_left">
+                <lightning-button variant="brand" label="Save" onclick={handleSave}></lightning-button>
+                <lightning-button
+                    variant="base"
+                    label="Cancel"
+                    class="slds-m-left_small"
+                    onclick={handleCancel}
+                ></lightning-button>
+            </footer>
+        </div>
+    </section>
+    <div class="slds-backdrop slds-backdrop_open" role="presentation"></div>
+</template>
