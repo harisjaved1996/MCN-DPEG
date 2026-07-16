@@ -193,6 +193,15 @@
         <fields>Failed_Count__c</fields>
         <relatedList>Master_Document__c.Investment__c</relatedList>
     </relatedLists>
+    <relatedLists>
+        <fields>NAME</fields>
+        <fields>Email_Choice__c</fields>
+        <fields>Status__c</fields>
+        <fields>Sent_At__c</fields>
+        <fields>Total_Recipients__c</fields>
+        <fields>Opened_Count__c</fields>
+        <relatedList>Email_Send__c.Investment__c</relatedList>
+    </relatedLists>
     <showEmailCheckbox>false</showEmailCheckbox>
     <showHighlightsPanel>false</showHighlightsPanel>
     <showInteractionLogPanel>false</showInteractionLogPanel>

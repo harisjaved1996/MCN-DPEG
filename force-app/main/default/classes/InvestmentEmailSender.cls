@@ -85,11 +85,23 @@ public with sharing class InvestmentEmailSender {
         private final String investmentName;
         private final String emailChoice;
         private final String sendRunId;
+        private final Id emailSendId;
 
         public BroadcastCalloutJob(String investmentName, String emailChoice, String sendRunId) {
+            this(investmentName, emailChoice, sendRunId, null);
+        }
+
+        /**
+         * emailSendId (optional): the Email_Send__c tracking record to report
+         * the callout outcome onto. The flow path passes none and behaves
+         * exactly as before.
+         */
+        public BroadcastCalloutJob(String investmentName, String emailChoice,
+                String sendRunId, Id emailSendId) {
             this.investmentName = investmentName;
             this.emailChoice    = emailChoice;
             this.sendRunId      = sendRunId;
+            this.emailSendId    = emailSendId;
         }
 
         public void execute(QueueableContext ctx) {
@@ -116,14 +128,22 @@ public with sharing class InvestmentEmailSender {
                 if (res.getStatusCode() == 200) {
                     System.debug(LoggingLevel.INFO,
                         'Broadcast initiated for ' + investmentName + '. Run: ' + sendRunId);
+                    InvestmentEmailTracking.markBroadcastOutcome(emailSendId, true, null);
                 } else {
                     System.debug(LoggingLevel.ERROR,
                         'Broadcast callout failed (' + res.getStatusCode() + ') Run: '
                         + sendRunId + ' Body: ' + res.getBody());
+                    InvestmentEmailTracking.markBroadcastOutcome(emailSendId, false,
+                        'HTTP ' + res.getStatusCode() + ': ' + res.getBody());
                 }
             } catch (Exception e) {
                 System.debug(LoggingLevel.ERROR,
                     'Broadcast callout exception Run: ' + sendRunId + ' - ' + e.getMessage());
+                // A timeout is ambiguous - the broadcast may still have executed.
+                // The metrics sync keeps trying to claim engagement for failed
+                // sends, so a slow-but-successful trigger self-heals to Syncing.
+                InvestmentEmailTracking.markBroadcastOutcome(emailSendId, false,
+                    'Callout exception (send may still have executed): ' + e.getMessage());
             }
         }
     }

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Email__c</fullName>
+    <label>Email</label>
+    <required>false</required>
+    <type>Email</type>
+    <unique>false</unique>
+    <description>The contact's email address at send time.</description>
+</CustomField>

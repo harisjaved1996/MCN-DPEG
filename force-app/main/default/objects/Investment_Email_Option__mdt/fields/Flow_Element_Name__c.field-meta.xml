@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Flow_Element_Name__c</fullName>
+    <fieldManageability>DeveloperControlled</fieldManageability>
+    <label>Flow Element Name</label>
+    <length>80</length>
+    <required>true</required>
+    <type>Text</type>
+    <unique>false</unique>
+    <description>API name of the Send Email Message element in the Investment Broadcast Flow for this email option (e.g. Send_Distribution_Email). Engagement events carry it in ssot__FlowElementRunId__c after the # separator.</description>
+</CustomField>

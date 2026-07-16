@@ -33,6 +33,15 @@ public with sharing class InvestmentEmailController {
      */
     @AuraEnabled(cacheable=true)
     public static InvestorData getInvestors(Id recordId) {
+        return resolveInvestors(recordId);
+    }
+
+    /**
+     * Shared resolution used by the wire above and by sendEmail (which
+     * re-resolves server-side so the tracking rows cannot be spoofed by
+     * a stale or tampered client list).
+     */
+    public static InvestorData resolveInvestors(Id recordId) {
         InvestorData data = new InvestorData();
         data.investors = new List<Investor>();
 
@@ -121,17 +130,46 @@ public with sharing class InvestmentEmailController {
                 insert exclusions; // single bulk DML
             }
 
+            // Tracking rows: the send record plus one recipient row per
+            // selected contact (resolved investors minus the deselected).
+            // Same fail-closed transaction: if this DML throws, no callout
+            // is ever queued and no email goes out untracked.
+            List<Investor> recipients = new List<Investor>();
+            Set<Id> deselected = deselectedContactIds == null
+                ? new Set<Id>() : new Set<Id>(deselectedContactIds);
+            for (Investor investor : resolveInvestors(recordId).investors) {
+                if (!deselected.contains(investor.id)) {
+                    recipients.add(investor);
+                }
+            }
+            Id emailSendId = InvestmentEmailTracking.createSendRecord(
+                recordId, investmentName, emailChoice, sendRunId, recipients);
+
             // Callout in a separate transaction (avoids "uncommitted work pending").
-            // Reuses the existing, proven Queueable — no change to InvestmentEmailSender.
+            // Reuses the existing, proven Queueable; the extra argument lets the
+            // job report the callout outcome back onto the Email_Send__c record.
             System.enqueueJob(new InvestmentEmailSender.BroadcastCalloutJob(
-                investmentName, emailChoice, sendRunId
+                investmentName, emailChoice, sendRunId, emailSendId
             ));
 
             return 'SUCCESS: Email send queued for ' + investmentName + '. Run: ' + sendRunId;
         } catch (Exception e) {
             // Nothing was queued — surface the failure to the LWC.
             throw new AuraHandledException(
-                'Could not record exclusions, so no email was sent: ' + e.getMessage());
+                'Could not record the send, so no email was sent: ' + e.getMessage());
+        }
+    }
+
+    /**
+     * On-demand metrics refresh for the Refresh Metrics quick action on
+     * Email_Send__c. Returns a user-facing message.
+     */
+    @AuraEnabled
+    public static String refreshEmailSend(Id emailSendId) {
+        try {
+            return InvestmentEmailTracking.syncSend(emailSendId);
+        } catch (Exception e) {
+            throw new AuraHandledException('Could not refresh metrics: ' + e.getMessage());
         }
     }
 }

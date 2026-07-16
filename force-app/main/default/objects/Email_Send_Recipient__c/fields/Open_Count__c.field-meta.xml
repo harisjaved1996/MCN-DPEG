@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Open_Count__c</fullName>
+    <label>Open Count</label>
+    <precision>9</precision>
+    <scale>0</scale>
+    <defaultValue>0</defaultValue>
+    <required>false</required>
+    <type>Number</type>
+    <unique>false</unique>
+</CustomField>
