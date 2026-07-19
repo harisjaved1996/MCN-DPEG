@@ -4,7 +4,7 @@ export default class SigreqConfirmStep extends LightningElement {
     @api document;
     @api fields = [];
     @api prospects = [];
-    @api selectedContactIds = [];
+    @api selectedAssociationIds = [];
     @api emailSubject = '';
     @api emailMessage = '';
     @api isSending = false;
@@ -19,11 +19,24 @@ export default class SigreqConfirmStep extends LightningElement {
         return this.document.sourceType === 'TEMPLATE' ? 'DocuSign template' : 'Salesforce file';
     }
     get selectedProspects() {
-        const ids = new Set(this.selectedContactIds || []);
-        return (this.prospects || []).filter((p) => ids.has(p.contactId));
+        const ids = new Set(this.selectedAssociationIds || []);
+        return (this.prospects || [])
+            .filter((p) => ids.has(p.associationId))
+            .map((p) => ({
+                ...p,
+                roleLabel: p.isPrimary
+                    ? 'Primary (fills fields, signs last)'
+                    : p.isRequiredSigner
+                      ? 'Required signer (signs first)'
+                      : 'Viewer (copy only)'
+            }));
     }
     get recipientCount() {
         return this.selectedProspects.length;
+    }
+    get envelopeCount() {
+        const entities = new Set(this.selectedProspects.map((p) => p.entityId));
+        return entities.size;
     }
     get fieldSummary() {
         if (this.document && this.document.sourceType === 'TEMPLATE') {

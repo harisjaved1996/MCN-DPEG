@@ -47,20 +47,51 @@ public with sharing class SignatureRequestTracking {
         return master.Id;
     }
 
-    public static void createCopyForOutcome(Id masterId, SignatureRequestModels.SendOutcome outcome) {
-        String copyName = String.isBlank(outcome.contactName)
-            ? String.valueOf(outcome.contactId) : outcome.contactName;
-        insert new Document_Copy__c(
-            Name = copyName.abbreviate(80),
-            Master_Document__c = masterId,
-            Contact__c = outcome.contactId,
-            Investing_Entity__c = outcome.entityId,
-            DocuSign_Envelope_Id__c = outcome.docuSignId,
-            Envelope_Record_Id__c = outcome.envelopeRecordId,
-            Status__c = outcome.success ? STATUS_SENT : STATUS_FAILED,
-            Sent_At__c = outcome.success ? Datetime.now() : null,
-            Error_Message__c = outcome.errorMessage
-        );
+    /**
+     * DocuSign web-app deep link base for a sent envelope. Durable (unlike
+     * session view URLs) so the investor-portal phase can reuse it; the
+     * envelope UUID stored on each copy is the API-side key for embedded
+     * signing later. Demo environment host — switch to
+     * https://apps.docusign.com/send/documents/details/ for production.
+     */
+    @TestVisible
+    private static String envelopeLinkBase = 'https://apps-d.docusign.com/send/documents/details/';
+
+    /** One copy row PER RECIPIENT of the entity's shared envelope. */
+    public static void createCopiesForOutcome(Id masterId, SignatureRequestModels.SendOutcome outcome) {
+        List<SignatureRequestModels.RecipientPlan> plans = outcome.recipients;
+        if (plans == null || plans.isEmpty()) {
+            // Entity failed before its recipients were resolved: one failure row.
+            SignatureRequestModels.RecipientPlan placeholder = new SignatureRequestModels.RecipientPlan();
+            placeholder.contactId = outcome.contactId;
+            placeholder.contactName = outcome.contactName;
+            plans = new List<SignatureRequestModels.RecipientPlan>{ placeholder };
+        }
+        String link = String.isBlank(outcome.docuSignId) ? null : envelopeLinkBase + outcome.docuSignId;
+
+        List<Document_Copy__c> copies = new List<Document_Copy__c>();
+        for (SignatureRequestModels.RecipientPlan plan : plans) {
+            String copyName = String.isBlank(plan.contactName)
+                ? (String.isBlank(outcome.entityName) ? 'Recipient' : outcome.entityName)
+                : plan.contactName;
+            copies.add(new Document_Copy__c(
+                Name = copyName.abbreviate(80),
+                Master_Document__c = masterId,
+                Contact__c = plan.contactId,
+                Investing_Entity__c = outcome.entityId,
+                DocuSign_Envelope_Id__c = outcome.docuSignId,
+                Envelope_Record_Id__c = outcome.envelopeRecordId,
+                Envelope_Link__c = link,
+                Status__c = outcome.success ? STATUS_SENT : STATUS_FAILED,
+                Sent_At__c = outcome.success ? Datetime.now() : null,
+                Error_Message__c = outcome.errorMessage,
+                Is_Primary__c = plan.isPrimary == true,
+                Is_Required_Signer__c = plan.isRequiredSigner == true,
+                Recipient_Role__c = plan.recipientRole,
+                Routing_Order__c = plan.routingOrder
+            ));
+        }
+        insert copies;
         recalcMetrics(new Set<Id>{ masterId });
     }
 
@@ -204,13 +235,14 @@ public with sharing class SignatureRequestTracking {
         List<SignatureRequestModels.CopyRow> rows = new List<SignatureRequestModels.CopyRow>();
         for (Document_Copy__c copy : [
             SELECT Id, Name, Contact__c, Contact__r.Name,
-                   Investing_Entity__r.Name, Investing_Entity__r.Entity_Type__c,
-                   DocuSign_Envelope_Id__c, Status__c, Sent_At__c, Opened_At__c,
-                   Completed_At__c, Error_Message__c
+                   Investing_Entity__c, Investing_Entity__r.Name, Investing_Entity__r.Entity_Type__c,
+                   DocuSign_Envelope_Id__c, Envelope_Link__c, Status__c, Sent_At__c, Opened_At__c,
+                   Completed_At__c, Error_Message__c,
+                   Is_Primary__c, Is_Required_Signer__c, Recipient_Role__c, Routing_Order__c
             FROM Document_Copy__c
             WHERE Master_Document__c = :masterDocumentId
             WITH USER_MODE
-            ORDER BY CreatedDate DESC
+            ORDER BY Investing_Entity__r.Name, CreatedDate DESC, Routing_Order__c
         ]) {
             SignatureRequestModels.CopyRow row = new SignatureRequestModels.CopyRow();
             row.id = copy.Id;
@@ -225,7 +257,12 @@ public with sharing class SignatureRequestTracking {
             row.completedAt = copy.Completed_At__c;
             row.errorMessage = copy.Error_Message__c;
             row.docuSignEnvelopeId = copy.DocuSign_Envelope_Id__c;
-            row.resettable = copy.Status__c != STATUS_RESET && copy.Contact__c != null;
+            row.envelopeLink = copy.Envelope_Link__c;
+            row.isPrimary = copy.Is_Primary__c == true;
+            row.isRequiredSigner = copy.Is_Required_Signer__c == true;
+            row.recipientRole = copy.Recipient_Role__c;
+            row.routingOrder = copy.Routing_Order__c == null ? null : copy.Routing_Order__c.intValue();
+            row.resettable = copy.Status__c != STATUS_RESET && copy.Investing_Entity__c != null;
             row.viewable = String.isNotBlank(copy.DocuSign_Envelope_Id__c);
             rows.add(row);
         }
@@ -249,9 +286,11 @@ public with sharing class SignatureRequestTracking {
     }
 
     /**
-     * Voids the copy's envelope (when still voidable), marks the copy Reset
-     * so it stops counting toward metrics, and queues a fresh envelope to the
-     * same contact using the master's stored wizard payload.
+     * Resets the ENTIRE entity envelope the clicked copy belongs to: voids
+     * the shared envelope (when still voidable), marks every sibling copy of
+     * that entity Reset (they stop counting toward metrics), and queues a
+     * fresh envelope for the whole entity from the master's stored payload —
+     * same recipients, same routing.
      */
     public static SignatureRequestModels.SendReceipt resetAndResend(Id copyId) {
         Document_Copy__c copy = loadCopy(copyId);
@@ -259,13 +298,27 @@ public with sharing class SignatureRequestTracking {
             throw new SignatureRequestService.SignatureRequestException(
                 'This copy was already reset.');
         }
-        if (copy.Contact__c == null) {
+        if (copy.Investing_Entity__c == null) {
             throw new SignatureRequestService.SignatureRequestException(
-                'This copy has no contact to resend to.');
+                'This copy predates the entity-envelope model and cannot be resent; send a new request instead.');
         }
         if (String.isBlank(copy.Master_Document__r.Request_Payload__c)) {
             throw new SignatureRequestService.SignatureRequestException(
                 'The original request payload was not stored, so this document cannot be resent.');
+        }
+
+        SignatureRequestModels.SendRequest req;
+        try {
+            req = (SignatureRequestModels.SendRequest) JSON.deserialize(
+                copy.Master_Document__r.Request_Payload__c,
+                SignatureRequestModels.SendRequest.class);
+        } catch (Exception e) {
+            throw new SignatureRequestService.SignatureRequestException(
+                'Stored request payload could not be read: ' + e.getMessage());
+        }
+        if (req.selectedAssociationIds == null || req.selectedAssociationIds.isEmpty()) {
+            throw new SignatureRequestService.SignatureRequestException(
+                'This master was sent before the entity-envelope model; send a new request instead.');
         }
 
         // Void first (callout before any DML). Completed/declined/voided
@@ -285,28 +338,29 @@ public with sharing class SignatureRequestTracking {
             }
         }
 
-        SignatureRequestModels.SendRequest req;
-        try {
-            req = (SignatureRequestModels.SendRequest) JSON.deserialize(
-                copy.Master_Document__r.Request_Payload__c,
-                SignatureRequestModels.SendRequest.class);
-        } catch (Exception e) {
-            throw new SignatureRequestService.SignatureRequestException(
-                'Stored request payload could not be read: ' + e.getMessage());
+        // Supersede every active copy of this entity's envelope on this master.
+        List<Document_Copy__c> siblings = [
+            SELECT Id, Status__c, Error_Message__c
+            FROM Document_Copy__c
+            WHERE Master_Document__c = :copy.Master_Document__c
+              AND Investing_Entity__c = :copy.Investing_Entity__c
+              AND Status__c != :STATUS_RESET
+        ];
+        for (Document_Copy__c sibling : siblings) {
+            sibling.Status__c = STATUS_RESET;
+            sibling.Error_Message__c = ('Reset on ' + Datetime.now().format() + voidNote
+                + (sibling.Error_Message__c == null ? '' : '\n' + sibling.Error_Message__c))
+                .abbreviate(32768);
         }
-        req.masterDocumentId = copy.Master_Document__c;
-        req.selectedContactIds = new List<Id>{ copy.Contact__c };
+        update siblings;
 
-        copy.Status__c = STATUS_RESET;
-        copy.Error_Message__c = ('Reset on ' + Datetime.now().format() + voidNote
-            + (copy.Error_Message__c == null ? '' : '\n' + copy.Error_Message__c)).abbreviate(32768);
-        update copy;
+        req.masterDocumentId = copy.Master_Document__c;
 
         SignatureRequestModels.SendReceipt receipt = new SignatureRequestModels.SendReceipt();
         receipt.plannedCount = 1;
         receipt.masterDocumentId = copy.Master_Document__c;
         receipt.asyncJobId = System.enqueueJob(
-            new SignatureRequestSender(req, new List<Id>{ copy.Contact__c }));
+            new SignatureRequestSender(req, new List<Id>{ copy.Investing_Entity__c }));
 
         recalcMetrics(new Set<Id>{ copy.Master_Document__c });
         return receipt;
@@ -315,7 +369,7 @@ public with sharing class SignatureRequestTracking {
     private static Document_Copy__c loadCopy(Id copyId) {
         List<Document_Copy__c> copies = [
             SELECT Id, Name, Master_Document__c, Master_Document__r.Request_Payload__c,
-                   Contact__c, DocuSign_Envelope_Id__c, Status__c, Error_Message__c
+                   Contact__c, Investing_Entity__c, DocuSign_Envelope_Id__c, Status__c, Error_Message__c
             FROM Document_Copy__c
             WHERE Id = :copyId
             LIMIT 1

@@ -34,6 +34,7 @@
                         <tr class="slds-line-height_reset">
                             <th scope="col">Contact</th>
                             <th scope="col">Investing Entity</th>
+                            <th scope="col">Role</th>
                             <th scope="col">Status</th>
                             <th scope="col">Sent</th>
                             <th scope="col">Opened</th>
@@ -53,6 +54,7 @@
                                         <span class="slds-text-body_small slds-text-color_weak"> ({c.entityType})</span>
                                     </template>
                                 </td>
+                                <td>{c.roleLabel}</td>
                                 <td>
                                     <span class={c.badgeClass}>{c.status}</span>
                                     <template if:true={c.errorMessage}>
@@ -94,7 +96,7 @@
                                         </template>
                                     </template>
                                     <template if:true={c.confirming}>
-                                        <span class="slds-text-body_small slds-m-right_x-small">Void &amp; resend?</span>
+                                        <span class="slds-text-body_small slds-m-right_x-small">Void &amp; resend the whole entity envelope?</span>
                                         <lightning-button
                                             label="Confirm"
                                             variant="destructive"

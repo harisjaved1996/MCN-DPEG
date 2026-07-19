@@ -15,12 +15,15 @@
         </div>
 
         <div class="slds-box slds-box_x-small slds-m-bottom_small">
-            <p class="slds-text-heading_small slds-p-bottom_x-small">Recipients ({recipientCount})</p>
+            <p class="slds-text-heading_small slds-p-bottom_x-small">
+                Recipients ({recipientCount}) — {envelopeCount} shared envelope(s), one per investing entity
+            </p>
             <template for:each={selectedProspects} for:item="p">
-                <div key={p.contactId} class="slds-grid slds-p-vertical_xx-small recipient-row">
-                    <span class="slds-size_1-of-3">{p.name}</span>
-                    <span class="slds-size_1-of-3 slds-text-color_weak">{p.email}</span>
-                    <span class="slds-size_1-of-3 slds-text-color_weak">{p.entityName} ({p.entityType})</span>
+                <div key={p.associationId} class="slds-grid slds-p-vertical_xx-small recipient-row">
+                    <span class="slds-size_1-of-4">{p.name}</span>
+                    <span class="slds-size_1-of-4 slds-text-color_weak">{p.email}</span>
+                    <span class="slds-size_1-of-4 slds-text-color_weak">{p.entityName}</span>
+                    <span class="slds-size_1-of-4 slds-text-color_weak">{p.roleLabel}</span>
                 </div>
             </template>
         </div>

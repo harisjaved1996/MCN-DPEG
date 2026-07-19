@@ -1,10 +1,12 @@
 /**
- * Self-chaining Queueable that sends one DocuSign envelope per execution.
+ * Self-chaining Queueable that sends ONE shared envelope per INVESTING
+ * ENTITY per execution (required secondary signers first, primary last,
+ * view-only contacts as carbon copies).
  *
  * dfsle.EnvelopeService.sendEnvelope performs callouts AND DML inside the
  * managed package, so batching several envelopes into one transaction risks
- * "uncommitted work pending". One contact per link keeps every transaction's
- * callout/DML ordering safe; a run of N contacts is a chain of N links.
+ * "uncommitted work pending". One entity per link keeps every transaction's
+ * callout/DML ordering safe; a run of N entities is a chain of N links.
  *
  * Outcomes accumulate in chain state; the final link notifies the sending
  * user via the Signature_Request_Result custom notification.
@@ -12,24 +14,24 @@
 public with sharing class SignatureRequestSender implements Queueable, Database.AllowsCallouts {
 
     private final SignatureRequestModels.SendRequest req;
-    private final List<Id> remaining;
+    private final List<Id> remainingEntityIds;
     private final List<SignatureRequestModels.SendOutcome> outcomes;
     private final String templateRole;
     private final Boolean templateRoleResolved;
 
-    public SignatureRequestSender(SignatureRequestModels.SendRequest req, List<Id> contactIds) {
-        this(req, contactIds, new List<SignatureRequestModels.SendOutcome>(), null, false);
+    public SignatureRequestSender(SignatureRequestModels.SendRequest req, List<Id> entityIds) {
+        this(req, entityIds, new List<SignatureRequestModels.SendOutcome>(), null, false);
     }
 
     @TestVisible
     private SignatureRequestSender(
             SignatureRequestModels.SendRequest req,
-            List<Id> remaining,
+            List<Id> remainingEntityIds,
             List<SignatureRequestModels.SendOutcome> outcomes,
             String templateRole,
             Boolean templateRoleResolved) {
         this.req = req;
-        this.remaining = remaining;
+        this.remainingEntityIds = remainingEntityIds;
         this.outcomes = outcomes;
         this.templateRole = templateRole;
         this.templateRoleResolved = templateRoleResolved;
@@ -51,14 +53,14 @@ public with sharing class SignatureRequestSender implements Queueable, Database.
             roleResolved = true;
         }
 
-        if (!remaining.isEmpty()) {
-            Id contactId = remaining.remove(0);
-            SignatureRequestModels.SendOutcome outcome = sendToContact(contactId, role);
+        if (!remainingEntityIds.isEmpty()) {
+            Id entityId = remainingEntityIds.remove(0);
+            SignatureRequestModels.SendOutcome outcome = sendToEntity(entityId, role);
             outcomes.add(outcome);
             if (req.masterDocumentId != null) {
                 try {
                     // DML after the callout is fine (only callout-after-DML is blocked).
-                    SignatureRequestTracking.createCopyForOutcome(req.masterDocumentId, outcome);
+                    SignatureRequestTracking.createCopiesForOutcome(req.masterDocumentId, outcome);
                 } catch (Exception trackingError) {
                     System.debug(LoggingLevel.WARN,
                         'SignatureRequestSender: copy tracking failed - ' + trackingError.getMessage());
@@ -66,28 +68,44 @@ public with sharing class SignatureRequestSender implements Queueable, Database.
             }
         }
 
-        if (remaining.isEmpty()) {
+        if (remainingEntityIds.isEmpty()) {
             finish();
         } else if (!Test.isRunningTest()) {
-            System.enqueueJob(new SignatureRequestSender(req, remaining, outcomes, role, roleResolved));
+            System.enqueueJob(new SignatureRequestSender(
+                req, remainingEntityIds, outcomes, role, roleResolved));
         }
     }
 
-    private SignatureRequestModels.SendOutcome sendToContact(Id contactId, String role) {
+    private SignatureRequestModels.SendOutcome sendToEntity(Id entityId, String role) {
         SignatureRequestModels.SendOutcome outcome = new SignatureRequestModels.SendOutcome();
-        outcome.contactId = contactId;
+        outcome.entityId = entityId;
         try {
+            Map<Id, SignatureRequestService.EntityRecipientGroup> groups =
+                SignatureRequestService.loadRecipientGroups(req);
+            SignatureRequestService.EntityRecipientGroup grp = groups.get(entityId);
+            if (grp == null) {
+                throw new SignatureRequestService.SignatureRequestException(
+                    'No selected investors remain for this investing entity.');
+            }
+            outcome.entityName = grp.entityName;
+            outcome.recipients = grp.recipients;
+            if (grp.primary == null) {
+                throw new SignatureRequestService.SignatureRequestException(
+                    'No primary investor selected for investing entity "' + grp.entityName + '".');
+            }
+            outcome.contactId = grp.primary.contactId;
+            outcome.contactName = grp.primary.contactName;
+
             Map<Id, SignatureRequestService.ProspectContext> contexts =
-                SignatureRequestService.loadProspectContexts(req, new Set<Id>{ contactId });
-            SignatureRequestService.ProspectContext ctx = contexts.get(contactId);
+                SignatureRequestService.loadEntityContexts(
+                    req, new Map<Id, SignatureRequestService.EntityRecipientGroup>{ entityId => grp });
+            SignatureRequestService.ProspectContext ctx = contexts.get(entityId);
             if (ctx == null) {
                 throw new SignatureRequestService.SignatureRequestException(
-                    'Contact is no longer an investor on this investment.');
+                    'Investing entity no longer holds a position on this investment.');
             }
-            outcome.contactName = ctx.contactName;
-            outcome.entityId = ctx.entityRecord == null ? null : (Id) ctx.entityRecord.get('Id');
 
-            dfsle.Envelope envelope = SignatureRequestService.buildEnvelope(req, ctx, role);
+            dfsle.Envelope envelope = SignatureRequestService.buildEntityEnvelope(req, ctx, grp, role);
             envelope = SignatureRequestService.gateway.sendNow(envelope);
 
             outcome.success = true;
@@ -120,16 +138,16 @@ public with sharing class SignatureRequestSender implements Queueable, Database.
             if (outcome.success) {
                 sent++;
             } else {
-                String who = String.isBlank(outcome.contactName)
-                    ? String.valueOf(outcome.contactId) : outcome.contactName;
+                String who = String.isBlank(outcome.entityName)
+                    ? String.valueOf(outcome.entityId) : outcome.entityName;
                 failures.add(who + ' - ' + outcome.errorMessage);
             }
         }
 
-        String title = 'Signature requests: ' + sent + ' sent'
+        String title = 'Signature requests: ' + sent + ' envelope(s) sent'
             + (failures.isEmpty() ? '' : ', ' + failures.size() + ' failed');
         String body = failures.isEmpty()
-            ? 'All DocuSign envelopes were sent. Track signing status on the investment record.'
+            ? 'All entity envelopes were sent via DocuSign. Track signing status on the investment record.'
             : ('Failed: ' + String.join(failures, ' | ')).abbreviate(740);
 
         System.debug(LoggingLevel.INFO, 'SignatureRequestSender finished. ' + title + ' :: ' + body);

@@ -1,7 +1,11 @@
 <template>
     <div>
         <div class="slds-grid slds-grid_vertical-align-center slds-p-bottom_small">
-            <p class="slds-text-title">Step 3: {headline}. All prospects are selected by default — deselect anyone who should not receive a copy.</p>
+            <p class="slds-text-title">
+                Step 3: {headline}. All investors are selected by default. Each investing entity gets ONE
+                shared envelope: the primary fills the input fields (signing last), required signers sign
+                first, everyone else receives a view-only copy.
+            </p>
             <span class="slds-col_bump-left slds-badge">{counter}</span>
         </div>
 
@@ -15,7 +19,7 @@
 
         <template if:true={hasProspects}>
             <lightning-datatable
-                key-field="contactId"
+                key-field="associationId"
                 data={prospects}
                 columns={columns}
                 selected-rows={selectedRowIds}

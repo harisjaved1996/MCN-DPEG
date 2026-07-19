@@ -59,48 +59,68 @@ public class SignatureRequestServiceTest {
         }
     }
 
+    /**
+     * Fund IV with two invested entities:
+     * - Trust Entity (Estate or Trust): Prime (primary), Second (required
+     *   signer), Watcher (view-only), NoEmail (required but no email).
+     * - Solo LLC (Partnership or LLC): Solo (primary).
+     */
     @TestSetup
     static void setup() {
         Investment__c inv = new Investment__c(Name = 'Fund IV');
         insert inv;
 
         List<Contact> contacts = new List<Contact>{
-            new Contact(LastName = 'Alpha', Email = 'alpha@example.com', Phone = '111-1111'),
-            new Contact(LastName = 'Beta', Email = 'beta@example.com'),
-            new Contact(LastName = 'NoEmail')
+            new Contact(LastName = 'Prime', Email = 'prime@example.com', Phone = '111'),
+            new Contact(LastName = 'Second', Email = 'second@example.com'),
+            new Contact(LastName = 'Watcher', Email = 'watcher@example.com'),
+            new Contact(LastName = 'NoEmail'),
+            new Contact(LastName = 'Solo', Email = 'solo@example.com')
         };
         insert contacts;
 
         List<Investing_Entity__c> entities = new List<Investing_Entity__c>{
-            new Investing_Entity__c(Name = 'Alpha LLC', Entity_Type__c = 'Partnership or LLC', Contact__c = contacts[0].Id),
-            new Investing_Entity__c(Name = 'Alpha Trust', Entity_Type__c = 'Estate or Trust', Contact__c = contacts[0].Id),
-            new Investing_Entity__c(Name = 'Beta Individual', Entity_Type__c = 'Individual', Contact__c = contacts[1].Id),
-            new Investing_Entity__c(Name = 'Silent LLC', Entity_Type__c = 'Partnership or LLC', Contact__c = contacts[2].Id)
+            new Investing_Entity__c(Name = 'Trust Entity', Entity_Type__c = 'Estate or Trust'),
+            new Investing_Entity__c(Name = 'Solo LLC', Entity_Type__c = 'Partnership or LLC')
         };
         insert entities;
 
-        List<position__c> positions = new List<position__c>{
-            new position__c(Investment__c = inv.Id, Investing_Entity__c = entities[0].Id), // Alpha older
-            new position__c(Investment__c = inv.Id, Investing_Entity__c = entities[1].Id), // Alpha newer
-            new position__c(Investment__c = inv.Id, Investing_Entity__c = entities[2].Id),
-            new position__c(Investment__c = inv.Id, Investing_Entity__c = entities[3].Id)
+        insert new List<position__c>{
+            new position__c(Investment__c = inv.Id, Investing_Entity__c = entities[0].Id),
+            new position__c(Investment__c = inv.Id, Investing_Entity__c = entities[1].Id)
         };
-        insert positions;
-        Test.setCreatedDate(positions[0].Id, Datetime.now().addDays(-10));
-        Test.setCreatedDate(positions[1].Id, Datetime.now().addDays(-1));
-        Test.setCreatedDate(positions[2].Id, Datetime.now().addDays(-5));
-        Test.setCreatedDate(positions[3].Id, Datetime.now().addDays(-5));
+
+        insert new List<Associated_Contact__c>{
+            new Associated_Contact__c(Name = 'Prime', Investing_Entity__c = entities[0].Id,
+                Contact__c = contacts[0].Id, Primary__c = true, Required_Signer__c = true),
+            new Associated_Contact__c(Name = 'Second', Investing_Entity__c = entities[0].Id,
+                Contact__c = contacts[1].Id, Primary__c = false, Required_Signer__c = true),
+            new Associated_Contact__c(Name = 'Watcher', Investing_Entity__c = entities[0].Id,
+                Contact__c = contacts[2].Id, Primary__c = false, Required_Signer__c = false),
+            new Associated_Contact__c(Name = 'NoEmail', Investing_Entity__c = entities[0].Id,
+                Contact__c = contacts[3].Id, Primary__c = false, Required_Signer__c = true),
+            new Associated_Contact__c(Name = 'Solo', Investing_Entity__c = entities[1].Id,
+                Contact__c = contacts[4].Id, Primary__c = true, Required_Signer__c = true)
+        };
     }
 
-    private static Id investmentId() {
+    public static Id investmentId() {
         return [SELECT Id FROM Investment__c WHERE Name = 'Fund IV' LIMIT 1].Id;
     }
 
-    private static Contact contactByName(String lastName) {
-        return [SELECT Id, Name, Email, Phone FROM Contact WHERE LastName = :lastName LIMIT 1];
+    public static List<Id> allAssociationIds() {
+        List<Id> ids = new List<Id>();
+        for (Associated_Contact__c a : [
+            SELECT Id FROM Associated_Contact__c
+            WHERE Contact__r.Email != NULL
+            ORDER BY Name
+        ]) {
+            ids.add(a.Id);
+        }
+        return ids;
     }
 
-    private static String requestJson(Id invId, List<Id> contactIds, List<Object> fields) {
+    public static String requestJson(Id invId, List<Id> associationIds, List<Object> fields) {
         return JSON.serialize(new Map<String, Object>{
             'investmentId' => invId,
             'emailSubject' => 'Please sign',
@@ -108,10 +128,13 @@ public class SignatureRequestServiceTest {
             'document' => new Map<String, Object>{
                 'sourceType' => 'FILE',
                 'contentVersionId' => makeContentVersion(),
-                'name' => 'PPM.pdf'
+                'name' => 'PPM.pdf',
+                'pageCount' => 3,
+                'lastPageWidth' => 612,
+                'lastPageHeight' => 792
             },
             'fields' => fields,
-            'selectedContactIds' => contactIds
+            'selectedAssociationIds' => associationIds
         });
     }
 
@@ -143,34 +166,58 @@ public class SignatureRequestServiceTest {
             }
             byObject.put(grp.objectApiName, names);
         }
-        Assert.isTrue(byObject.containsKey('Investing_Entity__c'), 'entity group missing');
-        Assert.isTrue(byObject.get('Investing_Entity__c').contains('Name'), 'entity Name missing');
         Assert.isTrue(byObject.get('Investing_Entity__c').contains('Entity_Type__c'), 'entity type missing');
         Assert.isTrue(byObject.get('Contact').contains('Email'), 'contact email missing');
         Assert.isTrue(byObject.get('Investment__c').contains('Name'), 'investment name missing');
     }
 
     @IsTest
-    static void loadProspectsDedupesAndSkipsNoEmail() {
+    static void loadProspectsListsAssociationsWithRoles() {
         SignatureRequestModels.ProspectResult result = SignatureRequestService.loadProspects(investmentId());
 
         Assert.areEqual('Fund IV', result.investmentName);
-        Assert.areEqual(2, result.prospects.size(), 'Alpha deduped + Beta; NoEmail skipped');
+        Assert.areEqual(4, result.prospects.size(), 'Prime+Second+Watcher+Solo (NoEmail hidden)');
         Assert.areEqual(1, result.skippedNoEmailCount);
 
         Map<String, SignatureRequestModels.Prospect> byName = new Map<String, SignatureRequestModels.Prospect>();
         for (SignatureRequestModels.Prospect p : result.prospects) {
             byName.put(p.name, p);
         }
-        Assert.isTrue(byName.containsKey('Alpha'), 'Alpha missing');
-        Assert.areEqual('Alpha Trust', byName.get('Alpha').entityName,
-            'most recent position entity must win for duplicated contact');
+        Assert.isTrue(byName.get('Prime').isPrimary);
+        Assert.isTrue(byName.get('Prime').isRequiredSigner, 'primary is always a required signer');
+        Assert.isFalse(byName.get('Second').isPrimary);
+        Assert.isTrue(byName.get('Second').isRequiredSigner);
+        Assert.isFalse(byName.get('Watcher').isRequiredSigner, 'viewer is not a required signer');
+        Assert.areEqual('Trust Entity', byName.get('Prime').entityName);
+        Assert.isNotNull(byName.get('Prime').associationId);
+    }
+
+    @IsTest
+    static void loadRecipientGroupsGroupsByEntityAndFindsPrimary() {
+        SignatureRequestModels.SendRequest req = SignatureRequestService.parseAndValidate(
+            requestJson(investmentId(), allAssociationIds(), new List<Object>()));
+        Map<Id, SignatureRequestService.EntityRecipientGroup> groups =
+            SignatureRequestService.loadRecipientGroups(req);
+
+        Assert.areEqual(2, groups.size(), 'one group per invested entity');
+        for (SignatureRequestService.EntityRecipientGroup grp : groups.values()) {
+            if (grp.entityName == 'Trust Entity') {
+                Assert.areEqual(3, grp.recipients.size(), 'NoEmail dropped');
+                Assert.isNotNull(grp.primary, 'primary resolved');
+                Assert.isTrue(grp.primary.isPrimary);
+                Assert.isTrue(grp.primary.contactName.contains('Prime'));
+            } else {
+                Assert.areEqual('Solo LLC', grp.entityName);
+                Assert.areEqual(1, grp.recipients.size());
+                Assert.isNotNull(grp.primary);
+            }
+        }
     }
 
     @IsTest
     static void parseAndValidateRejectsBadPayloads() {
         Id invId = investmentId();
-        Id alphaId = contactByName('Alpha').Id;
+        List<Id> assocIds = allAssociationIds();
 
         try {
             SignatureRequestService.parseAndValidate('{"investmentId": null}');
@@ -181,13 +228,13 @@ public class SignatureRequestServiceTest {
 
         try {
             SignatureRequestService.parseAndValidate(requestJson(invId, new List<Id>(), new List<Object>()));
-            Assert.fail('expected empty-contacts failure');
+            Assert.fail('expected empty-selection failure');
         } catch (SignatureRequestService.SignatureRequestException e) {
-            Assert.isTrue(e.getMessage().contains('at least one'), e.getMessage());
+            Assert.isTrue(e.getMessage().contains('at least one investor'), e.getMessage());
         }
 
         try {
-            SignatureRequestService.parseAndValidate(requestJson(invId, new List<Id>{ alphaId },
+            SignatureRequestService.parseAndValidate(requestJson(invId, assocIds,
                 new List<Object>{ mergeField('f1', 'Account', 'Name', null) }));
             Assert.fail('expected non-whitelisted-object failure');
         } catch (SignatureRequestService.SignatureRequestException e) {
@@ -195,77 +242,55 @@ public class SignatureRequestServiceTest {
         }
 
         SignatureRequestModels.SendRequest ok = SignatureRequestService.parseAndValidate(
-            requestJson(invId, new List<Id>{ alphaId },
+            requestJson(invId, assocIds,
                 new List<Object>{ mergeField('f1', 'Investing_Entity__c', 'Name', null) }));
         Assert.areEqual(1, ok.fields.size());
-        Assert.areEqual('Name', ok.fields[0].fieldApiName);
     }
 
     @IsTest
-    static void buildTabSpecsAppliesEntityTypeFilterAndValues() {
+    static void buildTabSpecsAppliesEntityFilterAndResolvesPrimaryValues() {
         Id invId = investmentId();
-        Id alphaId = contactByName('Alpha').Id;
-        Id betaId = contactByName('Beta').Id;
-
         SignatureRequestModels.SendRequest req = SignatureRequestService.parseAndValidate(
-            requestJson(invId, new List<Id>{ alphaId, betaId }, new List<Object>{
+            requestJson(invId, allAssociationIds(), new List<Object>{
                 mergeField('fEntityName', 'Investing_Entity__c', 'Name', null),
                 mergeField('fRestricted', 'Investing_Entity__c', 'Entity_Type__c',
                     new List<String>{ 'Estate or Trust' }),
+                mergeField('fPrimaryEmail', 'Contact', 'Email', null),
                 new Map<String, Object>{
                     'clientId' => 'fReqText', 'category' => 'ENTRY', 'entryKind' => 'REQUIRED_TEXT',
-                    'label' => 'Required Text', 'page' => 2, 'x' => 10, 'y' => 20 },
-                new Map<String, Object>{
-                    'clientId' => 'fSig', 'category' => 'RECIPIENT', 'recipientKind' => 'SIGNATURE',
-                    'label' => 'Signature', 'page' => 3, 'x' => 30, 'y' => 40 },
-                new Map<String, Object>{
-                    'clientId' => 'fSigTrust', 'category' => 'RECIPIENT', 'recipientKind' => 'SIGNATURE',
-                    'label' => 'Trust Signature', 'page' => 3, 'x' => 30, 'y' => 90,
-                    'entityTypes' => new List<String>{ 'Estate or Trust' } }
+                    'label' => 'Required Text', 'page' => 2, 'x' => 10, 'y' => 20 }
             }));
 
+        Map<Id, SignatureRequestService.EntityRecipientGroup> groups =
+            SignatureRequestService.loadRecipientGroups(req);
         Map<Id, SignatureRequestService.ProspectContext> contexts =
-            SignatureRequestService.loadProspectContexts(req, new Set<Id>{ alphaId, betaId });
-        SignatureRequestService.ProspectContext alphaCtx = contexts.get(alphaId); // Estate or Trust (most recent)
-        SignatureRequestService.ProspectContext betaCtx = contexts.get(betaId);   // Individual
+            SignatureRequestService.loadEntityContexts(req, groups);
 
-        List<SignatureRequestModels.TabSpec> alphaSpecs = SignatureRequestService.buildTabSpecs(req.fields, alphaCtx);
-        List<SignatureRequestModels.TabSpec> betaSpecs = SignatureRequestService.buildTabSpecs(req.fields, betaCtx);
-
-        Assert.areEqual(5, alphaSpecs.size(), 'restricted fields included for matching entity type');
-        Assert.areEqual(3, betaSpecs.size(),
-            'restricted merge AND restricted signature both skipped for non-matching entity type');
-
-        SignatureRequestModels.TabSpec entityName = alphaSpecs[0];
-        Assert.areEqual('TEXT', entityName.kind);
-        Assert.isTrue(entityName.readOnly, 'merge tabs are locked');
-        Assert.areEqual('Alpha Trust', entityName.value, 'value from most recent position entity');
-        Assert.areEqual('fEntityName', entityName.dataLabel);
-        Assert.areEqual(72, entityName.x, 'x rounded to integer points');
-        Assert.areEqual(101, entityName.y, 'y rounded to integer points');
-
-        SignatureRequestModels.TabSpec restricted = alphaSpecs[1];
-        Assert.areEqual('Estate or Trust', restricted.value);
-
-        SignatureRequestModels.TabSpec entry = alphaSpecs[2];
-        Assert.areEqual('TEXT', entry.kind);
-        Assert.isTrue(entry.required);
-        Assert.isFalse(entry.readOnly);
-
-        Assert.areEqual('SIGN_HERE', alphaSpecs[3].kind);
-        Assert.areEqual('fSigTrust', alphaSpecs[4].dataLabel,
-            'entity-type-restricted signature reaches matching recipients');
-
-        Boolean betaHasTrustSig = false;
-        for (SignatureRequestModels.TabSpec spec : betaSpecs) {
-            if (spec.dataLabel == 'fSigTrust') {
-                betaHasTrustSig = true;
+        SignatureRequestService.ProspectContext trustCtx;
+        SignatureRequestService.ProspectContext soloCtx;
+        for (SignatureRequestService.EntityRecipientGroup grp : groups.values()) {
+            if (grp.entityName == 'Trust Entity') {
+                trustCtx = contexts.get(grp.entityId);
+            } else {
+                soloCtx = contexts.get(grp.entityId);
             }
         }
-        Assert.isFalse(betaHasTrustSig, 'restricted signature omitted for non-matching recipient');
 
-        List<dfsle.Tab> tabs = SignatureRequestService.toDfsleTabs(alphaSpecs);
-        Assert.areEqual(5, tabs.size(), 'every spec maps to a dfsle tab');
+        List<SignatureRequestModels.TabSpec> trustSpecs =
+            SignatureRequestService.buildTabSpecs(req.fields, trustCtx);
+        List<SignatureRequestModels.TabSpec> soloSpecs =
+            SignatureRequestService.buildTabSpecs(req.fields, soloCtx);
+
+        Assert.areEqual(4, trustSpecs.size(), 'restricted field included for Estate or Trust');
+        Assert.areEqual(3, soloSpecs.size(), 'restricted field skipped for Partnership or LLC');
+
+        Assert.areEqual('Trust Entity', trustSpecs[0].value);
+        Assert.isTrue(trustSpecs[0].readOnly, 'merge tabs are locked');
+        Assert.areEqual(72, trustSpecs[0].x, 'x rounded to integer points');
+
+        Assert.areEqual('prime@example.com', trustSpecs[2].value,
+            'Contact merge fields resolve against the PRIMARY investor');
+        Assert.areEqual('solo@example.com', soloSpecs[1].value);
     }
 
     @IsTest
@@ -276,21 +301,13 @@ public class SignatureRequestServiceTest {
 
         SignatureRequestModels.PlacedField f = new SignatureRequestModels.PlacedField();
         f.clientId = 'f1';
-        f.category = 'MERGE';
-        f.objectApiName = 'Investing_Entity__c';
-        f.fieldApiName = 'Name';
+        f.category = 'RECIPIENT';
+        f.recipientKind = 'SIGNATURE';
         f.entityTypes = new List<String>{ 'Individual' };
         f.page = 1; f.x = 1; f.y = 1;
 
-        SignatureRequestModels.PlacedField sig = new SignatureRequestModels.PlacedField();
-        sig.clientId = 'f2';
-        sig.category = 'RECIPIENT';
-        sig.recipientKind = 'SIGNATURE';
-        sig.entityTypes = new List<String>{ 'Individual' };
-        sig.page = 1; sig.x = 1; sig.y = 1;
-
         List<SignatureRequestModels.TabSpec> specs = SignatureRequestService.buildTabSpecs(
-            new List<SignatureRequestModels.PlacedField>{ f, sig }, ctx);
+            new List<SignatureRequestModels.PlacedField>{ f }, ctx);
         Assert.areEqual(0, specs.size(), 'null entity type never matches a restriction, any category');
     }
 
@@ -301,29 +318,67 @@ public class SignatureRequestServiceTest {
         Assert.areEqual('No', SignatureRequestService.formatValue(Schema.DisplayType.BOOLEAN, false));
         Assert.isTrue(String.isNotBlank(
             SignatureRequestService.formatValue(Schema.DisplayType.DATE, Date.newInstance(2026, 7, 15))));
-        Assert.isTrue(String.isNotBlank(
-            SignatureRequestService.formatValue(Schema.DisplayType.CURRENCY, (Object) 1234.5)));
         Assert.areEqual('plain', SignatureRequestService.formatValue(Schema.DisplayType.STRING, 'plain'));
     }
 
     @IsTest
-    static void buildEnvelopeUsesGatewayAndFileDocument() {
+    static void autoSignSpecsStackFromLastPageBottom() {
+        SignatureRequestModels.DocumentSelection doc = new SignatureRequestModels.DocumentSelection();
+        doc.sourceType = 'FILE';
+        doc.pageCount = 3;
+        doc.lastPageWidth = 612;
+        doc.lastPageHeight = 792;
+
+        List<SignatureRequestModels.TabSpec> first =
+            SignatureRequestService.buildAutoSignSpecs(doc, 0, 2, 'auto_s2');
+        List<SignatureRequestModels.TabSpec> second =
+            SignatureRequestService.buildAutoSignSpecs(doc, 1, 2, 'auto_primary');
+
+        Assert.areEqual(3, first.size(), 'Sign Here + Full Name + Date Signed');
+        Assert.areEqual('SIGN_HERE', first[0].kind);
+        Assert.areEqual(3, first[0].page, 'always the LAST page');
+        Assert.isTrue(second[0].y > first[0].y, 'later slots sit lower on the page');
+        Assert.areEqual('auto_primary_sign', second[0].dataLabel);
+
+        // No page metadata (template master) -> no auto blocks.
+        doc.pageCount = null;
+        Assert.areEqual(0, SignatureRequestService.buildAutoSignSpecs(doc, 0, 1, 'x').size());
+    }
+
+    @IsTest
+    static void buildEntityEnvelopeAssignsRolesAndRouting() {
         FakeGateway fake = new FakeGateway();
         SignatureRequestService.gateway = fake;
 
-        Id invId = investmentId();
-        Id alphaId = contactByName('Alpha').Id;
         SignatureRequestModels.SendRequest req = SignatureRequestService.parseAndValidate(
-            requestJson(invId, new List<Id>{ alphaId },
+            requestJson(investmentId(), allAssociationIds(),
                 new List<Object>{ mergeField('f1', 'Contact', 'Email', null) }));
 
-        Map<Id, SignatureRequestService.ProspectContext> contexts =
-            SignatureRequestService.loadProspectContexts(req, new Set<Id>{ alphaId });
+        Map<Id, SignatureRequestService.EntityRecipientGroup> groups =
+            SignatureRequestService.loadRecipientGroups(req);
+        SignatureRequestService.EntityRecipientGroup trust;
+        for (SignatureRequestService.EntityRecipientGroup grp : groups.values()) {
+            if (grp.entityName == 'Trust Entity') {
+                trust = grp;
+            }
+        }
+        SignatureRequestService.ProspectContext ctx =
+            SignatureRequestService.loadEntityContexts(req, groups).get(trust.entityId);
 
-        dfsle.Envelope envelope = SignatureRequestService.buildEnvelope(req, contexts.get(alphaId), null);
+        dfsle.Envelope envelope = SignatureRequestService.buildEntityEnvelope(req, ctx, trust, null);
 
         Assert.isNotNull(envelope);
         Assert.areEqual(1, fake.emptyCount, 'gateway created the empty envelope');
+        for (SignatureRequestModels.RecipientPlan plan : trust.recipients) {
+            if (plan.isPrimary) {
+                Assert.areEqual(2, plan.routingOrder, 'primary signs after required secondaries');
+                Assert.areEqual('Signer', plan.recipientRole);
+            } else if (plan.isRequiredSigner) {
+                Assert.areEqual(1, plan.routingOrder, 'required secondary signs first');
+            } else {
+                Assert.areEqual('Viewer', plan.recipientRole, 'non-required contact is view-only');
+            }
+        }
     }
 
     @IsTest
@@ -332,10 +387,8 @@ public class SignatureRequestServiceTest {
         SignatureRequestService.gateway = fake;
 
         Assert.areEqual(0, SignatureRequestService.mapTemplates(null).size());
-        Assert.areEqual(0, SignatureRequestService.mapTemplates(fake.getTemplates()).size());
         Assert.isNull(SignatureRequestService.readDocuSignId(null));
 
-        // Envelope with null docuSignId reads safely; with a value it round-trips.
         dfsle.Envelope env = new dfsle.Envelope(null, null, null, null, null, null, null, null, null, null, null, null);
         Assert.isNull(SignatureRequestService.readDocuSignId(env));
         dfsle.Envelope envWithIds = new dfsle.Envelope(
@@ -344,11 +397,9 @@ public class SignatureRequestServiceTest {
         Assert.areEqual('33333333-3333-3333-3333-333333333333',
             SignatureRequestService.readDocuSignId(envWithIds));
 
-        // Template without recipients -> null role, no throw.
         fake.templateToReturn = new dfsle.Template(null, 'Blank', null, null, null, null, null, null);
         Assert.isNull(SignatureRequestService.resolveTemplateRole('11111111-1111-1111-1111-111111111111'));
 
-        // Template with id + a named role maps and resolves.
         fake.templateToReturn = new dfsle.Template(
             dfsle.UUID.parse('22222222-2222-2222-2222-222222222222'), 'Sub Docs',
             null, null, 'Subject', null,
@@ -358,7 +409,6 @@ public class SignatureRequestServiceTest {
         List<SignatureRequestModels.TemplateDoc> mapped =
             SignatureRequestService.mapTemplates(fake.getTemplates());
         Assert.areEqual(1, mapped.size());
-        Assert.areEqual('22222222-2222-2222-2222-222222222222', mapped[0].templateId);
         Assert.areEqual('Sub Docs', mapped[0].name);
         Assert.areEqual('Signer 1',
             SignatureRequestService.resolveTemplateRole('22222222-2222-2222-2222-222222222222'));

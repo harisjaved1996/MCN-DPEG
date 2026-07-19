@@ -27,6 +27,7 @@
                     <c-sigreq-fields-step
                         document={document}
                         fields={fields}
+                        ondocmeta={handleDocMeta}
                         onfieldschange={handleFieldsChange}
                     ></c-sigreq-fields-step>
                 </template>
@@ -34,7 +35,7 @@
                 <template if:true={isStep3}>
                     <c-sigreq-prospects-step
                         record-id={recordId}
-                        selected-contact-ids={selectedContactIds}
+                        selected-association-ids={selectedAssociationIds}
                         onselectionchange={handleSelectionChange}
                     ></c-sigreq-prospects-step>
                 </template>
@@ -44,7 +45,7 @@
                         document={document}
                         fields={fields}
                         prospects={prospects}
-                        selected-contact-ids={selectedContactIds}
+                        selected-association-ids={selectedAssociationIds}
                         email-subject={emailSubject}
                         email-message={emailMessage}
                         is-sending={isSending}

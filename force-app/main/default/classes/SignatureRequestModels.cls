@@ -16,7 +16,8 @@ public with sharing class SignatureRequestModels {
         public String emailMessage;
         public DocumentSelection document;
         public List<PlacedField> fields;
-        public List<Id> selectedContactIds;
+        public List<Id> selectedAssociationIds; // Associated_Contact__c ids picked in step 3
+        public List<Id> selectedContactIds;     // legacy payloads only (pre-association model)
         public Id masterDocumentId; // tracking record copies attach to (set server-side)
     }
 
@@ -26,6 +27,22 @@ public with sharing class SignatureRequestModels {
         public Id contentDocumentId;    // FILE only
         public String templateId;       // TEMPLATE only (DocuSign UUID string)
         public String name;
+        public Integer pageCount;       // FILE only, from pdf.js (auto sign area placement)
+        public Decimal lastPageWidth;   // PDF points
+        public Decimal lastPageHeight;  // PDF points
+    }
+
+    /** One recipient of an entity's shared envelope, with their signing role. */
+    public class RecipientPlan {
+        public Id associationId;
+        public Id contactId;
+        public String contactName;
+        public String contactEmail;
+        public String contactPhone;
+        public Boolean isPrimary = false;
+        public Boolean isRequiredSigner = false;
+        public Integer routingOrder;    // assigned at envelope build
+        public String recipientRole;    // Signer | Viewer
     }
 
     public class PlacedField {
@@ -89,6 +106,7 @@ public with sharing class SignatureRequestModels {
     }
 
     public class Prospect {
+        @AuraEnabled public Id associationId;   // Associated_Contact__c id (selection key)
         @AuraEnabled public Id contactId;
         @AuraEnabled public String name;
         @AuraEnabled public String email;
@@ -97,6 +115,8 @@ public with sharing class SignatureRequestModels {
         @AuraEnabled public String entityName;
         @AuraEnabled public String entityType;
         @AuraEnabled public Id positionId;
+        @AuraEnabled public Boolean isPrimary = false;
+        @AuraEnabled public Boolean isRequiredSigner = false;
     }
 
     public class ProspectResult {
@@ -107,8 +127,9 @@ public with sharing class SignatureRequestModels {
 
     public class SendReceipt {
         @AuraEnabled public Id asyncJobId;
-        @AuraEnabled public Integer plannedCount;
+        @AuraEnabled public Integer plannedCount; // entity envelopes queued
         @AuraEnabled public Id masterDocumentId;
+        @AuraEnabled public List<String> warnings = new List<String>();
     }
 
     public class MasterDocSummary {
@@ -138,17 +159,25 @@ public with sharing class SignatureRequestModels {
         @AuraEnabled public String docuSignEnvelopeId;
         @AuraEnabled public Boolean resettable;
         @AuraEnabled public Boolean viewable;
+        @AuraEnabled public Boolean isPrimary;
+        @AuraEnabled public Boolean isRequiredSigner;
+        @AuraEnabled public String recipientRole;
+        @AuraEnabled public Integer routingOrder;
+        @AuraEnabled public String envelopeLink;
     }
 
     // ---------- queueable chain state ----------
 
+    /** One entity envelope's outcome (copies are created per recipient). */
     public class SendOutcome {
-        public Id contactId;
+        public Id contactId;            // primary contact
         public String contactName;
         public Id entityId;
+        public String entityName;
         public Boolean success = false;
         public String docuSignId;
         public String envelopeRecordId;
         public String errorMessage;
+        public List<RecipientPlan> recipients = new List<RecipientPlan>();
     }
 }

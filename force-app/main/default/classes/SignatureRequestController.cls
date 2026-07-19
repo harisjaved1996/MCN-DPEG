@@ -118,32 +118,36 @@ public with sharing class SignatureRequestController {
         }
     }
 
-    /** Validates the wizard payload and queues one envelope per selected contact. */
+    /** Validates the wizard payload and queues ONE shared envelope per investing entity. */
     @AuraEnabled
     public static SignatureRequestModels.SendReceipt send(String requestJson) {
         try {
             SignatureRequestModels.SendRequest req = SignatureRequestService.parseAndValidate(requestJson);
 
-            // Fail fast when none of the selected contacts still invest here.
-            Map<Id, SignatureRequestService.ProspectContext> contexts =
-                SignatureRequestService.loadProspectContexts(req, new Set<Id>(req.selectedContactIds));
-            List<Id> sendable = new List<Id>();
-            for (Id contactId : req.selectedContactIds) {
-                if (contexts.containsKey(contactId)) {
-                    sendable.add(contactId);
+            Map<Id, SignatureRequestService.EntityRecipientGroup> groups =
+                SignatureRequestService.loadRecipientGroups(req);
+            List<Id> sendableEntityIds = new List<Id>();
+            List<String> warnings = new List<String>();
+            for (SignatureRequestService.EntityRecipientGroup grp : groups.values()) {
+                if (grp.primary == null) {
+                    warnings.add('Skipped ' + grp.entityName
+                        + ': its primary investor is not selected (the primary fills the input fields).');
+                } else {
+                    sendableEntityIds.add(grp.entityId);
                 }
             }
-            if (sendable.isEmpty()) {
-                throw auraError('None of the selected contacts are current investors on this investment.');
+            if (sendableEntityIds.isEmpty()) {
+                throw auraError('Nothing to send: no investing entity has its primary investor selected.');
             }
 
             // Tracking master first: copies attach to it as each envelope sends.
             req.masterDocumentId = SignatureRequestTracking.createMaster(req);
 
             SignatureRequestModels.SendReceipt receipt = new SignatureRequestModels.SendReceipt();
-            receipt.plannedCount = sendable.size();
+            receipt.plannedCount = sendableEntityIds.size();
             receipt.masterDocumentId = req.masterDocumentId;
-            receipt.asyncJobId = System.enqueueJob(new SignatureRequestSender(req, sendable));
+            receipt.warnings = warnings;
+            receipt.asyncJobId = System.enqueueJob(new SignatureRequestSender(req, sendableEntityIds));
             return receipt;
         } catch (AuraHandledException e) {
             throw e;
@@ -161,23 +165,29 @@ public with sharing class SignatureRequestController {
     public static String createPreviewEnvelope(String requestJson) {
         try {
             SignatureRequestModels.SendRequest req = SignatureRequestService.parseAndValidate(requestJson);
-            Map<Id, SignatureRequestService.ProspectContext> contexts =
-                SignatureRequestService.loadProspectContexts(req, new Set<Id>(req.selectedContactIds));
-            SignatureRequestService.ProspectContext ctx;
-            for (Id contactId : req.selectedContactIds) {
-                if (contexts.containsKey(contactId)) {
-                    ctx = contexts.get(contactId);
+            Map<Id, SignatureRequestService.EntityRecipientGroup> groups =
+                SignatureRequestService.loadRecipientGroups(req);
+            SignatureRequestService.EntityRecipientGroup grp;
+            for (SignatureRequestService.EntityRecipientGroup candidate : groups.values()) {
+                if (candidate.primary != null) {
+                    grp = candidate;
                     break;
                 }
             }
+            if (grp == null) {
+                throw auraError('No investing entity with a selected primary investor to preview.');
+            }
+            SignatureRequestService.ProspectContext ctx = SignatureRequestService.loadEntityContexts(
+                req, new Map<Id, SignatureRequestService.EntityRecipientGroup>{ grp.entityId => grp })
+                .get(grp.entityId);
             if (ctx == null) {
-                throw auraError('No selected contact is a current investor on this investment.');
+                throw auraError('The entity no longer holds a position on this investment.');
             }
             String templateRole = req.document.sourceType == 'TEMPLATE'
                 ? SignatureRequestService.resolveTemplateRole(req.document.templateId)
                 : null;
             dfsle.Envelope draft = SignatureRequestService.gateway.saveDraft(
-                SignatureRequestService.buildEnvelope(req, ctx, templateRole));
+                SignatureRequestService.buildEntityEnvelope(req, ctx, grp, templateRole));
             String docuSignId = SignatureRequestService.readDocuSignId(draft);
             if (String.isBlank(docuSignId)) {
                 throw auraError('Draft envelope was created but its DocuSign id could not be read.');

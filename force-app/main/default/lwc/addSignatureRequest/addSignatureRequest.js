@@ -18,10 +18,10 @@ export default class AddSignatureRequest extends NavigationMixin(LightningElemen
     step = 1;
 
     // wizard state (single source of truth)
-    document = null;        // { sourceType, contentVersionId, contentDocumentId, templateId, name }
+    document = null;        // { sourceType, contentVersionId, contentDocumentId, templateId, name, pageCount, lastPageWidth, lastPageHeight }
     fields = [];            // PlacedField[] in PDF points
-    prospects = [];         // rows from getProspects
-    selectedContactIds = [];
+    prospects = [];         // association rows from getProspects
+    selectedAssociationIds = [];
     emailSubject = '';
     emailMessage = '';
 
@@ -60,7 +60,7 @@ export default class AddSignatureRequest extends NavigationMixin(LightningElemen
             return !this.document;
         }
         if (this.step === 3) {
-            return this.selectedContactIds.length === 0;
+            return this.selectedAssociationIds.length === 0;
         }
         return false;
     }
@@ -92,8 +92,15 @@ export default class AddSignatureRequest extends NavigationMixin(LightningElemen
         this.fields = event.detail.fields;
     }
 
+    handleDocMeta(event) {
+        if (this.document) {
+            const { pageCount, lastPageWidth, lastPageHeight } = event.detail;
+            this.document = { ...this.document, pageCount, lastPageWidth, lastPageHeight };
+        }
+    }
+
     handleSelectionChange(event) {
-        this.selectedContactIds = event.detail.selectedContactIds;
+        this.selectedAssociationIds = event.detail.selectedAssociationIds;
         this.prospects = event.detail.prospects || this.prospects;
     }
 
@@ -115,23 +122,9 @@ export default class AddSignatureRequest extends NavigationMixin(LightningElemen
     }
 
     handleNext() {
-        if (this.step === 2 && this.needsSignatureWarning()) {
-            this.toast(
-                'No signature field placed',
-                'The document has no Signature field. Recipients will be able to sign anywhere (free-form signing).',
-                'warning'
-            );
-        }
         if (this.step < 4) {
             this.step += 1;
         }
-    }
-
-    needsSignatureWarning() {
-        if (!this.document || this.document.sourceType !== 'FILE') {
-            return false;
-        }
-        return !this.fields.some((f) => f.recipientKind === 'SIGNATURE');
     }
 
     // ---------- send ----------
@@ -145,15 +138,16 @@ export default class AddSignatureRequest extends NavigationMixin(LightningElemen
                 emailMessage: this.emailMessage,
                 document: this.document,
                 fields: this.document && this.document.sourceType === 'FILE' ? this.fields : [],
-                selectedContactIds: this.selectedContactIds
+                selectedAssociationIds: this.selectedAssociationIds
             };
             const receipt = await send({ requestJson: JSON.stringify(payload) });
             this.sendReceipt = receipt;
             this.toast(
                 'Signature requests queued',
-                `${receipt.plannedCount} envelope(s) queued. You will get a notification when sending completes.`,
+                `${receipt.plannedCount} entity envelope(s) queued. You will get a notification when sending completes.`,
                 'success'
             );
+            (receipt.warnings || []).forEach((w) => this.toast('Heads up', w, 'warning'));
         } catch (error) {
             this.errorMessage = reduceError(error);
             this.toast('Send failed', this.errorMessage, 'error');
@@ -179,7 +173,7 @@ export default class AddSignatureRequest extends NavigationMixin(LightningElemen
         this.step = 1;
         this.document = null;
         this.fields = [];
-        this.selectedContactIds = [];
+        this.selectedAssociationIds = [];
         this.emailSubject = '';
         this.emailMessage = '';
         this.sendReceipt = null;

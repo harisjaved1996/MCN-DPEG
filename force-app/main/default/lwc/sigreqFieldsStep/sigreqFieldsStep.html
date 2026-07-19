@@ -1,9 +1,10 @@
 <template>
     <div>
         <p class="slds-text-title slds-p-bottom_small">
-            Step 2: Review the document and drag fields onto the pages.
-            Right-click any placed field to filter which entity types see it (e.g. a separate
-            signature block per entity type).
+            Step 2: Review the document and drag fields onto the pages. Every input field you place is
+            completed by each investing entity's PRIMARY investor. A signing area is added automatically
+            at the end of the document for every required signer. Right-click any placed field to filter
+            which entity types see it.
         </p>
 
         <template if:true={isTemplate}>
@@ -29,6 +30,7 @@
                     <c-sigreq-pdf-canvas
                         content-version-id={contentVersionId}
                         fields={fields}
+                        ondocmeta={handleDocMeta}
                         onfieldadd={handleFieldAdd}
                         onfieldmove={handleFieldMove}
                         onfieldaction={handleFieldAction}

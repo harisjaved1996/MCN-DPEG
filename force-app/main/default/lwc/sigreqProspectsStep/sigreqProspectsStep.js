@@ -7,12 +7,20 @@ const COLUMNS = [
     { label: 'Email', fieldName: 'email', type: 'email' },
     { label: 'Phone', fieldName: 'phone', type: 'phone' },
     { label: 'Investing Entity', fieldName: 'entityName', type: 'text' },
-    { label: 'Entity Type', fieldName: 'entityType', type: 'text' }
+    { label: 'Entity Type', fieldName: 'entityType', type: 'text' },
+    { label: 'Primary', fieldName: 'isPrimary', type: 'boolean', initialWidth: 90 },
+    { label: 'Required Signer', fieldName: 'isRequiredSigner', type: 'boolean', initialWidth: 120 }
 ];
 
+/**
+ * Step 3: investors associated (via Associated Contacts) to any investing
+ * entity holding a position in this investment. One row per association —
+ * an entity's investors share ONE envelope; the primary fills the input
+ * fields, required signers sign, the rest receive a view-only copy.
+ */
 export default class SigreqProspectsStep extends LightningElement {
     @api recordId;
-    @api selectedContactIds = [];
+    @api selectedAssociationIds = [];
 
     columns = COLUMNS;
     prospects = [];
@@ -37,11 +45,11 @@ export default class SigreqProspectsStep extends LightningElement {
 
             // Everyone pre-selected by default; keep an earlier selection when
             // the user navigates back to this step.
-            const previous = (this.selectedContactIds || []).filter((id) =>
-                this.prospects.some((p) => p.contactId === id)
+            const previous = (this.selectedAssociationIds || []).filter((id) =>
+                this.prospects.some((p) => p.associationId === id)
             );
             this.selectedRowIds =
-                previous.length > 0 ? previous : this.prospects.map((p) => p.contactId);
+                previous.length > 0 ? previous : this.prospects.map((p) => p.associationId);
             this.emitSelection(this.selectedRowIds);
         } catch (error) {
             this.errorMessage = reduceError(error);
@@ -51,7 +59,7 @@ export default class SigreqProspectsStep extends LightningElement {
     }
 
     get headline() {
-        return `Prospects invested in ${this.investmentName || 'this investment'}`;
+        return `Investors of ${this.investmentName || 'this investment'}`;
     }
     get counter() {
         return `${this.selectedRowIds.length} of ${this.prospects.length} selected`;
@@ -66,11 +74,11 @@ export default class SigreqProspectsStep extends LightningElement {
         return this.skippedNoEmailCount > 0;
     }
     get skippedNote() {
-        return `${this.skippedNoEmailCount} investor contact(s) hidden because they have no email address.`;
+        return `${this.skippedNoEmailCount} associated investor(s) hidden because they have no email address.`;
     }
 
     handleRowSelection(event) {
-        const ids = event.detail.selectedRows.map((row) => row.contactId);
+        const ids = event.detail.selectedRows.map((row) => row.associationId);
         this.selectedRowIds = ids;
         this.emitSelection(ids);
     }
@@ -78,7 +86,7 @@ export default class SigreqProspectsStep extends LightningElement {
     emitSelection(ids) {
         this.dispatchEvent(
             new CustomEvent('selectionchange', {
-                detail: { selectedContactIds: ids, prospects: this.prospects }
+                detail: { selectedAssociationIds: ids, prospects: this.prospects }
             })
         );
     }

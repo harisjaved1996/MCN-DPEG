@@ -141,7 +141,12 @@ public with sharing class SignatureRequestService {
         public SObject investmentRecord;
     }
 
-    /** Prospect list for the wizard: one row per contact (most recent position wins). */
+    /**
+     * Prospect list for the wizard: one row per Associated_Contact__c of any
+     * investing entity holding a position in this investment. All rows are
+     * pre-selected in the UI; Primary/Required Signer flags come along so the
+     * user sees each investor's role.
+     */
     public static SignatureRequestModels.ProspectResult loadProspects(Id investmentId) {
         SignatureRequestModels.ProspectResult result = new SignatureRequestModels.ProspectResult();
 
@@ -153,51 +158,140 @@ public with sharing class SignatureRequestService {
         }
         result.investmentName = investments[0].Name;
 
-        Set<Id> seenContacts = new Set<Id>();
+        // Entities invested here; most recent position per entity for display.
+        Map<Id, Id> latestPositionByEntity = new Map<Id, Id>();
         for (position__c pos : [
-            SELECT Id, CreatedDate,
-                   Investing_Entity__c, Investing_Entity__r.Name, Investing_Entity__r.Entity_Type__c,
-                   Investing_Entity__r.Contact__c, Investing_Entity__r.Contact__r.Name,
-                   Investing_Entity__r.Contact__r.Email, Investing_Entity__r.Contact__r.Phone
+            SELECT Id, Investing_Entity__c
             FROM position__c
-            WHERE Investment__c = :investmentId
-              AND Investing_Entity__c != NULL
-              AND Investing_Entity__r.Contact__c != NULL
+            WHERE Investment__c = :investmentId AND Investing_Entity__c != NULL
             WITH USER_MODE
             ORDER BY CreatedDate DESC
         ]) {
-            Id contactId = (Id) pos.Investing_Entity__r.Contact__c;
-            if (seenContacts.contains(contactId)) {
-                continue; // most recent position already captured
+            if (!latestPositionByEntity.containsKey(pos.Investing_Entity__c)) {
+                latestPositionByEntity.put(pos.Investing_Entity__c, pos.Id);
             }
-            seenContacts.add(contactId);
+        }
+        if (latestPositionByEntity.isEmpty()) {
+            return result;
+        }
 
-            if (String.isBlank(pos.Investing_Entity__r.Contact__r.Email)) {
+        for (Associated_Contact__c assoc : [
+            SELECT Id, Primary__c, Required_Signer__c,
+                   Investing_Entity__c, Investing_Entity__r.Name, Investing_Entity__r.Entity_Type__c,
+                   Contact__c, Contact__r.Name, Contact__r.Email, Contact__r.Phone
+            FROM Associated_Contact__c
+            WHERE Investing_Entity__c IN :latestPositionByEntity.keySet()
+              AND Contact__c != NULL
+            WITH USER_MODE
+            ORDER BY Investing_Entity__r.Name, Primary__c DESC, CreatedDate
+        ]) {
+            if (String.isBlank(assoc.Contact__r.Email)) {
                 result.skippedNoEmailCount++;
                 continue;
             }
             SignatureRequestModels.Prospect p = new SignatureRequestModels.Prospect();
-            p.contactId = contactId;
-            p.name = pos.Investing_Entity__r.Contact__r.Name;
-            p.email = pos.Investing_Entity__r.Contact__r.Email;
-            p.phone = pos.Investing_Entity__r.Contact__r.Phone;
-            p.entityId = pos.Investing_Entity__c;
-            p.entityName = pos.Investing_Entity__r.Name;
-            p.entityType = pos.Investing_Entity__r.Entity_Type__c;
-            p.positionId = pos.Id;
+            p.associationId = assoc.Id;
+            p.contactId = assoc.Contact__c;
+            p.name = assoc.Contact__r.Name;
+            p.email = assoc.Contact__r.Email;
+            p.phone = assoc.Contact__r.Phone;
+            p.entityId = assoc.Investing_Entity__c;
+            p.entityName = assoc.Investing_Entity__r.Name;
+            p.entityType = assoc.Investing_Entity__r.Entity_Type__c;
+            p.positionId = latestPositionByEntity.get(assoc.Investing_Entity__c);
+            p.isPrimary = assoc.Primary__c == true;
+            // Business rule: the primary investor is always a required signer.
+            p.isRequiredSigner = assoc.Required_Signer__c == true || assoc.Primary__c == true;
             result.prospects.add(p);
         }
         return result;
     }
 
-    /**
-     * Loads the merge-value context for the given contacts, re-deriving each
-     * contact's most recent position/entity on THIS investment. Only
-     * describe-validated field names ever enter the dynamic SOQL.
-     */
-    public static Map<Id, ProspectContext> loadProspectContexts(
-            SignatureRequestModels.SendRequest req, Set<Id> contactIds) {
+    /** Selected recipients of one investing entity's shared envelope. */
+    public class EntityRecipientGroup {
+        public Id entityId;
+        public String entityName;
+        public SignatureRequestModels.RecipientPlan primary;
+        public List<SignatureRequestModels.RecipientPlan> recipients =
+            new List<SignatureRequestModels.RecipientPlan>();
+    }
 
+    /**
+     * Groups the selected Associated_Contact__c rows by investing entity,
+     * limited to entities that hold a position in this investment. Contacts
+     * without an email are dropped; the primary flag forces required-signer.
+     */
+    public static Map<Id, EntityRecipientGroup> loadRecipientGroups(
+            SignatureRequestModels.SendRequest req) {
+
+        Map<Id, EntityRecipientGroup> groups = new Map<Id, EntityRecipientGroup>();
+        if (req.selectedAssociationIds == null || req.selectedAssociationIds.isEmpty()) {
+            return groups;
+        }
+        Set<Id> entityIds = new Set<Id>();
+        for (position__c pos : [
+            SELECT Investing_Entity__c
+            FROM position__c
+            WHERE Investment__c = :req.investmentId AND Investing_Entity__c != NULL
+            WITH USER_MODE
+        ]) {
+            entityIds.add(pos.Investing_Entity__c);
+        }
+        if (entityIds.isEmpty()) {
+            return groups;
+        }
+
+        for (Associated_Contact__c assoc : [
+            SELECT Id, Primary__c, Required_Signer__c,
+                   Investing_Entity__c, Investing_Entity__r.Name,
+                   Contact__c, Contact__r.Name, Contact__r.Email, Contact__r.Phone
+            FROM Associated_Contact__c
+            WHERE Id IN :req.selectedAssociationIds
+              AND Investing_Entity__c IN :entityIds
+              AND Contact__c != NULL
+            WITH USER_MODE
+            ORDER BY Primary__c DESC, CreatedDate
+        ]) {
+            if (String.isBlank(assoc.Contact__r.Email)) {
+                continue;
+            }
+            EntityRecipientGroup grp = groups.get(assoc.Investing_Entity__c);
+            if (grp == null) {
+                grp = new EntityRecipientGroup();
+                grp.entityId = assoc.Investing_Entity__c;
+                grp.entityName = assoc.Investing_Entity__r.Name;
+                groups.put(grp.entityId, grp);
+            }
+            SignatureRequestModels.RecipientPlan plan = new SignatureRequestModels.RecipientPlan();
+            plan.associationId = assoc.Id;
+            plan.contactId = assoc.Contact__c;
+            plan.contactName = assoc.Contact__r.Name;
+            plan.contactEmail = assoc.Contact__r.Email;
+            plan.contactPhone = assoc.Contact__r.Phone;
+            plan.isPrimary = assoc.Primary__c == true;
+            plan.isRequiredSigner = assoc.Required_Signer__c == true || plan.isPrimary;
+            if (plan.isPrimary && grp.primary == null) {
+                grp.primary = plan;
+            }
+            grp.recipients.add(plan);
+        }
+        return groups;
+    }
+
+    /**
+     * Loads the merge-value context PER INVESTING ENTITY: the entity's most
+     * recent position on this investment, the entity itself, the investment,
+     * and the entity's PRIMARY contact (Contact merge fields resolve against
+     * the primary — they fill the input fields). Only describe-validated
+     * field names ever enter the dynamic SOQL.
+     */
+    public static Map<Id, ProspectContext> loadEntityContexts(
+            SignatureRequestModels.SendRequest req, Map<Id, EntityRecipientGroup> groups) {
+
+        Map<Id, ProspectContext> contexts = new Map<Id, ProspectContext>();
+        if (groups == null || groups.isEmpty()) {
+            return contexts;
+        }
         Map<String, Set<String>> fieldsByObject = collectMergeFields(req.fields);
 
         // Base fields the wizard always needs.
@@ -219,51 +313,75 @@ public with sharing class SignatureRequestService {
         }
         SObject investment = invRecords[0];
 
-        // Positions with entity + contact relationship fields
-        List<String> selectParts = new List<String>{ 'Id', 'Investing_Entity__c', 'Investing_Entity__r.Contact__c' };
-        Set<String> seen = new Set<String>{ 'id', 'investing_entity__c', 'investing_entity__r.contact__c' };
+        // Most recent position per entity, with entity relationship fields.
+        Set<Id> entityIds = groups.keySet();
+        List<String> selectParts = new List<String>{ 'Id', 'Investing_Entity__c' };
+        Set<String> seen = new Set<String>{ 'id', 'investing_entity__c' };
         for (String f : fieldsByObject.get('position__c')) {
             addSelect(selectParts, seen, f);
         }
         for (String f : fieldsByObject.get('investing_entity__c')) {
             addSelect(selectParts, seen, 'Investing_Entity__r.' + f);
         }
-        for (String f : fieldsByObject.get('contact')) {
-            addSelect(selectParts, seen, 'Investing_Entity__r.Contact__r.' + f);
-        }
         String posQuery = 'SELECT ' + String.join(selectParts, ', ')
             + ' FROM position__c'
             + ' WHERE Investment__c = :investmentId'
-            + ' AND Investing_Entity__c != NULL'
-            + ' AND Investing_Entity__r.Contact__c IN :contactIds'
+            + ' AND Investing_Entity__c IN :entityIds'
             + ' ORDER BY CreatedDate DESC';
-        List<SObject> positions = Database.queryWithBinds(
-            posQuery,
-            new Map<String, Object>{ 'investmentId' => req.investmentId, 'contactIds' => contactIds },
-            AccessLevel.USER_MODE);
+        Map<Id, SObject> positionByEntity = new Map<Id, SObject>();
+        for (SObject pos : Database.queryWithBinds(
+                posQuery,
+                new Map<String, Object>{ 'investmentId' => req.investmentId, 'entityIds' => entityIds },
+                AccessLevel.USER_MODE)) {
+            Id entityId = (Id) pos.get('Investing_Entity__c');
+            if (!positionByEntity.containsKey(entityId)) {
+                positionByEntity.put(entityId, pos);
+            }
+        }
 
-        Map<Id, ProspectContext> contexts = new Map<Id, ProspectContext>();
-        for (SObject pos : positions) {
+        // Primary contacts with the Contact merge fields.
+        Set<Id> primaryContactIds = new Set<Id>();
+        for (EntityRecipientGroup grp : groups.values()) {
+            if (grp.primary != null) {
+                primaryContactIds.add(grp.primary.contactId);
+            }
+        }
+        Map<Id, SObject> contactById = new Map<Id, SObject>();
+        if (!primaryContactIds.isEmpty()) {
+            List<String> contactSelect = new List<String>{ 'Id' };
+            Set<String> seenContact = new Set<String>{ 'id' };
+            for (String f : fieldsByObject.get('contact')) {
+                addSelect(contactSelect, seenContact, f);
+            }
+            String contactQuery = 'SELECT ' + String.join(contactSelect, ', ')
+                + ' FROM Contact WHERE Id IN :contactIds';
+            for (SObject c : Database.queryWithBinds(
+                    contactQuery,
+                    new Map<String, Object>{ 'contactIds' => primaryContactIds },
+                    AccessLevel.USER_MODE)) {
+                contactById.put((Id) c.get('Id'), c);
+            }
+        }
+
+        for (EntityRecipientGroup grp : groups.values()) {
+            SObject pos = positionByEntity.get(grp.entityId);
+            if (pos == null) {
+                continue; // entity no longer holds a position here
+            }
             SObject entity = pos.getSObject('Investing_Entity__r');
-            SObject contact = entity == null ? null : entity.getSObject('Contact__r');
-            if (entity == null || contact == null) {
-                continue;
-            }
-            Id contactId = (Id) contact.get('Id');
-            if (contexts.containsKey(contactId)) {
-                continue; // most recent position already captured
-            }
+            SObject primaryContact = grp.primary == null ? null : contactById.get(grp.primary.contactId);
+
             ProspectContext ctx = new ProspectContext();
-            ctx.contactId = contactId;
-            ctx.contactName = (String) contact.get('Name');
-            ctx.contactEmail = (String) contact.get('Email');
-            ctx.contactPhone = (String) contact.get('Phone');
-            ctx.entityType = (String) entity.get('Entity_Type__c');
-            ctx.contactRecord = contact;
+            ctx.contactId = grp.primary == null ? null : grp.primary.contactId;
+            ctx.contactName = grp.primary == null ? null : grp.primary.contactName;
+            ctx.contactEmail = grp.primary == null ? null : grp.primary.contactEmail;
+            ctx.contactPhone = grp.primary == null ? null : grp.primary.contactPhone;
+            ctx.entityType = entity == null ? null : (String) entity.get('Entity_Type__c');
+            ctx.contactRecord = primaryContact;
             ctx.entityRecord = entity;
             ctx.positionRecord = pos;
             ctx.investmentRecord = investment;
-            contexts.put(contactId, ctx);
+            contexts.put(grp.entityId, ctx);
         }
         return contexts;
     }
@@ -295,8 +413,8 @@ public with sharing class SignatureRequestService {
         if (req.document.sourceType == 'TEMPLATE' && String.isBlank(req.document.templateId)) {
             throw new SignatureRequestException('No DocuSign template selected.');
         }
-        if (req.selectedContactIds == null || req.selectedContactIds.isEmpty()) {
-            throw new SignatureRequestException('Select at least one prospect to send to.');
+        if (req.selectedAssociationIds == null || req.selectedAssociationIds.isEmpty()) {
+            throw new SignatureRequestException('Select at least one investor to send to.');
         }
         if (req.fields == null || req.document.sourceType == 'TEMPLATE') {
             req.fields = new List<SignatureRequestModels.PlacedField>(); // template fields come from DocuSign
@@ -557,15 +675,83 @@ public with sharing class SignatureRequestService {
         return tabs;
     }
 
-    /** Builds the complete per-contact envelope (does not send it). */
-    public static dfsle.Envelope buildEnvelope(
-            SignatureRequestModels.SendRequest req, ProspectContext ctx, String templateRole) {
+    /**
+     * Auto-generated signing block (Sign Here + Full Name + Date Signed) in
+     * the generic area at the bottom of the LAST page — one block per
+     * required signer, stacked. Skipped when page metadata is unavailable
+     * (template masters or a stale client).
+     */
+    public static List<SignatureRequestModels.TabSpec> buildAutoSignSpecs(
+            SignatureRequestModels.DocumentSelection doc,
+            Integer slotIndex, Integer totalSlots, String labelPrefix) {
+
+        List<SignatureRequestModels.TabSpec> specs = new List<SignatureRequestModels.TabSpec>();
+        if (doc == null || doc.pageCount == null || doc.pageCount < 1 || doc.lastPageHeight == null) {
+            return specs;
+        }
+        Decimal blockHeight = 64;
+        Decimal bottomMargin = 30;
+        Decimal y = doc.lastPageHeight - bottomMargin - (blockHeight * (totalSlots - slotIndex));
+        if (y < 24) {
+            y = 24 + (slotIndex * 14); // degenerate short page: overlap rather than fall off
+        }
+        Integer page = doc.pageCount;
+        Integer yTop = (Integer) Math.round(y);
+
+        SignatureRequestModels.TabSpec sign = new SignatureRequestModels.TabSpec();
+        sign.kind = 'SIGN_HERE';
+        sign.dataLabel = labelPrefix + '_sign';
+        sign.page = page;
+        sign.x = 54;
+        sign.y = yTop;
+        specs.add(sign);
+
+        SignatureRequestModels.TabSpec fullName = new SignatureRequestModels.TabSpec();
+        fullName.kind = 'FULL_NAME';
+        fullName.dataLabel = labelPrefix + '_name';
+        fullName.page = page;
+        fullName.x = 230;
+        fullName.y = yTop + 22;
+        specs.add(fullName);
+
+        SignatureRequestModels.TabSpec dateSigned = new SignatureRequestModels.TabSpec();
+        dateSigned.kind = 'DATE_SIGNED';
+        dateSigned.dataLabel = labelPrefix + '_date';
+        dateSigned.page = page;
+        dateSigned.x = 430;
+        dateSigned.y = yTop + 22;
+        specs.add(dateSigned);
+
+        return specs;
+    }
+
+    /**
+     * Builds ONE shared envelope for an investing entity:
+     * - required secondary signers sign FIRST (routing 1), each with an
+     *   auto-generated signing block at the end of the document;
+     * - the PRIMARY investor signs LAST with every manually placed input
+     *   field (signature/text/checkbox), all merge fields, plus their own
+     *   auto signing block;
+     * - non-required contacts receive a view-only (carbon copy) of the
+     *   document.
+     * The envelope completes only when every required signer has signed.
+     */
+    public static dfsle.Envelope buildEntityEnvelope(
+            SignatureRequestModels.SendRequest req,
+            ProspectContext ctx,
+            EntityRecipientGroup grp,
+            String templateRole) {
+
+        if (grp.primary == null) {
+            throw new SignatureRequestException(
+                'Investing entity "' + grp.entityName + '" has no primary investor selected.');
+        }
+        Boolean isFile = req.document.sourceType == 'FILE';
 
         dfsle.Envelope envelope = gateway.emptyEnvelope(req.investmentId);
 
         dfsle.Document masterDocument;
-        String recipientRole;
-        if (req.document.sourceType == 'FILE') {
+        if (isFile) {
             List<ContentVersion> versions = [
                 SELECT Id, Title, FileExtension, ContentSize, ContentDocumentId
                 FROM ContentVersion
@@ -577,26 +763,82 @@ public with sharing class SignatureRequestService {
                 throw new SignatureRequestException('The selected file is no longer available.');
             }
             masterDocument = dfsle.Document.fromFile(versions[0]);
-            recipientRole = 'Signer 1';
         } else {
             masterDocument = dfsle.Document.fromTemplate(
                 dfsle.UUID.parse(req.document.templateId), req.document.name);
-            recipientRole = String.isBlank(templateRole) ? 'Signer 1' : templateRole;
         }
 
-        dfsle.Recipient recipient = dfsle.Recipient.fromSource(
-            ctx.contactName,
-            ctx.contactEmail,
-            ctx.contactPhone,
-            recipientRole,
-            new dfsle.Entity(ctx.contactId));
-        recipient = recipient.withRoutingOrder(1);
-
-        if (req.document.sourceType == 'FILE') {
-            List<dfsle.Tab> tabs = toDfsleTabs(buildTabSpecs(req.fields, ctx));
-            if (!tabs.isEmpty()) {
-                recipient = recipient.withTabs(tabs);
+        // Classify recipients.
+        List<SignatureRequestModels.RecipientPlan> requiredSecondaries =
+            new List<SignatureRequestModels.RecipientPlan>();
+        List<SignatureRequestModels.RecipientPlan> viewers =
+            new List<SignatureRequestModels.RecipientPlan>();
+        for (SignatureRequestModels.RecipientPlan plan : grp.recipients) {
+            if (plan.isPrimary) {
+                continue;
             }
+            if (plan.isRequiredSigner) {
+                requiredSecondaries.add(plan);
+            } else {
+                viewers.add(plan);
+            }
+        }
+        Boolean hasSecondSigners = !requiredSecondaries.isEmpty();
+        Integer totalBlocks = requiredSecondaries.size() + 1; // + primary
+
+        List<dfsle.Recipient> recipients = new List<dfsle.Recipient>();
+
+        // Required secondary signers: routing 1, auto block each.
+        Integer slot = 0;
+        Integer signerNumber = 2;
+        for (SignatureRequestModels.RecipientPlan plan : requiredSecondaries) {
+            plan.routingOrder = 1;
+            plan.recipientRole = 'Signer';
+            dfsle.Recipient recipient = dfsle.Recipient.fromSource(
+                plan.contactName, plan.contactEmail, plan.contactPhone,
+                'Signer ' + signerNumber, new dfsle.Entity(plan.contactId));
+            recipient = recipient.withRoutingOrder(1);
+            if (isFile) {
+                List<dfsle.Tab> tabs = toDfsleTabs(buildAutoSignSpecs(
+                    req.document, slot, totalBlocks, 'auto_s' + signerNumber));
+                if (!tabs.isEmpty()) {
+                    recipient = recipient.withTabs(tabs);
+                }
+            }
+            recipients.add(recipient);
+            slot++;
+            signerNumber++;
+        }
+
+        // Primary investor: signs last, owns every placed input field.
+        SignatureRequestModels.RecipientPlan primary = grp.primary;
+        primary.routingOrder = hasSecondSigners ? 2 : 1;
+        primary.recipientRole = 'Signer';
+        String primaryRole = isFile || String.isBlank(templateRole) ? 'Signer 1' : templateRole;
+        dfsle.Recipient primaryRecipient = dfsle.Recipient.fromSource(
+            primary.contactName, primary.contactEmail, primary.contactPhone,
+            primaryRole, new dfsle.Entity(primary.contactId));
+        primaryRecipient = primaryRecipient.withRoutingOrder(primary.routingOrder);
+        if (isFile) {
+            List<SignatureRequestModels.TabSpec> primarySpecs = buildTabSpecs(req.fields, ctx);
+            primarySpecs.addAll(buildAutoSignSpecs(req.document, slot, totalBlocks, 'auto_primary'));
+            List<dfsle.Tab> tabs = toDfsleTabs(primarySpecs);
+            if (!tabs.isEmpty()) {
+                primaryRecipient = primaryRecipient.withTabs(tabs);
+            }
+        }
+        recipients.add(primaryRecipient);
+
+        // View-only recipients (carbon copies) get the document immediately.
+        for (SignatureRequestModels.RecipientPlan plan : viewers) {
+            plan.routingOrder = 1;
+            plan.recipientRole = 'Viewer';
+            dfsle.Recipient viewer = dfsle.Recipient.fromSource(
+                plan.contactName, plan.contactEmail, plan.contactPhone,
+                'Viewer', new dfsle.Entity(plan.contactId));
+            viewer = viewer.withRoutingOrder(1);
+            viewer = viewer.withType('CarbonCopy');
+            recipients.add(viewer);
         }
 
         String subject = String.isBlank(req.emailSubject)
@@ -605,7 +847,7 @@ public with sharing class SignatureRequestService {
 
         return envelope
             .withDocuments(new List<dfsle.Document>{ masterDocument })
-            .withRecipients(new List<dfsle.Recipient>{ recipient })
+            .withRecipients(recipients)
             .withEmail(subject, req.emailMessage);
     }
 

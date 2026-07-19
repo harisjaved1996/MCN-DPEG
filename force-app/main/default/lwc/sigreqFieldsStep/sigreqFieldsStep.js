@@ -22,6 +22,11 @@ export default class SigreqFieldsStep extends LightningElement {
     }
 
     // ---------- canvas events ----------
+    handleDocMeta(event) {
+        // bubble the page metadata up to the wizard container
+        this.dispatchEvent(new CustomEvent('docmeta', { detail: event.detail }));
+    }
+
     handleFieldAdd(event) {
         this.emitFields([...this.fields, event.detail.field]);
     }

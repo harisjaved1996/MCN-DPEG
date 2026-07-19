@@ -72,9 +72,20 @@ export default class MasterDocumentCopies extends NavigationMixin(LightningEleme
             } else if (statusLower === 'reset') {
                 badgeClass += ' slds-badge_inverse';
             }
+            let roleLabel;
+            if (c.isPrimary) {
+                roleLabel = 'Primary';
+            } else if (c.recipientRole === 'Viewer') {
+                roleLabel = 'Viewer';
+            } else if (c.isRequiredSigner) {
+                roleLabel = 'Signer';
+            } else {
+                roleLabel = c.recipientRole || '';
+            }
             return {
                 ...c,
                 badgeClass,
+                roleLabel,
                 confirming: c.id === this.confirmingCopyId,
                 busy: c.id === this.busyCopyId,
                 rowClass: statusLower === 'reset' ? 'copy-row copy-row_reset' : 'copy-row'

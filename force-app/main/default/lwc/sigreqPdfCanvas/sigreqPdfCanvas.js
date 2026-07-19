@@ -123,6 +123,19 @@ export default class SigreqPdfCanvas extends LightningElement {
             }
             this.pageModels = models;
             this.isLoading = false;
+
+            // Page metadata feeds the auto-generated signing area on the last
+            // page (one block per required signer, added server-side).
+            const lastModel = models[models.length - 1];
+            this.dispatchEvent(
+                new CustomEvent('docmeta', {
+                    detail: {
+                        pageCount: models.length,
+                        lastPageWidth: lastModel ? lastModel.pointsWidth : null,
+                        lastPageHeight: lastModel ? lastModel.pointsHeight : null
+                    }
+                })
+            );
         } catch (error) {
             this.isLoading = false;
             this.errorMessage = reduceError(error);
