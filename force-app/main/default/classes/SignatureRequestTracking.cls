@@ -51,8 +51,8 @@ public with sharing class SignatureRequestTracking {
      * DocuSign web-app deep link base for a sent envelope. Durable (unlike
      * session view URLs) so the investor-portal phase can reuse it; the
      * envelope UUID stored on each copy is the API-side key for embedded
-     * signing later. Demo environment host — switch to
-     * https://apps.docusign.com/send/documents/details/ for production.
+     * signing later. dfsle is connected to the DEMO account (#49381188) —
+     * switch to https://apps.docusign.com/... if reconnected to production.
      */
     @TestVisible
     private static String envelopeLinkBase = 'https://apps-d.docusign.com/send/documents/details/';
@@ -114,18 +114,59 @@ public with sharing class SignatureRequestTracking {
             return;
         }
 
+        // Per-recipient statuses give copy-level truth (e.g. the routing-1
+        // signer is Completed while the envelope is still in progress).
+        Map<String, Map<String, dfsle__RecipientStatus__c>> recipientsByEnvelope =
+            new Map<String, Map<String, dfsle__RecipientStatus__c>>();
+        Set<Id> statusIds = new Set<Id>();
+        for (dfsle__EnvelopeStatus__c status : byEnvelopeId.values()) {
+            if (status.Id != null) {
+                statusIds.add(status.Id);
+            }
+        }
+        if (!statusIds.isEmpty()) {
+            for (dfsle__RecipientStatus__c rs : [
+                SELECT dfsle__Email__c, dfsle__Status__c, dfsle__Sent__c,
+                       dfsle__Completed__c, dfsle__LastStatusUpdate__c,
+                       dfsle__EnvelopeStatus__r.dfsle__DocuSignId__c
+                FROM dfsle__RecipientStatus__c
+                WHERE dfsle__EnvelopeStatus__c IN :statusIds
+                  AND dfsle__Email__c != NULL
+            ]) {
+                String envKey = rs.dfsle__EnvelopeStatus__r.dfsle__DocuSignId__c == null
+                    ? '' : rs.dfsle__EnvelopeStatus__r.dfsle__DocuSignId__c.toLowerCase();
+                if (!recipientsByEnvelope.containsKey(envKey)) {
+                    recipientsByEnvelope.put(envKey, new Map<String, dfsle__RecipientStatus__c>());
+                }
+                recipientsByEnvelope.get(envKey).put(rs.dfsle__Email__c.toLowerCase(), rs);
+            }
+        }
+
         List<Document_Copy__c> toUpdate = new List<Document_Copy__c>();
         Set<Id> masterIds = new Set<Id>();
         for (Document_Copy__c copy : [
             SELECT Id, Master_Document__c, DocuSign_Envelope_Id__c, Status__c,
-                   Sent_At__c, Opened_At__c, Completed_At__c
+                   Sent_At__c, Opened_At__c, Completed_At__c, Contact__r.Email
             FROM Document_Copy__c
             WHERE DocuSign_Envelope_Id__c IN :byEnvelopeId.keySet()
               AND Status__c != :STATUS_RESET
         ]) {
-            dfsle__EnvelopeStatus__c status =
-                byEnvelopeId.get(copy.DocuSign_Envelope_Id__c.toLowerCase());
-            if (status == null || !applyStatus(copy, status)) {
+            String envKey = copy.DocuSign_Envelope_Id__c.toLowerCase();
+            dfsle__EnvelopeStatus__c status = byEnvelopeId.get(envKey);
+            if (status == null) {
+                continue;
+            }
+            Boolean changed = applyStatus(copy, status);
+
+            dfsle__RecipientStatus__c rs;
+            if (recipientsByEnvelope.containsKey(envKey) && copy.Contact__r != null
+                && String.isNotBlank(copy.Contact__r.Email)) {
+                rs = recipientsByEnvelope.get(envKey).get(copy.Contact__r.Email.toLowerCase());
+            }
+            if (rs != null && applyRecipientStatus(copy, rs)) {
+                changed = true;
+            }
+            if (!changed) {
                 continue;
             }
             toUpdate.add(copy);
@@ -135,6 +176,31 @@ public with sharing class SignatureRequestTracking {
             update toUpdate;
             recalcMetrics(masterIds);
         }
+    }
+
+    /** Recipient-level truth overrides the envelope-level mirror. */
+    private static Boolean applyRecipientStatus(Document_Copy__c copy, dfsle__RecipientStatus__c rs) {
+        Boolean changed = false;
+        String statusLabel = rs.dfsle__Status__c;
+        String statusLower = statusLabel == null ? '' : statusLabel.toLowerCase();
+
+        if (String.isNotBlank(statusLabel) && !statusLower.equalsIgnoreCase(copy.Status__c)) {
+            copy.Status__c = statusLabel.capitalize();
+            changed = true;
+        }
+        if (copy.Opened_At__c == null && OPENED_STATUSES.contains(statusLower)) {
+            copy.Opened_At__c = rs.dfsle__LastStatusUpdate__c != null
+                ? rs.dfsle__LastStatusUpdate__c : Datetime.now();
+            changed = true;
+        }
+        if (rs.dfsle__Completed__c != null && copy.Completed_At__c == null) {
+            copy.Completed_At__c = rs.dfsle__Completed__c;
+            if (copy.Opened_At__c == null) {
+                copy.Opened_At__c = rs.dfsle__Completed__c;
+            }
+            changed = true;
+        }
+        return changed;
     }
 
     /** Returns true when the copy changed. */

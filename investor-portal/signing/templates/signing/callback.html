@@ -1,0 +1,22 @@
+{% extends "signing/base.html" %}
+{% block content %}
+<script>
+  // The signing ceremony runs in an iframe; when DocuSign redirects the frame
+  // here, promote this page to the full window.
+  if (window.self !== window.top) {
+    window.top.location = window.location.href;
+  }
+</script>
+<div class="card" style="max-width:520px;margin:60px auto;text-align:center">
+  {% if event == "signing_complete" %}
+    <div style="font-size:48px">✅</div>
+  {% elif event == "decline" %}
+    <div style="font-size:48px">🚫</div>
+  {% else %}
+    <div style="font-size:48px">ℹ️</div>
+  {% endif %}
+  <h2>{{ headline }}</h2>
+  <p class="muted">{{ detail }}</p>
+  <a class="btn" href="{% url 'dashboard' %}">Back to my documents</a>
+</div>
+{% endblock %}

@@ -4,6 +4,10 @@
     <description>Access to the Add Signature Request wizard on Investment records (assign together with the DocuSign Sender permission set from the dfsle package).</description>
     <hasActivationRequired>false</hasActivationRequired>
     <classAccesses>
+        <apexClass>PortalDocumentApi</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
+    <classAccesses>
         <apexClass>SignatureRequestController</apexClass>
         <enabled>true</enabled>
     </classAccesses>

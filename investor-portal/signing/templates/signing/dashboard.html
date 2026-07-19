@@ -1,0 +1,114 @@
+{% extends "signing/base.html" %}
+{% block content %}
+
+{% if error %}
+  <div class="msg error">{{ error }}</div>
+{% endif %}
+
+<div class="card" style="margin-bottom:24px">
+  <h2 style="margin-top:0">✍️ Needs your signature
+    {% if to_sign %}<span class="badge waiting" style="vertical-align:middle">{{ to_sign|length }}</span>{% endif %}
+  </h2>
+  {% if to_sign %}
+  <table>
+    <thead>
+      <tr><th>Document</th><th>Investment</th><th>Entity</th><th>Your role</th><th>Status</th><th></th></tr>
+    </thead>
+    <tbody>
+      {% for doc in to_sign %}
+      <tr>
+        <td><strong>{{ doc.documentName }}</strong>
+            {% if doc.isNew %}<span class="badge" style="background:#e8404a;color:#fff;margin-left:6px">NEW</span>{% endif %}<br>
+            <span class="muted">Sent {{ doc.sentAt|default:"—" }}</span></td>
+        <td>{{ doc.investmentName|default:"—" }}</td>
+        <td>{{ doc.entityName|default:"—" }}</td>
+        <td>
+          {% if doc.isPrimary %}Primary — fills fields, signs last
+          {% elif doc.isRequiredSigner %}Required signer — signs first
+          {% else %}Viewer{% endif %}
+        </td>
+        <td><span class="badge sent">{{ doc.status }}</span></td>
+        <td style="white-space:nowrap">
+          <a class="btn" href="{% url 'sign' doc.copyId %}">Sign now</a>
+          {% if doc.canView %}
+            <a class="btn" style="background:#54698d" href="{% url 'document' doc.copyId %}" target="_blank">View</a>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+    <p class="muted">Nothing waiting for your signature. 🎉</p>
+  {% endif %}
+</div>
+
+{% if waiting %}
+<div class="card" style="margin-bottom:24px">
+  <h2 style="margin-top:0">⏳ In progress</h2>
+  <table>
+    <thead>
+      <tr><th>Document</th><th>Investment</th><th>Entity</th><th>Status</th><th></th></tr>
+    </thead>
+    <tbody>
+      {% for doc in waiting %}
+      <tr>
+        <td><strong>{{ doc.documentName }}</strong><br>
+            <span class="muted">Sent {{ doc.sentAt|default:"—" }}</span></td>
+        <td>{{ doc.investmentName|default:"—" }}</td>
+        <td>{{ doc.entityName|default:"—" }}</td>
+        <td>
+          {% if doc.isFailed %}<span class="badge failed">{{ doc.status }}</span>
+          {% elif doc.waitingOnName %}<span class="badge waiting">Waiting for {{ doc.waitingOnName }}</span>
+          {% else %}<span class="badge sent">{{ doc.status }}</span>{% endif %}
+        </td>
+        <td>
+          {% if doc.canView %}
+            <a class="btn" style="background:#54698d" href="{% url 'document' doc.copyId %}" target="_blank">View</a>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+<div class="card">
+  <h2 style="margin-top:0">✅ Completed
+    {% if completed %}<span class="badge done" style="vertical-align:middle">{{ completed|length }}</span>{% endif %}
+  </h2>
+  {% if completed %}
+  <table>
+    <thead>
+      <tr><th>Document</th><th>Investment</th><th>Entity</th><th>Completed</th><th></th></tr>
+    </thead>
+    <tbody>
+      {% for doc in completed %}
+      <tr>
+        <td><strong>{{ doc.documentName }}</strong></td>
+        <td>{{ doc.investmentName|default:"—" }}</td>
+        <td>{{ doc.entityName|default:"—" }}</td>
+        <td><span class="badge done">{{ doc.status }}</span><br>
+            <span class="muted">{{ doc.completedAt|default:"" }}</span></td>
+        <td>
+          {% if doc.canView %}
+            <a class="btn" href="{% url 'document' doc.copyId %}" target="_blank">View signed document</a>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% elif not error %}
+    <p class="muted">No completed documents yet.</p>
+  {% endif %}
+</div>
+
+{% if not has_any and not error %}
+  <p class="muted" style="text-align:center;margin-top:20px">
+    When DPEG sends you a document, it will appear here automatically.
+  </p>
+{% endif %}
+
+{% endblock %}

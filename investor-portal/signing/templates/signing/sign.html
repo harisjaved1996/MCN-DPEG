@@ -1,0 +1,36 @@
+{% extends "signing/base.html" %}
+{% block content %}
+<div class="card" style="padding:14px 20px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center">
+  <div>
+    <strong style="font-size:16px">Signing: {{ doc.documentName }}</strong>
+    <span class="muted" style="margin-left:10px">{{ doc.investmentName }} — {{ doc.entityName }}</span>
+  </div>
+  <a class="btn" style="background:#54698d" href="{% url 'dashboard' %}">Cancel</a>
+</div>
+<div class="card" style="padding:0;overflow:hidden">
+  <iframe src="{{ ceremony_url }}"
+          style="width:100%;height:calc(100vh - 200px);min-height:600px;border:0"
+          allow="camera; microphone; geolocation"></iframe>
+</div>
+
+<script>
+  // Chrome blocks DocuSign's in-iframe redirect back to localhost, so we
+  // poll our own server for the recipient's status and navigate ourselves.
+  const statusUrl = "{% url 'sign_status' doc.copyId %}";
+  const callbackBase = "{% url 'callback' %}?copy={{ doc.copyId }}&master={{ doc.masterDocumentId|default:'' }}";
+  const timer = setInterval(async () => {
+    try {
+      const resp = await fetch(statusUrl);
+      if (!resp.ok) return;
+      const info = await resp.json();
+      if (info.status === "completed" || info.status === "signed") {
+        clearInterval(timer);
+        window.location = callbackBase + "&event=signing_complete";
+      } else if (info.status === "declined") {
+        clearInterval(timer);
+        window.location = callbackBase + "&event=decline";
+      }
+    } catch (e) { /* keep polling */ }
+  }, 4000);
+</script>
+{% endblock %}

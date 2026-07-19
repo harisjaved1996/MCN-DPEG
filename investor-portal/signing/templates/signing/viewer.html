@@ -1,0 +1,56 @@
+{% extends "signing/base.html" %}
+{% block content %}
+<div class="card" style="padding:14px 20px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center">
+  <div>
+    <strong style="font-size:16px">{{ doc.documentName }}</strong>
+    <span class="muted" style="margin-left:10px">{{ doc.investmentName }} — {{ doc.entityName }}</span>
+    {% if doc.isDone %}<span class="badge done" style="margin-left:10px">{{ doc.status }}</span>
+    {% else %}<span class="badge sent" style="margin-left:10px">{{ doc.status }}</span>{% endif %}
+  </div>
+  <div style="white-space:nowrap">
+    <a class="btn" style="background:#54698d" href="{% url 'dashboard' %}">&larr; Back</a>
+    <a class="btn" href="{% url 'document_file' doc.copyId %}?download=1">Download PDF</a>
+    {% if doc.canSign %}<a class="btn" style="background:#1e7b34" href="{% url 'sign' doc.copyId %}">Sign now</a>{% endif %}
+  </div>
+</div>
+
+<div class="card" style="padding:10px">
+  <div id="pdf-status" class="muted" style="text-align:center;padding:20px">Loading document…</div>
+  <div id="pdf-pages" style="display:flex;flex-direction:column;align-items:center;gap:14px"></div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>
+  pdfjsLib.GlobalWorkerOptions.workerSrc =
+    "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+
+  (async function () {
+    const status = document.getElementById("pdf-status");
+    const container = document.getElementById("pdf-pages");
+    try {
+      const resp = await fetch("{% url 'document_data' doc.copyId %}");
+      if (!resp.ok) throw new Error("HTTP " + resp.status);
+      const payload = await resp.json();
+      if (payload.error) throw new Error(payload.error);
+      const raw = atob(payload.b64);
+      const data = new Uint8Array(raw.length);
+      for (let i = 0; i < raw.length; i++) data[i] = raw.charCodeAt(i);
+      const pdf = await pdfjsLib.getDocument({ data }).promise;
+      status.remove();
+      for (let n = 1; n <= pdf.numPages; n++) {
+        const page = await pdf.getPage(n);
+        const viewport = page.getViewport({ scale: 1.4 });
+        const canvas = document.createElement("canvas");
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+        canvas.style.maxWidth = "100%";
+        canvas.style.boxShadow = "0 1px 6px rgba(0,0,0,.25)";
+        container.appendChild(canvas);
+        await page.render({ canvasContext: canvas.getContext("2d"), viewport }).promise;
+      }
+    } catch (err) {
+      status.textContent = "Could not display the document: " + err.message;
+    }
+  })();
+</script>
+{% endblock %}

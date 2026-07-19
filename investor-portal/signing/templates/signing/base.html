@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DPEG Investor Portal</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: "Segoe UI", system-ui, sans-serif; background: #f4f6f9; color: #16325c; }
+    header { background: #16325c; color: #fff; padding: 14px 28px; display: flex; justify-content: space-between; align-items: center; }
+    header .brand { font-size: 18px; font-weight: 600; }
+    header a { color: #b0c4de; text-decoration: none; margin-left: 16px; }
+    main { max-width: 960px; margin: 32px auto; padding: 0 16px; }
+    .card { background: #fff; border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,.12); padding: 24px; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid #e5e9f0; font-size: 14px; }
+    th { color: #54698d; font-weight: 600; text-transform: uppercase; font-size: 11px; letter-spacing: .05em; }
+    .badge { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; }
+    .badge.sent { background: #e3ecfb; color: #0b5cab; }
+    .badge.done { background: #e0f5e6; color: #1e7b34; }
+    .badge.failed { background: #fdeaea; color: #b02a2a; }
+    .badge.waiting { background: #fff4e5; color: #a05a00; }
+    .btn { display: inline-block; background: #0b5cab; color: #fff; border: 0; border-radius: 6px; padding: 8px 18px; font-size: 14px; cursor: pointer; text-decoration: none; }
+    .btn:hover { background: #084b8c; }
+    .muted { color: #54698d; font-size: 13px; }
+    .msg { border-radius: 6px; padding: 10px 14px; margin-bottom: 14px; font-size: 14px; }
+    .msg.error { background: #fdeaea; color: #b02a2a; }
+    .msg.info { background: #fff4e5; color: #a05a00; }
+    .msg.success { background: #e0f5e6; color: #1e7b34; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">DPEG Investor Portal</div>
+    <div>
+      {% if user.is_authenticated %}
+        <span>{{ user.get_full_name|default:user.username }}</span>
+        <form method="post" action="{% url 'logout' %}" style="display:inline">{% csrf_token %}
+          <button class="btn" style="background:#54698d;padding:5px 12px;margin-left:14px">Log out</button>
+        </form>
+      {% endif %}
+    </div>
+  </header>
+  <main>
+    {% for message in messages %}
+      <div class="msg {{ message.tags }}">{{ message }}</div>
+    {% endfor %}
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>

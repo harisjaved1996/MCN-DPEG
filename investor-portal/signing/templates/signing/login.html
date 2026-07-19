@@ -1,0 +1,18 @@
+{% extends "signing/base.html" %}
+{% block content %}
+<div class="card" style="max-width:400px;margin:60px auto">
+  <h2 style="margin-top:0">Investor Login</h2>
+  {% if form.errors %}
+    <div class="msg error">Invalid username or password.</div>
+  {% endif %}
+  <form method="post">
+    {% csrf_token %}
+    <p><label>Username<br>
+      <input type="text" name="username" autofocus style="width:100%;padding:8px" /></label></p>
+    <p><label>Password<br>
+      <input type="password" name="password" style="width:100%;padding:8px" /></label></p>
+    <button class="btn" type="submit" style="width:100%">Log in</button>
+  </form>
+  <p class="muted" style="margin-top:16px">POC users: haris1996 / haris637 (password Invest@123)</p>
+</div>
+{% endblock %}
