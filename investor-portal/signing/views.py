@@ -1,3 +1,5 @@
+import mimetypes
+
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -12,6 +14,15 @@ FINAL_STATUSES = {"completed", "signed", "declined", "voided", "failed"}
 
 def _profile(request):
     return getattr(request.user, "investor_profile", None)
+
+
+def _filename_for(doc):
+    """Title with its file extension appended, unless the Title already has it."""
+    name = doc.get("title") or "document"
+    ext = (doc.get("fileExtension") or "").lstrip(".")
+    if ext and not name.lower().endswith("." + ext.lower()):
+        name += "." + ext
+    return name
 
 
 def _annotate(doc):
@@ -67,6 +78,19 @@ def dashboard(request):
     to_sign = [d for d in documents if d["canSign"]]
     waiting = [d for d in documents if not d["canSign"] and not d["isDone"]]
     completed = [d for d in documents if d["isDone"]]
+
+    # Plain files dropped on an Investment record (Notes & Attachments / Files) —
+    # visible to every investor in that investment, independent of DocuSign.
+    investment_documents = []
+    try:
+        inv_payload = salesforce.get_investment_documents(profile.contact_id)
+        investment_documents = inv_payload.get("documents", [])
+        for d in investment_documents:
+            d["displayName"] = _filename_for(d)
+    except salesforce.SalesforceError as exc:
+        if error is None:
+            error = str(exc)
+
     return render(
         request,
         "signing/dashboard.html",
@@ -75,6 +99,7 @@ def dashboard(request):
             "waiting": waiting,
             "completed": completed,
             "has_any": bool(documents),
+            "investment_documents": investment_documents,
             "error": error,
             "profile": profile,
         },
@@ -225,6 +250,79 @@ def document_data(request, copy_id):
     except docusign_client.DocuSignError as exc:
         return JsonResponse({"error": str(exc)}, status=502)
     return JsonResponse({"b64": base64.b64encode(pdf_bytes).decode("ascii")})
+
+
+def _find_investment_doc(request, content_version_id):
+    """Loads a general Investment file for the logged-in investor, or None.
+
+    Re-fetches from Salesforce (scoped to this contact's investments) so a
+    contact can't guess another investor's contentVersionId and pull their file.
+    """
+    profile = _profile(request)
+    if profile is None:
+        messages.error(request, "Your login is not linked to a Salesforce contact.")
+        return None
+    try:
+        payload = salesforce.get_investment_documents(profile.contact_id)
+    except salesforce.SalesforceError as exc:
+        messages.error(request, str(exc))
+        return None
+    doc = next(
+        (d for d in payload.get("documents", []) if d.get("contentVersionId") == content_version_id),
+        None,
+    )
+    if doc is None:
+        messages.error(request, "That document was not found for your account.")
+        return None
+    return doc
+
+
+@login_required
+def investment_document(request, content_version_id):
+    """In-portal viewer page for a file uploaded directly on an Investment record."""
+    doc = _find_investment_doc(request, content_version_id)
+    if doc is None:
+        return redirect("dashboard")
+    doc["displayName"] = _filename_for(doc)
+    is_pdf = (doc.get("fileType") or "").upper() == "PDF"
+    return render(request, "signing/investment_document.html", {"doc": doc, "is_pdf": is_pdf})
+
+
+@login_required
+def investment_document_file(request, content_version_id):
+    """Raw file bytes — inline for viewing, or as an attachment when ?download=1."""
+    doc = _find_investment_doc(request, content_version_id)
+    if doc is None:
+        return redirect("dashboard")
+    try:
+        file_bytes = salesforce.get_content_version_data(content_version_id)
+    except salesforce.SalesforceError as exc:
+        messages.error(request, str(exc))
+        return redirect("dashboard")
+
+    filename = _filename_for(doc)
+    content_type = mimetypes.guess_type(filename)[0] or "application/octet-stream"
+    disposition = "attachment" if request.GET.get("download") else "inline"
+    response = HttpResponse(file_bytes, content_type=content_type)
+    response["Content-Disposition"] = f'{disposition}; filename="{filename}"'
+    return response
+
+
+@login_required
+def investment_document_data(request, content_version_id):
+    """PDF bytes as base64 JSON, for the in-portal pdf.js viewer (see document_data)."""
+    import base64
+
+    from django.http import JsonResponse
+
+    doc = _find_investment_doc(request, content_version_id)
+    if doc is None:
+        return JsonResponse({"error": "Document not found."}, status=404)
+    try:
+        file_bytes = salesforce.get_content_version_data(content_version_id)
+    except salesforce.SalesforceError as exc:
+        return JsonResponse({"error": str(exc)}, status=502)
+    return JsonResponse({"b64": base64.b64encode(file_bytes).decode("ascii")})
 
 
 @login_required

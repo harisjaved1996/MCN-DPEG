@@ -105,7 +105,35 @@
   {% endif %}
 </div>
 
-{% if not has_any and not error %}
+<div class="card" style="margin-top:24px">
+  <h2 style="margin-top:0">📁 Investment documents
+    {% if investment_documents %}<span class="badge sent" style="vertical-align:middle">{{ investment_documents|length }}</span>{% endif %}
+  </h2>
+  {% if investment_documents %}
+  <table>
+    <thead>
+      <tr><th>Document</th><th>Investment</th><th>Uploaded</th><th></th></tr>
+    </thead>
+    <tbody>
+      {% for doc in investment_documents %}
+      <tr>
+        <td><strong>{{ doc.displayName }}</strong></td>
+        <td>{{ doc.investmentName|default:"—" }}</td>
+        <td class="muted">{{ doc.uploadedDate|default:"—" }}</td>
+        <td style="white-space:nowrap">
+          <a class="btn" style="background:#54698d" href="{% url 'investment_document' doc.contentVersionId %}" target="_blank">View</a>
+          <a class="btn" href="{% url 'investment_document_file' doc.contentVersionId %}?download=1">Download</a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% elif not error %}
+    <p class="muted">No documents have been shared on your investments yet.</p>
+  {% endif %}
+</div>
+
+{% if not has_any and not investment_documents and not error %}
   <p class="muted" style="text-align:center;margin-top:20px">
     When DPEG sends you a document, it will appear here automatically.
   </p>

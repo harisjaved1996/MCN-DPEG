@@ -5,6 +5,12 @@
  *     -> signature documents (Document_Copy__c rows) for one investor contact,
  *        with a computed "waitingOnName" so the portal knows whose turn it is.
  *
+ * GET  /services/apexrest/portal/v1/investment-documents?contactId=003...
+ *     -> general files (Salesforce Files / Notes & Attachments) uploaded directly
+ *        on any Investment__c the contact holds a position in — e.g. back-office
+ *        drops a PPM or statement on the Investment record and every investor in
+ *        that investment can see it in the portal. Not tied to DocuSign at all.
+ *
  * POST /services/apexrest/portal/v1/refresh   body: {"masterDocumentId":"a4Q..."}
  *     -> polls DocuSign for the master's investment and syncs copy statuses;
  *        called by the portal right after a signing ceremony completes.
@@ -13,6 +19,25 @@
 global with sharing class PortalDocumentApi {
 
     private static final Set<String> DONE_STATUSES = new Set<String>{ 'signed', 'completed' };
+
+    global class InvestmentDocument {
+        public String contentDocumentId;
+        public String contentVersionId;
+        public String title;
+        public String fileType;
+        public String fileExtension;
+        public Integer contentSize;
+        public String description;
+        public String investmentId;
+        public String investmentName;
+        public Datetime uploadedDate;
+    }
+
+    global class InvestmentDocumentsResponse {
+        public String contactId;
+        public String contactName;
+        public List<InvestmentDocument> documents = new List<InvestmentDocument>();
+    }
 
     global class PortalDocument {
         public String copyId;
@@ -43,13 +68,17 @@ global with sharing class PortalDocumentApi {
         res.addHeader('Content-Type', 'application/json');
         try {
             String action = resolveAction();
-            if (action != 'documents') {
-                fail(res, 404, 'Unknown resource. Use /portal/v1/documents.');
-                return;
+            if (action == 'documents') {
+                Id contactId = resolveContactId();
+                res.statusCode = 200;
+                res.responseBody = Blob.valueOf(JSON.serialize(buildDocuments(contactId)));
+            } else if (action == 'investment-documents') {
+                Id contactId = resolveContactId();
+                res.statusCode = 200;
+                res.responseBody = Blob.valueOf(JSON.serialize(buildInvestmentDocuments(contactId)));
+            } else {
+                fail(res, 404, 'Unknown resource. Use /portal/v1/documents or /portal/v1/investment-documents.');
             }
-            Id contactId = resolveContactId();
-            res.statusCode = 200;
-            res.responseBody = Blob.valueOf(JSON.serialize(buildDocuments(contactId)));
         } catch (PortalApiException e) {
             fail(res, e.statusCode, e.getMessage());
         } catch (Exception e) {
@@ -196,6 +225,80 @@ global with sharing class PortalDocumentApi {
             }
         }
         return null;
+    }
+
+    // ----- GET: investment-documents -----------------------------------------
+
+    /**
+     * Files uploaded directly on any Investment__c the contact is an investor
+     * in (via Associated_Contact__c -> Investing_Entity__c -> position__c),
+     * regardless of who uploaded them or whether DocuSign is involved at all.
+     */
+    @TestVisible
+    private static InvestmentDocumentsResponse buildInvestmentDocuments(Id contactId) {
+        List<Contact> contacts = [
+            SELECT Id, Name FROM Contact WHERE Id = :contactId WITH USER_MODE LIMIT 1
+        ];
+        if (contacts.isEmpty()) {
+            throw new PortalApiException(404, 'Contact not found.');
+        }
+
+        InvestmentDocumentsResponse result = new InvestmentDocumentsResponse();
+        result.contactId = contacts[0].Id;
+        result.contactName = contacts[0].Name;
+
+        Set<Id> entityIds = new Set<Id>();
+        for (Associated_Contact__c assoc : [
+            SELECT Investing_Entity__c FROM Associated_Contact__c
+            WHERE Contact__c = :contactId AND Investing_Entity__c != NULL
+            WITH USER_MODE
+        ]) {
+            entityIds.add(assoc.Investing_Entity__c);
+        }
+        if (entityIds.isEmpty()) {
+            return result;
+        }
+
+        Map<Id, Investment__c> investmentsById = new Map<Id, Investment__c>();
+        for (position__c pos : [
+            SELECT Investment__c, Investment__r.Name FROM position__c
+            WHERE Investing_Entity__c IN :entityIds AND Investment__c != NULL
+            WITH USER_MODE
+        ]) {
+            if (!investmentsById.containsKey(pos.Investment__c)) {
+                investmentsById.put(pos.Investment__c, pos.Investment__r);
+            }
+        }
+        if (investmentsById.isEmpty()) {
+            return result;
+        }
+
+        for (ContentDocumentLink link : [
+            SELECT LinkedEntityId,
+                   ContentDocument.Id, ContentDocument.Title, ContentDocument.FileType,
+                   ContentDocument.FileExtension, ContentDocument.ContentSize,
+                   ContentDocument.Description, ContentDocument.LatestPublishedVersionId,
+                   ContentDocument.CreatedDate
+            FROM ContentDocumentLink
+            WHERE LinkedEntityId IN :investmentsById.keySet()
+            WITH USER_MODE
+            ORDER BY ContentDocument.CreatedDate DESC
+        ]) {
+            InvestmentDocument doc = new InvestmentDocument();
+            doc.contentDocumentId = link.ContentDocument.Id;
+            doc.contentVersionId = link.ContentDocument.LatestPublishedVersionId;
+            doc.title = link.ContentDocument.Title;
+            doc.fileType = link.ContentDocument.FileType;
+            doc.fileExtension = link.ContentDocument.FileExtension;
+            doc.contentSize = link.ContentDocument.ContentSize;
+            doc.description = link.ContentDocument.Description;
+            doc.investmentId = link.LinkedEntityId;
+            Investment__c inv = investmentsById.get(link.LinkedEntityId);
+            doc.investmentName = inv != null ? inv.Name : null;
+            doc.uploadedDate = link.ContentDocument.CreatedDate;
+            result.documents.add(doc);
+        }
+        return result;
     }
 
     private static Id resolveContactId() {

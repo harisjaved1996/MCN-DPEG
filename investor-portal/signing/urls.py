@@ -16,5 +16,20 @@ urlpatterns = [
     path("document/<str:copy_id>/", views.document, name="document"),
     path("document/<str:copy_id>/file", views.document_file, name="document_file"),
     path("document/<str:copy_id>/data", views.document_data, name="document_data"),
+    path(
+        "investment-document/<str:content_version_id>/",
+        views.investment_document,
+        name="investment_document",
+    ),
+    path(
+        "investment-document/<str:content_version_id>/file",
+        views.investment_document_file,
+        name="investment_document_file",
+    ),
+    path(
+        "investment-document/<str:content_version_id>/data",
+        views.investment_document_data,
+        name="investment_document_data",
+    ),
     path("callback", views.callback, name="callback"),
 ]

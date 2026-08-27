@@ -81,3 +81,29 @@ def refresh_master(master_document_id):
         "/services/apexrest/portal/v1/refresh",
         json_body={"masterDocumentId": master_document_id},
     )
+
+
+def get_investment_documents(contact_id):
+    """Files uploaded directly on any Investment the contact holds a position in
+    (Notes & Attachments / Files related list — nothing to do with DocuSign)."""
+    return _call(
+        "GET",
+        "/services/apexrest/portal/v1/investment-documents",
+        params={"contactId": contact_id},
+    )
+
+
+def get_content_version_data(content_version_id, retry=True):
+    """Raw bytes of a Salesforce File (ContentVersion), via the standard REST API."""
+    token, instance_url = get_sf_session()
+    response = requests.get(
+        f"{instance_url}/services/data/v62.0/sobjects/ContentVersion/{content_version_id}/VersionData",
+        headers={"Authorization": f"Bearer {token}"},
+        timeout=60,
+    )
+    if response.status_code == 401 and retry:
+        get_sf_session(force=True)
+        return get_content_version_data(content_version_id, retry=False)
+    if response.status_code >= 400:
+        raise SalesforceError(f"Salesforce file download error ({response.status_code}): {response.text}")
+    return response.content

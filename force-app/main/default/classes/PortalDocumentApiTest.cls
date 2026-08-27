@@ -199,4 +199,60 @@ private class PortalDocumentApiTest {
         Assert.areEqual(404,
             invokePost('/services/apexrest/portal/v1/nonsense', '{}').statusCode);
     }
+
+    private static RestResponse invokeGetInvestmentDocuments(Map<String, String> params) {
+        RestRequest req = new RestRequest();
+        req.requestURI = '/services/apexrest/portal/v1/investment-documents';
+        req.httpMethod = 'GET';
+        req.params.putAll(params);
+        RestContext.request = req;
+        RestContext.response = new RestResponse();
+        PortalDocumentApi.doGet();
+        return RestContext.response;
+    }
+
+    /** A file dropped directly on the Investment (no DocuSign) is visible to every investor. */
+    @IsTest
+    static void investmentDocumentsAreVisibleToEveryInvestorOnThatInvestment() {
+        Contact prime = contactByLastName('Prime');
+        Contact second = contactByLastName('Second');
+        Contact outsider = new Contact(LastName = 'Outsider', Email = 'outsider@example.com');
+        insert outsider;
+
+        Id investmentId = [SELECT Id FROM Investment__c LIMIT 1].Id;
+        Id contentDocumentId = [
+            SELECT ContentDocumentId FROM ContentVersion WHERE Title = 'PPM' LIMIT 1
+        ].ContentDocumentId;
+        insert new ContentDocumentLink(
+            ContentDocumentId = contentDocumentId,
+            LinkedEntityId = investmentId,
+            ShareType = 'V');
+
+        RestResponse res = invokeGetInvestmentDocuments(new Map<String, String>{ 'contactId' => prime.Id });
+        Assert.areEqual(200, res.statusCode, res.responseBody.toString());
+        PortalDocumentApi.InvestmentDocumentsResponse primeDocs =
+            (PortalDocumentApi.InvestmentDocumentsResponse) JSON.deserialize(
+                res.responseBody.toString(), PortalDocumentApi.InvestmentDocumentsResponse.class);
+        Assert.areEqual(1, primeDocs.documents.size());
+        Assert.areEqual('PPM', primeDocs.documents[0].title);
+        Assert.areEqual('Fund IV', primeDocs.documents[0].investmentName);
+
+        res = invokeGetInvestmentDocuments(new Map<String, String>{ 'contactId' => second.Id });
+        PortalDocumentApi.InvestmentDocumentsResponse secondDocs =
+            (PortalDocumentApi.InvestmentDocumentsResponse) JSON.deserialize(
+                res.responseBody.toString(), PortalDocumentApi.InvestmentDocumentsResponse.class);
+        Assert.areEqual(1, secondDocs.documents.size(), 'every investor on the investment sees the file');
+
+        res = invokeGetInvestmentDocuments(new Map<String, String>{ 'contactId' => outsider.Id });
+        PortalDocumentApi.InvestmentDocumentsResponse outsiderDocs =
+            (PortalDocumentApi.InvestmentDocumentsResponse) JSON.deserialize(
+                res.responseBody.toString(), PortalDocumentApi.InvestmentDocumentsResponse.class);
+        Assert.areEqual(0, outsiderDocs.documents.size(), 'non-investors see nothing');
+    }
+
+    @IsTest
+    static void investmentDocumentsNotFoundContactErrors() {
+        RestResponse res = invokeGetInvestmentDocuments(new Map<String, String>{ 'contactId' => '003000000000000AAA' });
+        Assert.areEqual(404, res.statusCode);
+    }
 }
