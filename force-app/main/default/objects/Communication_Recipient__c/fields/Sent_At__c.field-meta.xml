@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Sent_At__c</fullName>
+    <label>Sent At</label>
+    <required>false</required>
+    <type>DateTime</type>
+    <inlineHelpText>When this individual's message was handed to Marketing Cloud Next.</inlineHelpText>
+</CustomField>

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Token_Endpoint__c</fullName>
+    <label>Token Endpoint</label>
+    <length>255</length>
+    <required>false</required>
+    <type>Text</type>
+    <unique>false</unique>
+    <inlineHelpText>My Domain OAuth token URL, e.g. https://yourorg.my.salesforce.com/services/oauth2/token</inlineHelpText>
+</CustomField>

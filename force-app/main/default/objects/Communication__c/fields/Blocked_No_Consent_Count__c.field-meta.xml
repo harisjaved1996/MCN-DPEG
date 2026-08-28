@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Blocked_No_Consent_Count__c</fullName>
+    <label>Blocked - No Consent</label>
+    <defaultValue>0</defaultValue>
+    <precision>18</precision>
+    <scale>0</scale>
+    <required>false</required>
+    <type>Number</type>
+    <unique>false</unique>
+    <inlineHelpText>Rejected with CONSENT_NOT_GIVEN. The address has no OPT_IN consent record in Data Cloud, so Marketing Cloud Next refused to send.</inlineHelpText>
+</CustomField>

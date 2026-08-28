@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Execution_Duration__c</fullName>
+    <label>Duration</label>
+    <formula>IF(OR(ISBLANK(Execution_Start__c), ISBLANK(Execution_End__c)), "", TEXT(FLOOR((Execution_End__c - Execution_Start__c) * 24 * 60)) &amp; "m " &amp; TEXT(ROUND(MOD((Execution_End__c - Execution_Start__c) * 24 * 60 * 60, 60), 0)) &amp; "s")</formula>
+    <formulaTreatBlanksAs>BlankAsZero</formulaTreatBlanksAs>
+    <required>false</required>
+    <type>Text</type>
+    <unique>false</unique>
+    <inlineHelpText>Wall-clock time from first batch to last.</inlineHelpText>
+</CustomField>

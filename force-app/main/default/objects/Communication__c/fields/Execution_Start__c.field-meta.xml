@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Execution_Start__c</fullName>
+    <label>Execution Start</label>
+    <required>false</required>
+    <type>DateTime</type>
+    <inlineHelpText>When the send job began processing its first batch.</inlineHelpText>
+</CustomField>

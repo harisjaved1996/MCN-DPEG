@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Engagement_Status__c</fullName>
+    <label>Engagement Status</label>
+    <required>false</required>
+    <type>Picklist</type>
+    <inlineHelpText>Furthest engagement reached, sourced from the Data Cloud Email Engagement DMO. Escalates Sent to Opened to Clicked.</inlineHelpText>
+    <valueSet>
+        <restricted>true</restricted>
+        <valueSetDefinition>
+            <sorted>false</sorted>
+            <value><fullName>Awaiting Data</fullName><default>true</default><label>Awaiting Data</label></value>
+            <value><fullName>Not Sent</fullName><default>false</default><label>Not Sent</label></value>
+            <value><fullName>Sent</fullName><default>false</default><label>Sent</label></value>
+            <value><fullName>Opened</fullName><default>false</default><label>Opened</label></value>
+            <value><fullName>Clicked</fullName><default>false</default><label>Clicked</label></value>
+            <value><fullName>Bounced - Soft</fullName><default>false</default><label>Bounced - Soft</label></value>
+            <value><fullName>Bounced - Hard</fullName><default>false</default><label>Bounced - Hard</label></value>
+            <value><fullName>Unsubscribed</fullName><default>false</default><label>Unsubscribed</label></value>
+            <value><fullName>Complaint</fullName><default>false</default><label>Complaint</label></value>
+        </valueSetDefinition>
+    </valueSet>
+</CustomField>

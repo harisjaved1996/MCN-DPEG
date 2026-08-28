@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Audience_Filter__c</fullName>
+    <label>Audience Filter</label>
+    <length>255</length>
+    <required>false</required>
+    <type>Text</type>
+    <unique>false</unique>
+    <inlineHelpText>Search term the sender had applied when choosing the audience. Blank means the whole audience was targeted.</inlineHelpText>
+</CustomField>

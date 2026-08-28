@@ -1,0 +1,253 @@
+<template>
+    <div class="wizard">
+        <!-- Header -->
+        <header class="hero">
+            <div class="hero-mark">
+                <lightning-icon icon-name="utility:send" variant="inverse" size="small"></lightning-icon>
+            </div>
+            <div class="hero-copy">
+                <p class="hero-eyebrow">Offering Campaign</p>
+                <h1 class="hero-title">{offeringName}</h1>
+            </div>
+        </header>
+
+        <!-- Stepper -->
+        <nav class="stepper">
+            <div class={stepOneClass}>
+                <span class="step-dot">1</span>
+                <span class="step-text">Choose Email</span>
+            </div>
+            <span class={connectorClass}></span>
+            <div class={stepTwoClass}>
+                <span class="step-dot">2</span>
+                <span class="step-text">Select Recipients</span>
+            </div>
+        </nav>
+
+        <template lwc:if={errorMessage}>
+            <div class="banner banner_error">
+                <lightning-icon icon-name="utility:error" size="x-small" variant="inverse"></lightning-icon>
+                <span>{errorMessage}</span>
+            </div>
+        </template>
+
+        <!-- ================= STEP 1 ================= -->
+        <template lwc:if={isStepOne}>
+            <section class="body">
+                <template lwc:if={isLoadingEmails}>
+                    <div class="center">
+                        <lightning-spinner alternative-text="Loading emails" size="medium"></lightning-spinner>
+                        <p class="muted">Loading published emails…</p>
+                    </div>
+                </template>
+
+                <template lwc:else>
+                    <template lwc:if={hasEmails}>
+                        <div class="controls">
+                            <div class="search">
+                                <lightning-icon icon-name="utility:search" size="x-small"
+                                                class="search-icon"></lightning-icon>
+                                <input type="text" class="search-input"
+                                       placeholder="Search emails" oninput={handleEmailSearch} />
+                            </div>
+                            <span class="muted count-note">{emailCountLabel}</span>
+                        </div>
+
+                        <template lwc:if={hasVisibleEmails}>
+                            <ul class="list list_emails">
+                                <template for:each={emailCards} for:item="e">
+                                    <li key={e.managedContentId} class={e.rowClass}
+                                        data-id={e.managedContentId} onclick={handleSelectEmail}>
+                                        <span class={e.radioClass}>
+                                            <template lwc:if={e.selected}>
+                                                <span class="radio-dot"></span>
+                                            </template>
+                                        </span>
+                                        <span class="email-icon">
+                                            <lightning-icon icon-name="utility:email"
+                                                            size="x-small"></lightning-icon>
+                                        </span>
+                                        <span class="who">
+                                            <span class="who-name">{e.name}</span>
+                                            <span class="who-mail">{e.workspaceName} &middot; created {e.createdLabel}</span>
+                                        </span>
+                                        <span class={e.readyClass}>{e.readyLabel}</span>
+                                        <button class="ghost" data-id={e.managedContentId}
+                                                onclick={handlePreview}>Preview</button>
+                                    </li>
+                                </template>
+                            </ul>
+
+                            <template lwc:if={showEmailPager}>
+                                <div class="pager">
+                                    <button class="ghost" disabled={isFirstEmailPage}
+                                            onclick={handleEmailPrevious}>Previous</button>
+                                    <span class="muted">{emailRangeLabel}</span>
+                                    <button class="ghost" disabled={isLastEmailPage}
+                                            onclick={handleEmailNext}>Next</button>
+                                </div>
+                            </template>
+                        </template>
+
+                        <template lwc:else>
+                            <div class="empty">
+                                <lightning-icon icon-name="utility:search" size="small"></lightning-icon>
+                                <p class="muted">No emails match that search.</p>
+                            </div>
+                        </template>
+                    </template>
+
+                    <template lwc:else>
+                        <div class="empty">
+                            <lightning-icon icon-name="utility:info_alt" size="small"></lightning-icon>
+                            <p class="muted">No published emails found in this workspace. Publish an email in Marketing CMS and it will appear here automatically.</p>
+                        </div>
+                    </template>
+                </template>
+            </section>
+        </template>
+
+        <!-- ================= STEP 2 ================= -->
+        <template lwc:if={isStepTwo}>
+            <section class="body">
+                <div class="chosen">
+                    <span class="chip">{selectedEmailName}</span>
+                    <span class="muted">will be sent to the audience below</span>
+                </div>
+
+                <template lwc:if={hasBlocked}>
+                    <div class={blockedBannerClass}>
+                        <lightning-icon icon-name="utility:privacy" size="x-small"></lightning-icon>
+                        <span>{blockedMessage}</span>
+                    </div>
+                </template>
+
+                <div class="controls">
+                    <div class="search">
+                        <lightning-icon icon-name="utility:search" size="x-small" class="search-icon"></lightning-icon>
+                        <input type="text" class="search-input" placeholder="Search by name or email"
+                               oninput={handleSearch} />
+                    </div>
+                    <label class="toggle">
+                        <input type="checkbox" checked={skipWithoutConsent} onchange={handleToggleConsentFilter} />
+                        <span>Only send to opted-in</span>
+                    </label>
+                </div>
+
+                <template lwc:if={isLoadingAudience}>
+                    <div class="center">
+                        <lightning-spinner alternative-text="Loading recipients" size="small"></lightning-spinner>
+                    </div>
+                </template>
+
+                <template lwc:else>
+                    <template lwc:if={browseLimitReached}>
+                        <div class="empty">
+                            <lightning-icon icon-name="utility:search" size="small"></lightning-icon>
+                            <p class="muted">Browsing stops at 2,000 records. Use search to find specific recipients — the send itself still covers the full audience.</p>
+                        </div>
+                    </template>
+
+                    <template lwc:else>
+                        <template lwc:if={hasRows}>
+                            <ul class="list">
+                                <template for:each={rows} for:item="r">
+                                    <li key={r.individualId} class={r.rowClass}
+                                        data-id={r.individualId} onclick={handleToggleRow}>
+                                        <span class={r.boxClass}>
+                                            <template lwc:if={r.included}>
+                                                <lightning-icon icon-name="utility:check" size="xx-small"
+                                                                variant="inverse"></lightning-icon>
+                                            </template>
+                                        </span>
+                                        <span class={r.avatarClass}>{r.initials}</span>
+                                        <span class="who">
+                                            <span class="who-name">{r.name}</span>
+                                            <span class="who-mail">{r.email}</span>
+                                        </span>
+                                        <span class={r.consentClass}>{r.consentLabel}</span>
+                                    </li>
+                                </template>
+                            </ul>
+
+                            <div class="pager">
+                                <button class="ghost" disabled={isFirstPage} onclick={handlePrevious}>Previous</button>
+                                <span class="muted">{rangeLabel}</span>
+                                <button class="ghost" disabled={isLastPage} onclick={handleNextPage}>Next</button>
+                            </div>
+                        </template>
+
+                        <template lwc:else>
+                            <div class="empty">
+                                <lightning-icon icon-name="utility:people" size="small"></lightning-icon>
+                                <p class="muted">No individuals match that search.</p>
+                            </div>
+                        </template>
+                    </template>
+                </template>
+
+                <div class="summary">
+                    <div class="stat">
+                        <span class="stat-num">{projectedRecipients}</span>
+                        <span class="stat-lbl">will receive</span>
+                    </div>
+                    <div class="stat stat_muted">
+                        <span class="stat-num">{excludedCount}</span>
+                        <span class="stat-lbl">unticked</span>
+                    </div>
+                    <template lwc:if={excludedCount}>
+                        <button class="ghost" onclick={handleResetSelection}>Reset</button>
+                    </template>
+                </div>
+            </section>
+        </template>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <template lwc:if={isStepOne}>
+                <button class="btn btn_plain" onclick={handleCancel}>Cancel</button>
+                <button class="btn btn_primary" disabled={nextDisabled} onclick={handleNext}>Continue</button>
+            </template>
+            <template lwc:else>
+                <button class="btn btn_plain" onclick={handleBack}>Back</button>
+                <div class="footer-right">
+                    <button class="btn btn_plain" onclick={handleCancel}>Cancel</button>
+                    <button class="btn btn_primary" disabled={sendDisabled} onclick={handleSend}>{sendLabel}</button>
+                </div>
+            </template>
+        </footer>
+
+        <!-- Preview overlay -->
+        <template lwc:if={isPreviewOpen}>
+            <div class="preview-scrim" onclick={closePreview}>
+                <div class="preview-panel" onclick={stopPropagation}>
+                    <div class="preview-head">
+                        <div>
+                            <p class="preview-eyebrow">Preview</p>
+                            <h3 class="preview-subject">{previewSubject}</h3>
+                        </div>
+                        <button class="icon-btn" onclick={closePreview}>
+                            <lightning-icon icon-name="utility:close" size="x-small"></lightning-icon>
+                        </button>
+                    </div>
+                    <div class="preview-body">
+                        <template lwc:if={isPreviewLoading}>
+                            <div class="center">
+                                <lightning-spinner alternative-text="Rendering" size="small"></lightning-spinner>
+                            </div>
+                        </template>
+                        <template lwc:else>
+                            <lightning-formatted-rich-text value={previewHtml}></lightning-formatted-rich-text>
+                        </template>
+                    </div>
+                </div>
+            </div>
+        </template>
+
+        <template lwc:if={isSending}>
+            <div class="sending-scrim">
+                <lightning-spinner alternative-text="Starting send" size="medium"></lightning-spinner>
+            </div>
+        </template>
+    </div>
+</template>

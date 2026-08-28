@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Last_Engagement_At__c</fullName>
+    <label>Last Engagement At</label>
+    <required>false</required>
+    <type>DateTime</type>
+    <inlineHelpText>Most recent engagement event of any type.</inlineHelpText>
+</CustomField>

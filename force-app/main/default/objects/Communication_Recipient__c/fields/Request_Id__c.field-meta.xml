@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Request_Id__c</fullName>
+    <label>Request Id</label>
+    <length>64</length>
+    <required>false</required>
+    <type>Text</type>
+    <unique>false</unique>
+    <inlineHelpText>Identifier of the bulk API call this recipient was part of. Shared across everyone in the same chunk.</inlineHelpText>
+</CustomField>

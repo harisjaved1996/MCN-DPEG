@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Chunk_Size__c</fullName>
+    <label>Chunk Size</label>
+    <precision>8</precision>
+    <scale>0</scale>
+    <required>false</required>
+    <type>Number</type>
+    <unique>false</unique>
+    <inlineHelpText>Recipients per bulk API call. Measured ceiling is 5000 (10000 returns 503); the batch scope should match this value.</inlineHelpText>
+</CustomField>

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Skip_Without_Consent__c</fullName>
+    <label>Skip Recipients Without Opt-In</label>
+    <defaultValue>true</defaultValue>
+    <required>false</required>
+    <type>Checkbox</type>
+    <inlineHelpText>When on, individuals whose address has no OPT_IN consent record are left out of the send entirely instead of being sent and rejected. Marketing Cloud Next blocks them either way; this simply avoids filling the recipient list with predictable failures.</inlineHelpText>
+</CustomField>

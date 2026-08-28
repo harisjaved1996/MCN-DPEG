@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Opened_Count__c</fullName>
+    <label>Opened</label>
+    <defaultValue>0</defaultValue>
+    <precision>18</precision>
+    <scale>0</scale>
+    <required>false</required>
+    <type>Number</type>
+    <unique>false</unique>
+    <inlineHelpText>Unique individuals who opened. Open tracking depends on image loading, so treat clicks as the stronger signal.</inlineHelpText>
+</CustomField>

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Execution_End__c</fullName>
+    <label>Execution End</label>
+    <required>false</required>
+    <type>DateTime</type>
+    <inlineHelpText>When the final batch finished.</inlineHelpText>
+</CustomField>
