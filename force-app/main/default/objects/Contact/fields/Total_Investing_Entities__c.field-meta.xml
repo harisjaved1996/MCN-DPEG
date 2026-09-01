@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Total_Investing_Entities__c</fullName>
+    <description>The total number of investing entity Accounts this Contact is associated with as an investor.</description>
+    <inlineHelpText>Count of investing entities linked to this investor.</inlineHelpText>
+    <label>Total Investing Entities</label>
+    <precision>18</precision>
+    <scale>0</scale>
+    <externalId>false</externalId>
+    <required>false</required>
+    <type>Number</type>
+    <unique>false</unique>
+    <trackFeedHistory>false</trackFeedHistory>
+</CustomField>

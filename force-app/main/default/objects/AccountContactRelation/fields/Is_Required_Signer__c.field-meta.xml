@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Is_Required_Signer__c</fullName>
+    <label>Is Required Signer</label>
+    <description>Indicates whether this Contact is a required signer on documents for this investing entity Account.</description>
+    <inlineHelpText>Check if this Contact must sign documents for this investing entity.</inlineHelpText>
+    <defaultValue>false</defaultValue>
+    <externalId>false</externalId>
+    <trackTrending>false</trackTrending>
+    <type>Checkbox</type>
+</CustomField>

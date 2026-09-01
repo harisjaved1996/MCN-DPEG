@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Lifetime_Invested__c</fullName>
+    <description>The total dollar amount this Contact has actually funded (invested) over their lifetime as an investor.</description>
+    <inlineHelpText>Sum of all funded investment amounts for this investor, lifetime to date.</inlineHelpText>
+    <label>Lifetime Invested</label>
+    <precision>18</precision>
+    <scale>2</scale>
+    <required>false</required>
+    <type>Currency</type>
+    <trackFeedHistory>false</trackFeedHistory>
+</CustomField>

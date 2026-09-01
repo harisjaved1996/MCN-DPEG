@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Active_Positions__c</fullName>
+    <description>The total number of currently active investment positions held by this Contact across all investing entities.</description>
+    <inlineHelpText>Count of this investor&apos;s currently active investment positions.</inlineHelpText>
+    <label>Active Positions</label>
+    <precision>18</precision>
+    <scale>0</scale>
+    <externalId>false</externalId>
+    <required>false</required>
+    <type>Number</type>
+    <unique>false</unique>
+    <trackFeedHistory>false</trackFeedHistory>
+</CustomField>

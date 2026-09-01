@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Tax_ID__c</fullName>
+    <description>The Tax Identification Number (SSN, EIN, or ITIN) for this investing entity, used for tax reporting (K-1 issuance) and AML/KYC compliance. Stored as Text (Encrypted, Classic Encryption) - masked to the last four characters for users without the View Encrypted Data permission.</description>
+    <inlineHelpText>Enter the entity&apos;s SSN, EIN, or ITIN. Only the last four characters are shown unless you have View Encrypted Data access.</inlineHelpText>
+    <label>Tax ID</label>
+    <length>175</length>
+    <maskChar>asterisk</maskChar>
+    <maskType>lastFour</maskType>
+    <required>false</required>
+    <type>EncryptedText</type>
+    <trackFeedHistory>false</trackFeedHistory>
+</CustomField>

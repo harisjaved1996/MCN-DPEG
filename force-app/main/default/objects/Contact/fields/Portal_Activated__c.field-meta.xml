@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Portal_Activated__c</fullName>
+    <description>Indicates whether this investor Contact has activated their Experience Cloud investor portal login.</description>
+    <inlineHelpText>Checked once the investor has activated their portal account.</inlineHelpText>
+    <label>Portal Activated</label>
+    <defaultValue>false</defaultValue>
+    <externalId>false</externalId>
+    <type>Checkbox</type>
+    <trackFeedHistory>false</trackFeedHistory>
+</CustomField>

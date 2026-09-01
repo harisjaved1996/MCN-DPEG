@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Appfolio_ID__c</fullName>
+    <description>Unique identifier for this investing entity Account in AppFolio, used to match/sync records between Salesforce and AppFolio.</description>
+    <inlineHelpText>Do not edit directly. Populated by the AppFolio integration.</inlineHelpText>
+    <label>Appfolio ID</label>
+    <length>50</length>
+    <externalId>true</externalId>
+    <caseSensitive>false</caseSensitive>
+    <required>false</required>
+    <type>Text</type>
+    <unique>true</unique>
+    <trackFeedHistory>false</trackFeedHistory>
+</CustomField>

@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<RecordType xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Investor</fullName>
+    <active>true</active>
+    <compactLayoutAssignment>Investor_Compact_Layout</compactLayoutAssignment>
+    <description>Investor contact. Layout/FLS/reporting only - sharing is inherited from the parent Account.</description>
+    <label>Investor</label>
+    <picklistValues>
+        <picklist>LeadSource</picklist>
+        <values><fullName>Email-to-Lead</fullName><default>false</default></values>
+        <values><fullName>Broker%20Portal</fullName><default>false</default></values>
+        <values><fullName>Manual%20Entry</fullName><default>false</default></values>
+        <values><fullName>Web</fullName><default>false</default></values>
+        <values><fullName>Phone%20Inquiry</fullName><default>false</default></values>
+        <values><fullName>Other</fullName><default>false</default></values>
+    </picklistValues>
+    <picklistValues>
+        <picklist>BuyerAttributes</picklist>
+        <values><fullName>Detractor</fullName><default>false</default></values>
+        <values><fullName>DecisionMaker</fullName><default>false</default></values>
+        <values><fullName>Buyer</fullName><default>false</default></values>
+        <values><fullName>ExecutiveSponsor</fullName><default>false</default></values>
+        <values><fullName>Champion</fullName><default>false</default></values>
+        <values><fullName>BusinessUser</fullName><default>false</default></values>
+        <values><fullName>Evaluator</fullName><default>false</default></values>
+        <values><fullName>TechnicalExpert</fullName><default>false</default></values>
+    </picklistValues>
+</RecordType>

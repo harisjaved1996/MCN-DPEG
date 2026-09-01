@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Total_Commitments__c</fullName>
+    <description>The total dollar amount this Contact has committed across all investments, active and closed.</description>
+    <inlineHelpText>Sum of all committed amounts across this investor&apos;s investments.</inlineHelpText>
+    <label>Total Commitments</label>
+    <precision>18</precision>
+    <scale>2</scale>
+    <required>false</required>
+    <type>Currency</type>
+    <trackFeedHistory>false</trackFeedHistory>
+</CustomField>
