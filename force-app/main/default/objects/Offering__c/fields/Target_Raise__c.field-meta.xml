@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Target_Raise__c</fullName>
+    <description>Total capital this Offering is targeting to raise from investors.</description>
+    <inlineHelpText>Enter the target raise amount in USD.</inlineHelpText>
+    <label>Target Raise</label>
+    <precision>16</precision>
+    <required>false</required>
+    <scale>2</scale>
+    <trackHistory>false</trackHistory>
+    <trackTrending>false</trackTrending>
+    <type>Currency</type>
+</CustomField>

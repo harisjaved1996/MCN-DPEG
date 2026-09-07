@@ -1,5 +1,24 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <CompactLayout xmlns="http://soap.sforce.com/2006/04/metadata">
+    <!--
+        ⚠ REWORKED 2026-08-20 - NO RECORD TYPE ON THIS OBJECT (see the comment in the sibling
+        layout file, layouts/AccountContactRelation-Investor-Investing Entity Layout.layout-meta.xml,
+        for the measured deploy-validation evidence). A CompactLayout file never names the record
+        type/object it serves either way - only WHERE the binding lives changes:
+
+        WITH a record type (e.g. Contact.Investor / objects/Contact/compactLayouts/
+        Investor_Compact_Layout), the binding is the RecordType file's own
+        <compactLayoutAssignment> element.
+
+        WITHOUT a record type - this object's case - the equivalent binding is the OBJECT's own
+        <compactLayoutAssignment> element in its CustomObject metadata (the org-wide "Primary
+        Compact Layout" setting), NOT a RecordType file (this object has none). See
+        objects/AccountContactRelation/AccountContactRelation.object-meta.xml, added alongside this
+        file to carry that assignment - both files must deploy together, same as the
+        record-type-keyed pattern. This mirrors how Account.object-meta.xml and Contact.object-meta.xml
+        already carry their own <compactLayoutAssignment> (currently "SYSTEM" = platform default on
+        both) at the object level.
+    -->
     <fullName>Investor_Investing_Entity</fullName>
     <fields>AccountId</fields>
     <fields>ContactId</fields>

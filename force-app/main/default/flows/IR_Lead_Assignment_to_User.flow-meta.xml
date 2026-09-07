@@ -1,0 +1,251 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Flow xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>67.0</apiVersion>
+    <decisions>
+        <name>Is_Queue_Found</name>
+        <label>Queue Found?</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <defaultConnector>
+            <targetReference>Screen_Error_Not_Member</targetReference>
+        </defaultConnector>
+        <defaultConnectorLabel>Queue Not Found</defaultConnectorLabel>
+        <description>FAILS CLOSED. If the Investor Onboarding queue cannot be resolved there is no membership to check, so the flow refuses the assignment rather than falling through to the update. Refusing is the safe direction: the only cost is that a legitimate member is asked to try again, whereas falling through would hand the Lead to a non-member.</description>
+        <rules>
+            <name>Queue_Found</name>
+            <conditionLogic>and</conditionLogic>
+            <conditions>
+                <leftValueReference>rec_Queue</leftValueReference>
+                <operator>IsNull</operator>
+                <rightValue>
+                    <booleanValue>false</booleanValue>
+                </rightValue>
+            </conditions>
+            <connector>
+                <targetReference>Get_Queue_Membership</targetReference>
+            </connector>
+            <label>Queue Found</label>
+        </rules>
+    </decisions>
+    <decisions>
+        <name>Is_Running_User_A_Queue_Member</name>
+        <label>Is Running User a Queue Member?</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <defaultConnector>
+            <targetReference>Screen_Error_Not_Member</targetReference>
+        </defaultConnector>
+        <defaultConnectorLabel>Not a Queue Member</defaultConnectorLabel>
+        <description>Gates the ownership change on the running user actually belonging to the Investor Onboarding queue. Only a non-null GroupMember row lets the flow reach Assign_Lead_To_Me; every other outcome (no row, or the queue lookup having failed) lands on the error screen and writes nothing.</description>
+        <rules>
+            <name>Is_Queue_Member</name>
+            <conditionLogic>and</conditionLogic>
+            <conditions>
+                <leftValueReference>rec_Membership</leftValueReference>
+                <operator>IsNull</operator>
+                <rightValue>
+                    <booleanValue>false</booleanValue>
+                </rightValue>
+            </conditions>
+            <connector>
+                <targetReference>Assign_Lead_To_Me</targetReference>
+            </connector>
+            <label>Is Queue Member</label>
+        </rules>
+    </decisions>
+    <description>Backs the Lead &quot;Assign to Me&quot; quick action. GATED ON QUEUE MEMBERSHIP: the flow first resolves the Investor Onboarding queue and confirms the running user is a member of it, and only then sets OwnerId on the Lead identified by recordId to {!$User.Id}. A non-member is shown an error screen and NOTHING is written -- the ownership update is never reached, so a refusal cannot half-apply. Deliberately does NOT write Is_Owner_Investor_Onboarding_Queue__c -- that field is a FORMULA (derives from RecordType.DeveloperName and whether OwnerId is a queue), so it recalculates automatically the moment OwnerId changes. Writing to it directly is not possible (it is not a metadata-writable field) and is not needed.
+
+QUEUE RESOLUTION MATCHES THE REST OF THE IR FEATURE: Group is filtered by DeveloperName (&apos;Investor_Onboarding_Queue&apos;) AND Type (&apos;Queue&apos;) -- both are required, because Group.DeveloperName is unique per Type rather than globally, so filtering on the name alone can also match a public group of the same name. Never a hardcoded Id. Identical to the lookup in IR_Lead_Assignment_Flow and IR_Lead_Notification_Flow.
+
+MEMBERSHIP IS DIRECT-ONLY, AND THIS IS A KNOWN LIMIT. GroupMember rows record DIRECT membership, so a user who belongs to the queue only INDIRECTLY -- via a role or a public group that is itself a member of the queue -- is NOT matched here and will be refused despite genuinely being able to own the record. This matches the existing convention in IR_Lead_Notification_Flow, which resolves queue members the same way and therefore notifies the same population that this flow admits; the two staying consistent is the point. If DPEG ever nests groups or roles inside the Investor Onboarding queue, BOTH flows must be revisited together -- an Apex membership check or a permission-set-based gate would be needed, because Flow cannot expand nested group membership recursively.</description>
+    <environments>Default</environments>
+    <interviewLabel>IR Lead Assignment to User {!$Flow.CurrentDateTime}</interviewLabel>
+    <label>IR Lead Assignment to User</label>
+    <processMetadataValues>
+        <name>CanvasMode</name>
+        <value>
+            <stringValue>AUTO_LAYOUT_CANVAS</stringValue>
+        </value>
+    </processMetadataValues>
+    <processType>Flow</processType>
+    <recordLookups>
+        <name>Get_Investor_Onboarding_Queue</name>
+        <label>Get Investor Onboarding Queue</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <assignNullValuesIfNoRecordsFound>true</assignNullValuesIfNoRecordsFound>
+        <connector>
+            <targetReference>Is_Queue_Found</targetReference>
+        </connector>
+        <description>Resolves the Investor Onboarding queue by DeveloperName AND Type -- never a hardcoded Id. Both filters are required: Group.DeveloperName is unique per Type, not globally.</description>
+        <faultConnector>
+            <targetReference>Screen_Error</targetReference>
+        </faultConnector>
+        <filterLogic>and</filterLogic>
+        <filters>
+            <field>DeveloperName</field>
+            <operator>EqualTo</operator>
+            <value>
+                <stringValue>Investor_Onboarding_Queue</stringValue>
+            </value>
+        </filters>
+        <filters>
+            <field>Type</field>
+            <operator>EqualTo</operator>
+            <value>
+                <stringValue>Queue</stringValue>
+            </value>
+        </filters>
+        <getFirstRecordOnly>true</getFirstRecordOnly>
+        <object>Group</object>
+        <outputReference>rec_Queue</outputReference>
+        <queriedFields>Id</queriedFields>
+    </recordLookups>
+    <recordLookups>
+        <name>Get_Queue_Membership</name>
+        <label>Get Queue Membership</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <assignNullValuesIfNoRecordsFound>true</assignNullValuesIfNoRecordsFound>
+        <connector>
+            <targetReference>Is_Running_User_A_Queue_Member</targetReference>
+        </connector>
+        <description>Looks for a GroupMember row joining the Investor Onboarding queue to the RUNNING USER. A row means the user is a member; no row means they are not. getFirstRecordOnly is correct here -- existence is the only question being asked, so at most one row is needed. Direct membership only; see the flow description for the nested-group limitation.</description>
+        <faultConnector>
+            <targetReference>Screen_Error</targetReference>
+        </faultConnector>
+        <filterLogic>and</filterLogic>
+        <filters>
+            <field>GroupId</field>
+            <operator>EqualTo</operator>
+            <value>
+                <elementReference>rec_Queue.Id</elementReference>
+            </value>
+        </filters>
+        <filters>
+            <field>UserOrGroupId</field>
+            <operator>EqualTo</operator>
+            <value>
+                <elementReference>$User.Id</elementReference>
+            </value>
+        </filters>
+        <getFirstRecordOnly>true</getFirstRecordOnly>
+        <object>GroupMember</object>
+        <outputReference>rec_Membership</outputReference>
+        <queriedFields>Id</queriedFields>
+        <queriedFields>UserOrGroupId</queriedFields>
+    </recordLookups>
+    <recordUpdates>
+        <name>Assign_Lead_To_Me</name>
+        <label>Assign Lead to Me</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <connector>
+            <targetReference>Screen_Success</targetReference>
+        </connector>
+        <description>Sets OwnerId on the Lead identified by recordId to the running user. ONLY REACHABLE once Is_Running_User_A_Queue_Member has confirmed membership -- it is not the flow&apos;s entry point and must never be reconnected as one. Is_Owner_Investor_Onboarding_Queue__c is a formula field and is not written here -- it recalculates on its own from the new OwnerId.</description>
+        <faultConnector>
+            <targetReference>Screen_Error</targetReference>
+        </faultConnector>
+        <filterLogic>and</filterLogic>
+        <filters>
+            <field>Id</field>
+            <operator>EqualTo</operator>
+            <value>
+                <elementReference>recordId</elementReference>
+            </value>
+        </filters>
+        <inputAssignments>
+            <field>OwnerId</field>
+            <value>
+                <elementReference>$User.Id</elementReference>
+            </value>
+        </inputAssignments>
+        <object>Lead</object>
+    </recordUpdates>
+    <screens>
+        <name>Screen_Success</name>
+        <label>Assign to Me</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <allowBack>false</allowBack>
+        <allowFinish>true</allowFinish>
+        <allowPause>false</allowPause>
+        <description>Displays a confirmation that the Lead is now owned by the running user.</description>
+        <fields>
+            <name>Success_Message</name>
+            <fieldType>DisplayText</fieldType>
+            <fieldText>&lt;p style=&quot;text-align: center;&quot;&gt;&lt;br&gt;&lt;/p&gt;&lt;p style=&quot;text-align: center;&quot;&gt;&lt;img src=&quot;/resource/Assets/success.png&quot; alt=&quot;Success&quot; width=&quot;96&quot; height=&quot;96&quot;&gt;&lt;/p&gt;&lt;p style=&quot;text-align: center;&quot;&gt;&lt;span style=&quot;font-size: 16px;&quot;&gt;Success! This Lead is now assigned to you.&lt;/span&gt;&lt;/p&gt;</fieldText>
+        </fields>
+        <nextOrFinishButtonLabel>Finish</nextOrFinishButtonLabel>
+        <showFooter>true</showFooter>
+        <showHeader>true</showHeader>
+    </screens>
+    <screens>
+        <name>Screen_Error_Not_Member</name>
+        <label>Assign to Me</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <allowBack>false</allowBack>
+        <allowFinish>true</allowFinish>
+        <allowPause>false</allowPause>
+        <description>Displays the refusal shown when the running user is not a member of the Investor Onboarding queue, or when that queue could not be resolved at all. Reached BEFORE any update runs, so the Lead is guaranteed untouched -- the message says so explicitly, because a user who is told only &quot;you cannot do this&quot; will reload the record to check.</description>
+        <fields>
+            <name>Error_Not_Member_Message</name>
+            <fieldType>DisplayText</fieldType>
+            <fieldText>&lt;p style=&quot;text-align: center;&quot;&gt;&lt;br&gt;&lt;/p&gt;&lt;p style=&quot;text-align: center;&quot;&gt;&lt;img src=&quot;/resource/Assets/error.png&quot; alt=&quot;Error&quot; width=&quot;96&quot; height=&quot;96&quot;&gt;&lt;/p&gt;&lt;p style=&quot;text-align: center;&quot;&gt;&lt;span style=&quot;font-size: 16px;&quot;&gt;Error: You are not a member of the Investor Onboarding queue, so this Lead cannot be assigned to you. Please ask an administrator to add you to the queue and then try again. The Lead owner has not been changed.&lt;/span&gt;&lt;/p&gt;</fieldText>
+        </fields>
+        <nextOrFinishButtonLabel>Finish</nextOrFinishButtonLabel>
+        <showFooter>true</showFooter>
+        <showHeader>true</showHeader>
+    </screens>
+    <screens>
+        <name>Screen_Error</name>
+        <label>Assign to Me</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <allowBack>false</allowBack>
+        <allowFinish>true</allowFinish>
+        <allowPause>false</allowPause>
+        <description>Displays the fault message if the queue lookup, the membership lookup, or the Lead owner update fails unexpectedly. Distinct from Screen_Error_Not_Member, which is a deliberate refusal rather than a fault.</description>
+        <fields>
+            <name>Error_Message</name>
+            <fieldType>DisplayText</fieldType>
+            <fieldText>&lt;p style=&quot;text-align: center;&quot;&gt;&lt;br&gt;&lt;/p&gt;&lt;p style=&quot;text-align: center;&quot;&gt;&lt;img src=&quot;/resource/Assets/error.png&quot; alt=&quot;Error&quot; width=&quot;96&quot; height=&quot;96&quot;&gt;&lt;/p&gt;&lt;p style=&quot;text-align: center;&quot;&gt;&lt;span style=&quot;font-size: 16px;&quot;&gt;Error: {!$Flow.FaultMessage}&lt;/span&gt;&lt;/p&gt;</fieldText>
+        </fields>
+        <nextOrFinishButtonLabel>Finish</nextOrFinishButtonLabel>
+        <showFooter>true</showFooter>
+        <showHeader>true</showHeader>
+    </screens>
+    <start>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <connector>
+            <targetReference>Get_Investor_Onboarding_Queue</targetReference>
+        </connector>
+    </start>
+    <status>Active</status>
+    <variables>
+        <name>recordId</name>
+        <dataType>String</dataType>
+        <isCollection>false</isCollection>
+        <isInput>true</isInput>
+        <isOutput>false</isOutput>
+    </variables>
+    <variables>
+        <name>rec_Queue</name>
+        <dataType>SObject</dataType>
+        <isCollection>false</isCollection>
+        <isInput>false</isInput>
+        <isOutput>false</isOutput>
+        <objectType>Group</objectType>
+    </variables>
+    <variables>
+        <name>rec_Membership</name>
+        <dataType>SObject</dataType>
+        <isCollection>false</isCollection>
+        <isInput>false</isInput>
+        <isOutput>false</isOutput>
+        <objectType>GroupMember</objectType>
+    </variables>
+</Flow>

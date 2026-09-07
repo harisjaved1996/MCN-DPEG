@@ -5,10 +5,9 @@
     <inlineHelpText>Count of investing entities linked to this investor.</inlineHelpText>
     <label>Total Investing Entities</label>
     <precision>18</precision>
-    <scale>0</scale>
-    <externalId>false</externalId>
     <required>false</required>
+    <scale>0</scale>
+    <trackFeedHistory>false</trackFeedHistory>
     <type>Number</type>
     <unique>false</unique>
-    <trackFeedHistory>false</trackFeedHistory>
 </CustomField>

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Content_Key__c</fullName>
+    <label>Content Key</label>
+    <type>Text</type>
+    <length>60</length>
+    <required>false</required>
+    <unique>false</unique>
+    <inlineHelpText>Optional. The content key the flow sends (MC...). When set it is authoritative and the name is only a label, which stops a duplicate name from silently sending the wrong email.</inlineHelpText>
+</CustomField>

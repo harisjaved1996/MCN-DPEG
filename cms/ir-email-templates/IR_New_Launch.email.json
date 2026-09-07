@@ -1,0 +1,515 @@
+{
+  "contentSpaceOrFolderId": "0ZuHn000000NwRtKAK",
+  "contentType": "sfdc_cms__email",
+  "title": "IR New Launch",
+  "urlName": "ir-new-launch-v3",
+  "body": {
+    "backgroundColor": "#eceae3",
+    "lightning:backgroundImage": {
+      "position": "center center",
+      "repeat": "no-repeat",
+      "size": "cover"
+    },
+    "lightning:brandSource": {
+      "defaultBrandOption": "sfdcBrand"
+    },
+    "lightning:colorScheme": "{!$brand.colorScheme}",
+    "lightning:dataProviders": [],
+    "lightning:expressions": [],
+    "lightning:padding": "{!$brand.spacing.none}",
+    "messagePurpose": "promotional",
+    "sfdc_cms:attachments": [],
+    "sfdc_cms:block": {
+      "definition": "sfdc_cms/rootContentBlock",
+      "id": "3402d16a-2ee0-40e2-ba11-7961b3115a44",
+      "type": "block",
+      "children": [
+        {
+          "attributes": {
+            "lightning:backgroundImage": {
+              "position": "center center",
+              "repeat": "no-repeat",
+              "size": "cover"
+            },
+            "lightning:borderRadius": "{!$brand.borderRadius.square}",
+            "lightning:borderWidth": "{!$brand.borderWeight.none}",
+            "lightning:colorScheme": "{!$brand.colorScheme}",
+            "lightning:margin": "{!$brand.spacing.none}",
+            "lightning:padding": "{!$brand.spacing.none}",
+            "stackOnMobile": true,
+            "reverseOrderOnMobile": false
+          },
+          "definition": "lightning/section",
+          "id": "d0c7c57c-94cd-47d1-99e4-a353761641bd",
+          "type": "block",
+          "children": [
+            {
+              "attributes": {
+                "columnWidth": 12.0,
+                "lightning:backgroundImage": {
+                  "position": "center center",
+                  "repeat": "no-repeat",
+                  "size": "cover"
+                },
+                "lightning:borderRadius": "{!$brand.borderRadius.square}",
+                "lightning:borderWidth": "{!$brand.borderWeight.none}",
+                "lightning:colorScheme": "{!$brand.colorScheme}",
+                "lightning:margin": "{!$brand.spacing.none}",
+                "lightning:padding": "{!$brand.spacing.none}",
+                "lightning:verticalAlignment": "top"
+              },
+              "definition": "lightning/column",
+              "id": "afb4f89e-ce14-4681-959f-5b865b7db2c7",
+              "type": "block",
+              "children": [
+                {
+                  "attributes": {
+                    "lightning:borderRadius": "{!$brand.borderRadius.square}",
+                    "lightning:borderWidth": "{!$brand.borderWeight.none}",
+                    "lightning:colorGroup": {
+                      "backgroundColor": "{!$brand.colorScheme.root}",
+                      "borderColor": "{!$brand.colorScheme.neutral}",
+                      "linkColor": "{!$brand.colorScheme.primaryAccent}",
+                      "textColor": "{!$brand.colorScheme.contrast}"
+                    },
+                    "lightning:margin": "{!$brand.spacing.none}",
+                    "lightning:padding": "{!$brand.spacing.none}",
+                    "rawHtml": "<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"border-collapse:collapse;background:#0e3416;\"><tr><td style=\"height:4px;background:#4db892;line-height:4px;font-size:0;\">&nbsp;</td></tr><tr><td align=\"center\" style=\"padding:44px 32px 12px 32px;\"><div style=\"font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-size:13px;font-weight:600;letter-spacing:4px;text-transform:uppercase;color:#f5f2ea;\">Dhanani Private Equity Group</div><div style=\"width:44px;height:2px;background:#4db892;margin:18px auto 14px auto;line-height:2px;font-size:0;\">&nbsp;</div><div style=\"font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-size:11px;line-height:1.5;letter-spacing:1.6px;text-transform:uppercase;color:#9fb5a5;\">Houston-Based &middot; Family-Owned Real Estate Syndication</div></td></tr><tr><td align=\"center\" style=\"padding:26px 32px 48px 32px;\"><div style=\"font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-size:11px;font-weight:700;letter-spacing:3.5px;text-transform:uppercase;color:#4db892;padding-bottom:20px;\">New Project Launch</div><div style=\"font-family:Georgia,'Times New Roman',Times,serif;font-size:40px;line-height:1.18;color:#ffffff;\">{{$content.Name}}</div></td></tr></table>"
+                  },
+                  "definition": "lightning/html",
+                  "id": "a748a5ea-570b-4e6b-a474-c1c49ca56555",
+                  "type": "block"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "attributes": {
+            "lightning:backgroundImage": {
+              "position": "center center",
+              "repeat": "no-repeat",
+              "size": "cover"
+            },
+            "lightning:borderRadius": "{!$brand.borderRadius.square}",
+            "lightning:borderWidth": "{!$brand.borderWeight.none}",
+            "lightning:colorScheme": "{!$brand.colorScheme}",
+            "lightning:margin": "{!$brand.spacing.none}",
+            "lightning:padding": "{!$brand.spacing.none}",
+            "stackOnMobile": true,
+            "reverseOrderOnMobile": false
+          },
+          "definition": "lightning/section",
+          "id": "a2c19082-fdf0-441b-b44d-c633c1404b97",
+          "type": "block",
+          "children": [
+            {
+              "attributes": {
+                "columnWidth": 12.0,
+                "lightning:backgroundImage": {
+                  "position": "center center",
+                  "repeat": "no-repeat",
+                  "size": "cover"
+                },
+                "lightning:borderRadius": "{!$brand.borderRadius.square}",
+                "lightning:borderWidth": "{!$brand.borderWeight.none}",
+                "lightning:colorScheme": "{!$brand.colorScheme}",
+                "lightning:margin": "{!$brand.spacing.none}",
+                "lightning:padding": "{!$brand.spacing.none}",
+                "lightning:verticalAlignment": "top"
+              },
+              "definition": "lightning/column",
+              "id": "53527b23-02e3-4187-9bfe-435f3f099ffb",
+              "type": "block",
+              "children": [
+                {
+                  "attributes": {
+                    "align": "left",
+                    "lightning:borderRadius": "{!$brand.borderRadius.square}",
+                    "lightning:borderWidth": "{!$brand.borderWeight.none}",
+                    "lightning:colorGroup": {
+                      "backgroundColor": "{!$brand.colorScheme.root}",
+                      "borderColor": "{!$brand.colorScheme.neutral}",
+                      "linkColor": "#0e3416",
+                      "textColor": "#1a1a1a"
+                    },
+                    "lightning:margin": "{!$brand.spacing.none}",
+                    "lightning:padding": {
+                      "top": {
+                        "unit": "rem",
+                        "value": 2.5
+                      },
+                      "bottom": {
+                        "unit": "rem",
+                        "value": 0.25
+                      },
+                      "left": {
+                        "unit": "rem",
+                        "value": 2.25
+                      },
+                      "right": {
+                        "unit": "rem",
+                        "value": 2.25
+                      }
+                    },
+                    "lightning:typography": {
+                      "fontFamily": "{!$brand.fontFamily.verdana}",
+                      "fontSize": {
+                        "unit": "px",
+                        "value": 16.0
+                      },
+                      "fontWeight": "{!$brand.fontWeight.normal}",
+                      "letterSpacing": "normal",
+                      "lineHeight": 1.6,
+                      "textTransform": "none"
+                    },
+                    "text": "Dear {!$recipient.FirstName},"
+                  },
+                  "definition": "lightning/paragraph",
+                  "id": "4c03dff9-cfe7-4d8c-915c-4ae04e625f12",
+                  "type": "block"
+                },
+                {
+                  "attributes": {
+                    "align": "left",
+                    "lightning:borderRadius": "{!$brand.borderRadius.square}",
+                    "lightning:borderWidth": "{!$brand.borderWeight.none}",
+                    "lightning:colorGroup": {
+                      "backgroundColor": "{!$brand.colorScheme.root}",
+                      "borderColor": "{!$brand.colorScheme.neutral}",
+                      "linkColor": "#0e3416",
+                      "textColor": "#1a1a1a"
+                    },
+                    "lightning:margin": "{!$brand.spacing.none}",
+                    "lightning:padding": {
+                      "top": {
+                        "unit": "rem",
+                        "value": 0.5
+                      },
+                      "bottom": {
+                        "unit": "rem",
+                        "value": 0.25
+                      },
+                      "left": {
+                        "unit": "rem",
+                        "value": 2.25
+                      },
+                      "right": {
+                        "unit": "rem",
+                        "value": 2.25
+                      }
+                    },
+                    "lightning:typography": {
+                      "fontFamily": "{!$brand.fontFamily.verdana}",
+                      "fontSize": {
+                        "unit": "px",
+                        "value": 16.0
+                      },
+                      "fontWeight": "{!$brand.fontWeight.normal}",
+                      "letterSpacing": "normal",
+                      "lineHeight": 1.6,
+                      "textTransform": "none"
+                    },
+                    "text": "DPEG is excited to launch our newest project, <strong>{{$content.Name}}</strong>. Please review the attached offering deck and reply to this email to confirm your commitment by the date below."
+                  },
+                  "definition": "lightning/paragraph",
+                  "id": "a0898e3f-977a-42fa-8886-854332fbdd72",
+                  "type": "block"
+                },
+                {
+                  "attributes": {
+                    "lightning:borderRadius": "{!$brand.borderRadius.square}",
+                    "lightning:borderWidth": "{!$brand.borderWeight.none}",
+                    "lightning:colorGroup": {
+                      "backgroundColor": "{!$brand.colorScheme.root}",
+                      "borderColor": "{!$brand.colorScheme.neutral}",
+                      "linkColor": "{!$brand.colorScheme.primaryAccent}",
+                      "textColor": "{!$brand.colorScheme.contrast}"
+                    },
+                    "lightning:margin": "{!$brand.spacing.none}",
+                    "lightning:padding": "{!$brand.spacing.none}",
+                    "rawHtml": "<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"border-collapse:collapse;background:#ffffff;\"><tr><td style=\"padding:4px 36px 0 36px;\"><table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"border-collapse:collapse;background:#f5f2ea;border-left:3px solid #0e3416;\" width=\"100%\"><tr><td style=\"padding:6px 26px 10px 26px;\"><table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"border-collapse:collapse;\" width=\"100%\"><tr><td style=\"padding:14px 0;border-bottom:1px solid #e0ddd4;\"><div style=\"font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-size:10px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:#7a8a7d;\">Offering</div><div style=\"font-family:Georgia,'Times New Roman',Times,serif;font-size:17px;line-height:1.4;color:#0e3416;padding-top:7px;\">{{$content.Name}}</div></td></tr><tr><td style=\"padding:14px 0;border-bottom:1px solid #e0ddd4;\"><div style=\"font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-size:10px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:#7a8a7d;\">Location</div><div style=\"font-family:Georgia,'Times New Roman',Times,serif;font-size:17px;line-height:1.4;color:#0e3416;padding-top:7px;\">[location]</div></td></tr><tr><td style=\"padding:14px 0;\"><div style=\"font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-size:10px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:#7a8a7d;\">Commitment Deadline</div><div style=\"font-family:Georgia,'Times New Roman',Times,serif;font-size:17px;line-height:1.4;color:#0e3416;padding-top:7px;\">[deadline]</div></td></tr></table></td></tr></table></td></tr></table>"
+                  },
+                  "definition": "lightning/html",
+                  "id": "1ca82cc4-0d0c-42ae-a268-d9981e1541b4",
+                  "type": "block"
+                },
+                {
+                  "attributes": {
+                    "lightning:borderRadius": "{!$brand.borderRadius.square}",
+                    "lightning:borderWidth": "{!$brand.borderWeight.none}",
+                    "lightning:colorGroup": {
+                      "backgroundColor": "{!$brand.colorScheme.root}",
+                      "borderColor": "{!$brand.colorScheme.neutral}",
+                      "linkColor": "{!$brand.colorScheme.primaryAccent}",
+                      "textColor": "{!$brand.colorScheme.contrast}"
+                    },
+                    "lightning:margin": "{!$brand.spacing.none}",
+                    "lightning:padding": "{!$brand.spacing.none}",
+                    "rawHtml": "<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"border-collapse:collapse;background:#ffffff;\"><tr><td style=\"height:30px;line-height:30px;font-size:0;\">&nbsp;</td></tr></table>"
+                  },
+                  "definition": "lightning/html",
+                  "id": "89ee1f61-0799-4675-a51e-a97c20e35b4b",
+                  "type": "block"
+                },
+                {
+                  "attributes": {
+                    "lightning:borderRadius": {
+                      "unit": "px",
+                      "value": 2.0
+                    },
+                    "lightning:borderWidth": "{!$brand.buttonStyleGroup.primary.lightning:borderWidth}",
+                    "lightning:buttonColorGroup": {
+                      "backgroundColor": "#0e3416",
+                      "backgroundHoverColor": "#1a5c30",
+                      "borderColor": "#0e3416",
+                      "borderHoverColor": "#1a5c30",
+                      "textColor": "#FFFFFF",
+                      "textHoverColor": "#FFFFFF"
+                    },
+                    "lightning:click": {
+                      "actions": [
+                        {
+                          "attributes": {
+                            "openInNewTab": true,
+                            "url": "https://dhananipeg.com/"
+                          },
+                          "definition": "sfdc_cms__navigateToUrlAction",
+                          "generatedUrl": "https://dhananipeg.com/"
+                        }
+                      ]
+                    },
+                    "lightning:horizontalAlignment": "center",
+                    "lightning:margin": "{!$brand.spacing.none}",
+                    "lightning:padding": {
+                      "bottom": {
+                        "unit": "rem",
+                        "value": 0.85
+                      },
+                      "left": {
+                        "unit": "rem",
+                        "value": 2.25
+                      },
+                      "right": {
+                        "unit": "rem",
+                        "value": 2.25
+                      },
+                      "top": {
+                        "unit": "rem",
+                        "value": 0.85
+                      }
+                    },
+                    "lightning:typography": {
+                      "fontFamily": "{!$brand.fontFamily.verdana}",
+                      "fontSize": {
+                        "unit": "px",
+                        "value": 13.0
+                      },
+                      "fontWeight": "{!$brand.fontWeight.bold}",
+                      "letterSpacing": "normal",
+                      "lineHeight": 1.5,
+                      "textTransform": "uppercase"
+                    },
+                    "sfdc_cms:styleGroup": "{!$brand.buttonStyleGroup.primary}",
+                    "text": "View the Offering"
+                  },
+                  "definition": "lightning/actionButton",
+                  "id": "540b2a62-4e96-44a6-be68-af57f21da0fc",
+                  "type": "block"
+                },
+                {
+                  "attributes": {
+                    "lightning:borderRadius": "{!$brand.borderRadius.square}",
+                    "lightning:borderWidth": "{!$brand.borderWeight.none}",
+                    "lightning:colorGroup": {
+                      "backgroundColor": "{!$brand.colorScheme.root}",
+                      "borderColor": "{!$brand.colorScheme.neutral}",
+                      "linkColor": "{!$brand.colorScheme.primaryAccent}",
+                      "textColor": "{!$brand.colorScheme.contrast}"
+                    },
+                    "lightning:margin": "{!$brand.spacing.none}",
+                    "lightning:padding": "{!$brand.spacing.none}",
+                    "rawHtml": "<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"border-collapse:collapse;background:#ffffff;\"><tr><td style=\"padding:34px 36px 42px 36px;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;color:#1a1a1a;\"><p style=\"margin:0;font-size:16px;line-height:1.7;\">Thank you for your continued partnership.</p><div style=\"width:34px;height:2px;background:#4db892;margin:22px 0 14px 0;line-height:2px;font-size:0;\">&nbsp;</div><div style=\"font-family:Georgia,'Times New Roman',Times,serif;font-size:15px;line-height:1.5;color:#0e3416;\">Investor Relations</div><div style=\"font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-size:12px;line-height:1.6;color:#6b7a6e;padding-top:3px;\">Dhanani Private Equity Group</div></td></tr></table>"
+                  },
+                  "definition": "lightning/html",
+                  "id": "cae304a5-e8c7-4c22-a2b1-7262cf50783b",
+                  "type": "block"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "attributes": {
+            "lightning:backgroundImage": {
+              "position": "center center",
+              "repeat": "no-repeat",
+              "size": "cover"
+            },
+            "lightning:borderRadius": "{!$brand.borderRadius.square}",
+            "lightning:borderWidth": "{!$brand.borderWeight.none}",
+            "lightning:colorScheme": "{!$brand.colorScheme}",
+            "lightning:margin": "{!$brand.spacing.none}",
+            "lightning:padding": "{!$brand.spacing.none}",
+            "stackOnMobile": true,
+            "reverseOrderOnMobile": false
+          },
+          "definition": "lightning/section",
+          "id": "b2e8a218-ecb8-4a3e-8535-244d3f201cd5",
+          "type": "block",
+          "children": [
+            {
+              "attributes": {
+                "columnWidth": 12.0,
+                "lightning:backgroundImage": {
+                  "position": "center center",
+                  "repeat": "no-repeat",
+                  "size": "cover"
+                },
+                "lightning:borderRadius": "{!$brand.borderRadius.square}",
+                "lightning:borderWidth": "{!$brand.borderWeight.none}",
+                "lightning:colorScheme": "{!$brand.colorScheme}",
+                "lightning:margin": "{!$brand.spacing.none}",
+                "lightning:padding": "{!$brand.spacing.none}",
+                "lightning:verticalAlignment": "top"
+              },
+              "definition": "lightning/column",
+              "id": "20c49524-b3ec-4339-99b3-0883fa85d270",
+              "type": "block",
+              "children": [
+                {
+                  "attributes": {
+                    "lightning:borderRadius": "{!$brand.borderRadius.square}",
+                    "lightning:borderWidth": "{!$brand.borderWeight.none}",
+                    "lightning:colorGroup": {
+                      "backgroundColor": "{!$brand.colorScheme.root}",
+                      "borderColor": "{!$brand.colorScheme.neutral}",
+                      "linkColor": "{!$brand.colorScheme.primaryAccent}",
+                      "textColor": "{!$brand.colorScheme.contrast}"
+                    },
+                    "lightning:margin": "{!$brand.spacing.none}",
+                    "lightning:padding": "{!$brand.spacing.none}",
+                    "rawHtml": "<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"border-collapse:collapse;background:#f5f2ea;\"><tr><td style=\"height:3px;background:#0e3416;line-height:3px;font-size:0;\">&nbsp;</td></tr><tr><td align=\"center\" style=\"padding:30px 32px 4px 32px;\"><div style=\"font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-size:11px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#0e3416;\">Dhanani Private Equity Group</div><div style=\"width:28px;height:1px;background:#e0ddd4;margin:14px auto 0 auto;line-height:1px;font-size:0;\">&nbsp;</div></td></tr></table>"
+                  },
+                  "definition": "lightning/html",
+                  "id": "f395ac1f-c1b9-4f2e-88a6-d029e1a08c3c",
+                  "type": "block"
+                },
+                {
+                  "attributes": {
+                    "align": "center",
+                    "lightning:borderRadius": "{!$brand.borderRadius.square}",
+                    "lightning:borderWidth": "{!$brand.borderWeight.none}",
+                    "lightning:colorGroup": {
+                      "backgroundColor": "{!$brand.colorScheme.root}",
+                      "borderColor": "{!$brand.colorScheme.neutral}",
+                      "linkColor": "#0e3416",
+                      "textColor": "#6b7a6e"
+                    },
+                    "lightning:margin": "{!$brand.spacing.none}",
+                    "lightning:padding": {
+                      "top": {
+                        "unit": "rem",
+                        "value": 0.25
+                      },
+                      "bottom": {
+                        "unit": "rem",
+                        "value": 1.75
+                      },
+                      "left": {
+                        "unit": "rem",
+                        "value": 2.0
+                      },
+                      "right": {
+                        "unit": "rem",
+                        "value": 2.0
+                      }
+                    },
+                    "lightning:typography": {
+                      "fontFamily": "{!$brand.fontFamily.verdana}",
+                      "fontSize": {
+                        "unit": "px",
+                        "value": 11.0
+                      },
+                      "fontWeight": "{!$brand.fontWeight.normal}",
+                      "letterSpacing": "normal",
+                      "lineHeight": 1.6,
+                      "textTransform": "none"
+                    },
+                    "text": "<a href=\"{!$link.EmailAddressOptOutUrl}\">Unsubscribe</a>"
+                  },
+                  "definition": "lightning/paragraph",
+                  "id": "aeee4c78-e09b-4a69-9d5b-1268890fa71d",
+                  "type": "block"
+                },
+                {
+                  "attributes": {
+                    "align": "center",
+                    "lightning:borderRadius": "{!$brand.borderRadius.square}",
+                    "lightning:borderWidth": "{!$brand.borderWeight.none}",
+                    "lightning:colorGroup": {
+                      "backgroundColor": "{!$brand.colorScheme.root}",
+                      "borderColor": "{!$brand.colorScheme.neutral}",
+                      "linkColor": "#0e3416",
+                      "textColor": "#8a978d"
+                    },
+                    "lightning:margin": "{!$brand.spacing.none}",
+                    "lightning:padding": {
+                      "top": {
+                        "unit": "rem",
+                        "value": 0.25
+                      },
+                      "bottom": {
+                        "unit": "rem",
+                        "value": 1.75
+                      },
+                      "left": {
+                        "unit": "rem",
+                        "value": 2.0
+                      },
+                      "right": {
+                        "unit": "rem",
+                        "value": 2.0
+                      }
+                    },
+                    "lightning:typography": {
+                      "fontFamily": "{!$brand.fontFamily.verdana}",
+                      "fontSize": {
+                        "unit": "px",
+                        "value": 11.0
+                      },
+                      "fontWeight": "{!$brand.fontWeight.normal}",
+                      "letterSpacing": "normal",
+                      "lineHeight": 1.6,
+                      "textTransform": "none"
+                    },
+                    "text": "{!$organization.Address}"
+                  },
+                  "definition": "lightning/paragraph",
+                  "id": "0fc5154f-9d54-42b0-8095-84596a160976",
+                  "type": "block"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "sfdc_cms:schema": {
+      "$schema": "sfdc://metaschema/sfdc_cms__propertyType",
+      "properties": {
+        "Name": {
+          "title": "Name",
+          "type": "string",
+          "$ref": "sfdc:propertyType/lightning__textType",
+          "lightning:type": "lightning__textType"
+        }
+      },
+      "type": "object"
+    },
+    "sfdc_cms:title": "IR New Launch",
+    "sfdc_cms:urlName": "ir-new-launch-v3",
+    "subjectLine": "New Project Launch - {{$content.Name}}",
+    "sfdc_cms:variants": []
+  }
+}

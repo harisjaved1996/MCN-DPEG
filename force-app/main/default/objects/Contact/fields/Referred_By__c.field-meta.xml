@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>Referred_By__c</fullName>
-    <description>Self-lookup to the Contact who referred this investor Contact.</description>
+    <deleteConstraint>SetNull</deleteConstraint>
+    <description>Self-lookup to the Contact who referred this investor Contact. Receives its value from Lead.Referred_By__c on conversion via InvestorLeadConvertService — no user action is required to populate it directly. Distinct relationshipName from Lead.Referred_By__c (both point at Contact and would otherwise collide on the child relationship name).</description>
     <inlineHelpText>The Contact who referred this investor, if known.</inlineHelpText>
     <label>Referred By</label>
     <referenceTo>Contact</referenceTo>
     <relationshipLabel>Referred Contacts</relationshipLabel>
     <relationshipName>Referred_Contacts</relationshipName>
-    <deleteConstraint>SetNull</deleteConstraint>
     <required>false</required>
-    <type>Lookup</type>
     <trackFeedHistory>false</trackFeedHistory>
+    <type>Lookup</type>
 </CustomField>

@@ -1,0 +1,258 @@
+<template>
+    <div class="wizard">
+        <!-- ------------------------------------------------------ header -->
+        <header class="hero">
+            <div class="hero-mark">
+                <lightning-icon
+                    icon-name="utility:send"
+                    variant="inverse"
+                    size="small"
+                ></lightning-icon>
+            </div>
+            <div class="hero-text">
+                <p class="hero-eyebrow">Investor Relations</p>
+                <h1 class="hero-title">Send New Offering Launch</h1>
+            </div>
+        </header>
+
+        <!-- ------------------------------------------------------- steps -->
+        <nav class="crumbs" aria-label="Progress">
+            <span class={stepOneClass}><span class="crumb-num">1</span> Choose email</span>
+            <span class="crumb-sep" aria-hidden="true"></span>
+            <span class={stepTwoClass}><span class="crumb-num">2</span> Select recipients</span>
+        </nav>
+
+        <div class="body">
+            <!-- =================================================== STEP 1 -->
+            <template if:true={isStepOne}>
+                <template if:true={loadingEmail}>
+                    <div class="loading">
+                        <lightning-spinner
+                            alternative-text="Loading email"
+                            size="small"
+                        ></lightning-spinner>
+                    </div>
+                </template>
+
+                <template if:true={emailError}>
+                    <div class="notice notice_bad" role="alert">
+                        <lightning-icon
+                            icon-name="utility:error"
+                            size="x-small"
+                            variant="error"
+                        ></lightning-icon>
+                        <span>{emailError}</span>
+                    </div>
+                </template>
+
+                <template if:true={email}>
+                    <p class="lede">
+                        This launch announcement is sent from the
+                        <strong>IR email templates</strong> workspace. The offering name is
+                        merged into the email when it sends.
+                    </p>
+
+                    <article class="email-card email-card_on">
+                        <div class="email-check">
+                            <lightning-icon
+                                icon-name="utility:check"
+                                size="x-small"
+                                variant="inverse"
+                            ></lightning-icon>
+                        </div>
+                        <div class="email-body">
+                            <h2 class="email-name">{email.name}</h2>
+                            <template if:true={email.subject}>
+                                <p class="email-subject">{email.subject}</p>
+                            </template>
+                            <template if:true={notPublished}>
+                                <p class="email-warn">
+                                    This email is not published, so it cannot be sent. Publish
+                                    it in the workspace, then reopen this action.
+                                </p>
+                            </template>
+                            <div class="email-meta">
+                                <span class={statusClass}>{statusLabel}</span>
+                                <span class="email-workspace">{email.workspaceName}</span>
+                            </div>
+                        </div>
+                    </article>
+                </template>
+            </template>
+
+            <!-- =================================================== STEP 2 -->
+            <template if:true={isStepTwo}>
+                <div class="toolbar">
+                    <lightning-input
+                        type="search"
+                        label="Search recipients"
+                        variant="label-hidden"
+                        placeholder="Search by name or email"
+                        onchange={handleSearch}
+                        class="search"
+                    ></lightning-input>
+
+                    <div class="bulk">
+                        <button class="linkbtn" onclick={handleSelectAll} type="button">
+                            Select all
+                        </button>
+                        <span class="bulk-sep" aria-hidden="true">·</span>
+                        <button class="linkbtn" onclick={handleDeselectAll} type="button">
+                            Deselect all
+                        </button>
+                    </div>
+                </div>
+
+                <div class="countbar">
+                    <span class="count-strong">{selectionSummary}</span>
+                    <template if:true={searchSummary}>
+                        <span class="count-soft">{searchSummary}</span>
+                    </template>
+                </div>
+
+                <template if:true={noneSelected}>
+                    <div class="notice notice_warn" role="alert">
+                        <lightning-icon
+                            icon-name="utility:warning"
+                            size="x-small"
+                            variant="warning"
+                        ></lightning-icon>
+                        <span>Select at least one recipient to send.</span>
+                    </div>
+                </template>
+
+                <template if:true={audienceError}>
+                    <div class="notice notice_bad" role="alert">
+                        <lightning-icon
+                            icon-name="utility:error"
+                            size="x-small"
+                            variant="error"
+                        ></lightning-icon>
+                        <span>{audienceError}</span>
+                    </div>
+                </template>
+
+                <template if:true={browseLimitReached}>
+                    <div class="notice notice_warn" role="status">
+                        <lightning-icon
+                            icon-name="utility:info"
+                            size="x-small"
+                            variant="warning"
+                        ></lightning-icon>
+                        <span>
+                            Data Cloud stops paging at 2,000 rows. Use search to reach
+                            recipients beyond this point — everyone still selected is
+                            included in the send regardless of what is on screen.
+                        </span>
+                    </div>
+                </template>
+
+                <div class="list-wrap">
+                    <template if:true={loadingAudience}>
+                        <div class="loading">
+                            <lightning-spinner
+                                alternative-text="Loading recipients"
+                                size="small"
+                            ></lightning-spinner>
+                        </div>
+                    </template>
+
+                    <template if:true={showEmptyState}>
+                        <div class="empty">
+                            <lightning-icon
+                                icon-name="utility:search"
+                                size="small"
+                            ></lightning-icon>
+                            <p>{emptyMessage}</p>
+                        </div>
+                    </template>
+
+                    <ul class="list">
+                        <template for:each={decoratedRows} for:item="row">
+                            <li key={row.individualId} class={row.rowClass}>
+                                <lightning-input
+                                    type="checkbox"
+                                    label={row.name}
+                                    variant="label-hidden"
+                                    checked={row.selected}
+                                    data-id={row.individualId}
+                                    onchange={handleRowToggle}
+                                    class="row-check"
+                                ></lightning-input>
+                                <div class="cell">
+                                    <span class="cell-main">{row.name}</span>
+                                    <span class={row.emailClass}>{row.emailDisplay}</span>
+                                </div>
+                            </li>
+                        </template>
+                    </ul>
+                </div>
+
+                <div class="pager">
+                    <lightning-button
+                        label="Previous"
+                        icon-name="utility:chevronleft"
+                        variant="neutral"
+                        disabled={prevDisabled}
+                        onclick={handlePrev}
+                    ></lightning-button>
+                    <span class="pager-label">{pageLabel}</span>
+                    <lightning-button
+                        label="Next"
+                        icon-name="utility:chevronright"
+                        icon-position="right"
+                        variant="neutral"
+                        disabled={nextDisabled}
+                        onclick={handleNextPage}
+                    ></lightning-button>
+                </div>
+            </template>
+        </div>
+
+        <!-- ------------------------------------------------------ footer -->
+        <footer class="foot">
+            <lightning-button
+                label="Cancel"
+                variant="neutral"
+                onclick={handleCancel}
+            ></lightning-button>
+
+            <div class="foot-right">
+                <template if:true={isStepTwo}>
+                    <lightning-button
+                        label="Back"
+                        variant="neutral"
+                        onclick={handleBack}
+                        class="foot-gap"
+                    ></lightning-button>
+                    <lightning-button
+                        label="Send"
+                        variant="brand"
+                        icon-name="utility:send"
+                        disabled={sendDisabled}
+                        onclick={handleSend}
+                    ></lightning-button>
+                </template>
+                <template if:true={isStepOne}>
+                    <lightning-button
+                        label="Next"
+                        variant="brand"
+                        icon-name="utility:chevronright"
+                        icon-position="right"
+                        disabled={proceedDisabled}
+                        onclick={handleNext}
+                    ></lightning-button>
+                </template>
+            </div>
+        </footer>
+
+        <template if:true={sending}>
+            <div class="veil">
+                <lightning-spinner
+                    alternative-text="Starting send"
+                    size="medium"
+                ></lightning-spinner>
+            </div>
+        </template>
+    </div>
+</template>

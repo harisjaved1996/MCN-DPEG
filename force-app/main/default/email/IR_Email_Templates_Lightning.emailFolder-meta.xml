@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    accessLevel changed View -> Manage 2026-08-15. View is read-only: it lets a user OPEN/USE
+    templates already in this folder but does not let them save a NEW template into it or save
+    changes to an existing one. MEASURED via 9 real check-only dry-run deploy attempts against
+    this exact type (2026-08-15): the `FolderShareAccessLevel` enum for `EmailTemplateFolder` at
+    API 67.0 accepts ONLY `View` and `Manage`; there is NO middle `Edit` tier here, unlike
+    ReportFolder/DashboardFolder's three-tier View/Edit/Manage model (do not assume the two share
+    an enum, they do not). Every other candidate tried (Edit, ReadWrite, Read, Full, Owner,
+    Collaborate, Editor, Manager, Viewer) was rejected with "'<value>' is not a valid value for
+    the enum 'FolderShareAccessLevel'". Manage is therefore the ONLY level that grants
+    create/edit rights on templates in this folder; it is not a preference for the broadest
+    option, it is the sole available level above View. This does mean a holder can also
+    rename/delete the folder and change its own sharing, which is broader than strictly
+    requested; there is no narrower platform option for this folder type. Not independently
+    runtime-verified as a user save (no live save attempt was made against the org for this
+    investigation); verify by having a DPEG_IR_Default_Access holder actually save a template
+    into this folder after deploy.
+-->
+<EmailTemplateFolder xmlns="http://soap.sforce.com/2006/04/metadata">
+    <folderShares>
+        <accessLevel>Manage</accessLevel>
+        <sharedTo>AllInternalUsers</sharedTo>
+        <sharedToType>Organization</sharedToType>
+    </folderShares>
+    <name>IR Email Templates</name>
+</EmailTemplateFolder>

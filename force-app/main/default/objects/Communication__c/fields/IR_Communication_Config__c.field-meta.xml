@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>IR_Communication_Config__c</fullName>
+    <description>Developer name of the IR_Communication__mdt record that drove this send. Stamped so the metrics sync can look up the same flow send element and claim window that were used to send, rather than assuming a single campaign.</description>
+    <externalId>false</externalId>
+    <inlineHelpText>Which IR Communication metadata record configured this send.</inlineHelpText>
+    <label>IR Communication Config</label>
+    <length>100</length>
+    <required>false</required>
+    <trackFeedHistory>false</trackFeedHistory>
+    <type>Text</type>
+    <unique>false</unique>
+</CustomField>

@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomMetadata xmlns="http://soap.sforce.com/2006/04/metadata" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+    <label>IR New Launch</label>
+    <protected>false</protected>
+    <values>
+        <field>Workspace_Name__c</field>
+        <value xsi:type="xsd:string">IR email templates</value>
+    </values>
+    <values>
+        <field>Email_Name__c</field>
+        <value xsi:type="xsd:string">IR New Launch</value>
+    </values>
+    <values>
+        <field>Content_Key__c</field>
+        <value xsi:type="xsd:string">MCMAPWY4ZIZBA4REAUPWDOUBJSKA</value>
+    </values>
+    <values>
+        <field>Content_Type__c</field>
+        <value xsi:type="xsd:string">sfdc_cms__email</value>
+    </values>
+    <values>
+        <field>Flow_API_Name__c</field>
+        <value xsi:type="xsd:string">IR_New_Launch</value>
+    </values>
+    <values>
+        <field>Send_Element_Name__c</field>
+        <value xsi:type="xsd:string">Send_New_Launch_Email</value>
+    </values>
+    <values>
+        <field>Communication_Name_Prefix__c</field>
+        <value xsi:type="xsd:string">New Launch - </value>
+    </values>
+    <values>
+        <field>Audience_Source_Object__c</field>
+        <value xsi:type="xsd:string">Contact</value>
+    </values>
+    <values>
+        <field>Claim_Window_Hours__c</field>
+        <value xsi:type="xsd:double">24.0</value>
+    </values>
+    <values>
+        <field>Batch_Scope__c</field>
+        <value xsi:type="xsd:double">200.0</value>
+    </values>
+    <values>
+        <field>Flow_API_Version__c</field>
+        <value xsi:type="xsd:string">v62.0</value>
+    </values>
+</CustomMetadata>

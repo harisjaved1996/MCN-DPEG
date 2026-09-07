@@ -1,14 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>Signing_Order__c</fullName>
-    <label>Signing Order</label>
     <description>The order in which this Contact must sign documents for this investing entity (e.g. 1 signs first, 2 signs second) when multiple signers are required.</description>
-    <inlineHelpText>Enter this signer&apos;s position in the signing sequence (1 = first).</inlineHelpText>
-    <externalId>false</externalId>
+    <inlineHelpText>Enter this signer's position in the signing sequence (1 = first).</inlineHelpText>
+    <label>Signing Order</label>
     <precision>3</precision>
     <required>false</required>
     <scale>0</scale>
-    <trackTrending>false</trackTrending>
+    <trackFeedHistory>false</trackFeedHistory>
     <type>Number</type>
     <unique>false</unique>
 </CustomField>

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Offering_Name__c</fullName>
+    <description>Human-readable name of the Offering. Separate from the standard Name field, which is an auto-generated OFR-{0000} number used as the record identifier.</description>
+    <externalId>false</externalId>
+    <inlineHelpText>Enter the marketing/deal name investors will recognize for this Offering.</inlineHelpText>
+    <label>Offering Name</label>
+    <length>255</length>
+    <required>false</required>
+    <trackHistory>false</trackHistory>
+    <trackTrending>false</trackTrending>
+    <type>Text</type>
+    <unique>false</unique>
+</CustomField>

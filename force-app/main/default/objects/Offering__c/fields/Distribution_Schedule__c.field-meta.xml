@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Distribution_Schedule__c</fullName>
+    <description>Cadence at which distributions are paid to investors under this Offering.</description>
+    <externalId>false</externalId>
+    <inlineHelpText>Select how often distributions are expected to be paid.</inlineHelpText>
+    <label>Distribution Schedule</label>
+    <required>false</required>
+    <trackHistory>false</trackHistory>
+    <trackTrending>false</trackTrending>
+    <type>Picklist</type>
+    <valueSet>
+        <restricted>true</restricted>
+        <valueSetDefinition>
+            <sorted>false</sorted>
+            <value>
+                <fullName>Monthly</fullName>
+                <default>false</default>
+                <label>Monthly</label>
+            </value>
+            <value>
+                <fullName>Quarterly</fullName>
+                <default>false</default>
+                <label>Quarterly</label>
+            </value>
+        </valueSetDefinition>
+    </valueSet>
+</CustomField>

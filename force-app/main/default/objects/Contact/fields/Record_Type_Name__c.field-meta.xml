@@ -1,11 +1,46 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <!-- THIS NOTE LIVES IN A COMMENT INSIDE THE ROOT ELEMENT. A comment placed ABOVE
+         <CustomField> breaks `sf` deploy at source conversion with a misleading "unable to find
+         matching parent xml file" error (same gotcha documented on the Offering__c precedent,
+         objects/Offering__c/fields/Is_Owner_Queue__c.field-meta.xml).
+
+         RECREATED 2026-09-01. This field was deleted earlier in this session as part of a
+         feature rollback that has now been partially reversed - restoring it exactly as it was
+         originally built (same formula, not placed on any layout, same read-only FLS grants on
+         the same three permission sets).
+
+         WHY THIS FIELD EXISTS: Data Cloud's Contact data stream needs to filter/segment on the
+         Contact's record type, but a Data Lake Object (DLO) cannot traverse the relationship
+         expression RecordType.DeveloperName directly - Data Cloud only maps flat fields that
+         live on the source object itself, not fields reached through a lookup/relationship
+         traversal. This formula flattens RecordType.DeveloperName onto Contact as plain text so
+         it is directly mappable into the DLO and usable as a Data Cloud filter/segmentation
+         criterion.
+
+         DERIVED, NEVER WRITTEN. This is a FORMULA field, not a stored value - nothing sets it
+         directly and it cannot drift out of sync with the Contact's actual RecordTypeId.
+
+         NOT ON ANY LAYOUT, DELIBERATELY. This field exists purely for the Data Cloud data
+         stream to consume, not for a human to read on the record page - a Metadata-API-deployed
+         field is not auto-added to any layout, so simply omitting it here is sufficient.
+
+         FLS IS LOAD-BEARING. A field deployed through the Metadata API arrives with NO field
+         permissions for ANY profile, System Administrator included - the read grants ship in
+         the same change (DPEG_IR_Default_Access, DPEG_IR_Principle_Read, DPEG_Admin_Access),
+         and formula fields are read-only by construction, so no `editable` grant is meaningful
+         here. DPEG_Apex_Access never carried this grant (it only ever holds classAccesses) and
+         the DPEG-IR-SF-Minimum Access profile never carried it either - neither is touched by
+         this restore. -->
     <fullName>Record_Type_Name__c</fullName>
-    <description>Formula field that shows the Record Type name of this Contact.</description>
-    <label>Record Type Name</label>
+    <description>Exposes the Contact's record type developer name as plain text so Data Cloud can filter/segment the Contact data stream on it - Data Cloud cannot traverse RecordType.DeveloperName directly on a DLO. Derived, never written directly. Not placed on any layout.</description>
     <externalId>false</externalId>
-    <formula>$RecordType.Name</formula>
+    <formula><![CDATA[RecordType.DeveloperName]]></formula>
     <formulaTreatBlanksAs>BlankAsBlank</formulaTreatBlanksAs>
-    <trackFeedHistory>false</trackFeedHistory>
+    <inlineHelpText>System field for Data Cloud. Mirrors RecordType.DeveloperName as plain text.</inlineHelpText>
+    <label>Record Type Name</label>
+    <required>false</required>
+    <trackTrending>false</trackTrending>
     <type>Text</type>
+    <unique>false</unique>
 </CustomField>

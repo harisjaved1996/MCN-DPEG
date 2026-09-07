@@ -10,6 +10,7 @@
             <layoutItems><behavior>Required</behavior><field>Communication__c</field></layoutItems>
             <layoutItems><behavior>Readonly</behavior><field>Individual_Name__c</field></layoutItems>
             <layoutItems><behavior>Readonly</behavior><field>Individual_Id__c</field></layoutItems>
+            <layoutItems><behavior>Readonly</behavior><field>Contact__c</field></layoutItems>
         </layoutColumns>
         <layoutColumns>
             <layoutItems><behavior>Readonly</behavior><field>Email_Address__c</field></layoutItems>
@@ -30,7 +31,6 @@
             <layoutItems><behavior>Readonly</behavior><field>Open_Count__c</field></layoutItems>
             <layoutItems><behavior>Readonly</behavior><field>Clicked_At__c</field></layoutItems>
             <layoutItems><behavior>Readonly</behavior><field>Click_Count__c</field></layoutItems>
-            <layoutItems><behavior>Readonly</behavior><field>Last_Clicked_URL__c</field></layoutItems>
         </layoutColumns>
         <layoutColumns>
             <layoutItems><behavior>Readonly</behavior><field>Bounced_At__c</field></layoutItems>
@@ -47,13 +47,8 @@
         <editHeading>true</editHeading>
         <label>Technical</label>
         <layoutColumns>
-            <layoutItems><behavior>Readonly</behavior><field>Message_Id__c</field></layoutItems>
-            <layoutItems><behavior>Readonly</behavior><field>Delivery_Id__c</field></layoutItems>
-            <layoutItems><behavior>Readonly</behavior><field>Request_Id__c</field></layoutItems>
         </layoutColumns>
         <layoutColumns>
-            <layoutItems><behavior>Readonly</behavior><field>Device_Type__c</field></layoutItems>
-            <layoutItems><behavior>Readonly</behavior><field>Email_Client__c</field></layoutItems>
         </layoutColumns>
         <style>TwoColumnsTopToBottom</style>
     </layoutSections>

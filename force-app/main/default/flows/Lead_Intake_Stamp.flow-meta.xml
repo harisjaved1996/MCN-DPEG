@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Flow xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>67.0</apiVersion>
+    <assignments>
+        <name>Assign_DPEG_First</name>
+        <label>Stamp DPEG First</label>
+        <locationX>176</locationX>
+        <locationY>504</locationY>
+        <assignmentItems>
+            <assignToReference>$Record.DPEG_First__c</assignToReference>
+            <operator>Assign</operator>
+            <value>
+                <elementReference>$Record.OwnerId</elementReference>
+            </value>
+        </assignmentItems>
+    </assignments>
+    <assignments>
+        <name>Assign_First_Seen</name>
+        <label>Stamp First Seen</label>
+        <locationX>176</locationX>
+        <locationY>288</locationY>
+        <assignmentItems>
+            <assignToReference>$Record.First_Seen_Date__c</assignToReference>
+            <operator>Assign</operator>
+            <value>
+                <elementReference>$Flow.CurrentDateTime</elementReference>
+            </value>
+        </assignmentItems>
+        <connector>
+            <targetReference>Needs_DPEG_First</targetReference>
+        </connector>
+    </assignments>
+    <decisions>
+        <name>Needs_DPEG_First</name>
+        <label>Needs DPEG First?</label>
+        <locationX>176</locationX>
+        <locationY>396</locationY>
+        <defaultConnectorLabel>No</defaultConnectorLabel>
+        <rules>
+            <name>DPEG_First_Blank_User_Owner</name>
+            <conditionLogic>and</conditionLogic>
+            <conditions>
+                <leftValueReference>$Record.DPEG_First__c</leftValueReference>
+                <operator>IsNull</operator>
+                <rightValue>
+                    <booleanValue>true</booleanValue>
+                </rightValue>
+            </conditions>
+            <conditions>
+                <leftValueReference>fOwnerIsUser</leftValueReference>
+                <operator>EqualTo</operator>
+                <rightValue>
+                    <booleanValue>true</booleanValue>
+                </rightValue>
+            </conditions>
+            <connector>
+                <targetReference>Assign_DPEG_First</targetReference>
+            </connector>
+            <label>DPEG First Blank + User Owner</label>
+        </rules>
+    </decisions>
+    <decisions>
+        <name>Needs_First_Seen</name>
+        <label>Needs First Seen?</label>
+        <locationX>176</locationX>
+        <locationY>180</locationY>
+        <defaultConnector>
+            <targetReference>Needs_DPEG_First</targetReference>
+        </defaultConnector>
+        <defaultConnectorLabel>No</defaultConnectorLabel>
+        <rules>
+            <name>First_Seen_Blank</name>
+            <conditionLogic>and</conditionLogic>
+            <conditions>
+                <leftValueReference>$Record.First_Seen_Date__c</leftValueReference>
+                <operator>IsNull</operator>
+                <rightValue>
+                    <booleanValue>true</booleanValue>
+                </rightValue>
+            </conditions>
+            <connector>
+                <targetReference>Assign_First_Seen</targetReference>
+            </connector>
+            <label>First Seen Blank</label>
+        </rules>
+    </decisions>
+    <environments>Default</environments>
+    <formulas>
+        <name>fOwnerIsUser</name>
+        <dataType>Boolean</dataType>
+        <expression>LEFT(CASESAFEID({!$Record.OwnerId}), 3) = &quot;005&quot;</expression>
+    </formulas>
+    <interviewLabel>Lead Intake Stamp {!$Flow.CurrentDateTime}</interviewLabel>
+    <label>Lead Intake Stamp</label>
+    <processType>AutoLaunchedFlow</processType>
+    <start>
+        <locationX>50</locationX>
+        <locationY>0</locationY>
+        <connector>
+            <targetReference>Needs_First_Seen</targetReference>
+        </connector>
+        <filterFormula>{!$Record.RecordType.DeveloperName} = &apos;Acquisition_Broker&apos;</filterFormula>
+        <object>Lead</object>
+        <recordTriggerType>CreateAndUpdate</recordTriggerType>
+        <triggerType>RecordBeforeSave</triggerType>
+    </start>
+    <status>Active</status>
+</Flow>

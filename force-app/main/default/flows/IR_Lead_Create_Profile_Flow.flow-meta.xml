@@ -1,0 +1,407 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Flow xmlns="http://soap.sforce.com/2006/04/metadata">
+    <actionCalls>
+        <name>Convert_Investor_Lead</name>
+        <label>Convert Lead</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <actionName>InvestorLeadConvertService</actionName>
+        <actionType>apex</actionType>
+        <connector>
+            <targetReference>Decision_Conversion_Succeeded</targetReference>
+        </connector>
+        <description>Calls the InvestorLeadConvertService Apex action to convert the Lead into an investor Contact.</description>
+        <faultConnector>
+            <targetReference>Screen_Error_General</targetReference>
+        </faultConnector>
+        <flowTransactionModel>CurrentTransaction</flowTransactionModel>
+        <inputParameters>
+            <name>leadId</name>
+            <value>
+                <elementReference>recordId</elementReference>
+            </value>
+        </inputParameters>
+        <outputParameters>
+            <assignToReference>var_Success</assignToReference>
+            <name>success</name>
+        </outputParameters>
+        <outputParameters>
+            <assignToReference>var_ErrorMessage</assignToReference>
+            <name>errorMessage</name>
+        </outputParameters>
+        <outputParameters>
+            <assignToReference>var_ContactId</assignToReference>
+            <name>contactId</name>
+        </outputParameters>
+    </actionCalls>
+    <apiVersion>67.0</apiVersion>
+    <decisions>
+        <name>Decision_Is_Accredited</name>
+        <label>Is Accredited?</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <defaultConnector>
+            <targetReference>Decision_Required_Fields</targetReference>
+        </defaultConnector>
+        <defaultConnectorLabel>Is Accredited</defaultConnectorLabel>
+        <description>Gates conversion on Is_Accredited__c, replacing a layout-level required checkbox (Checkbox fields cannot be marked Required on a page layout). If the Lead is not marked Is Accredited, the flow shows a dedicated error screen and ends without converting. Otherwise it proceeds exactly as before to the existing required-field checks.</description>
+        <rules>
+            <name>Not_Accredited</name>
+            <conditionLogic>and</conditionLogic>
+            <conditions>
+                <leftValueReference>rec_Lead.Is_Accredited__c</leftValueReference>
+                <operator>EqualTo</operator>
+                <rightValue>
+                    <booleanValue>false</booleanValue>
+                </rightValue>
+            </conditions>
+            <connector>
+                <targetReference>Screen_Error_Not_Accredited</targetReference>
+            </connector>
+            <label>Not Accredited</label>
+        </rules>
+    </decisions>
+    <decisions>
+        <name>Decision_Required_Fields</name>
+        <label>Check Required Fields</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <defaultConnector>
+            <targetReference>Get_Existing_Contact</targetReference>
+        </defaultConnector>
+        <defaultConnectorLabel>All Fields Present</defaultConnectorLabel>
+        <description>Checks whether Email, Phone, Last Name and Is Accredited are all populated on the Lead. If any required field is missing, the flow shows the missing-fields error screen; otherwise it continues to check for an existing Contact.</description>
+        <rules>
+            <name>Missing_Required_Field</name>
+            <conditionLogic>1 OR 2 OR 3 OR 4</conditionLogic>
+            <conditions>
+                <leftValueReference>rec_Lead.Email</leftValueReference>
+                <operator>IsNull</operator>
+                <rightValue>
+                    <booleanValue>true</booleanValue>
+                </rightValue>
+            </conditions>
+            <conditions>
+                <leftValueReference>rec_Lead.Phone</leftValueReference>
+                <operator>IsNull</operator>
+                <rightValue>
+                    <booleanValue>true</booleanValue>
+                </rightValue>
+            </conditions>
+            <conditions>
+                <leftValueReference>rec_Lead.LastName</leftValueReference>
+                <operator>IsNull</operator>
+                <rightValue>
+                    <booleanValue>true</booleanValue>
+                </rightValue>
+            </conditions>
+            <conditions>
+                <leftValueReference>rec_Lead.Is_Accredited__c</leftValueReference>
+                <operator>EqualTo</operator>
+                <rightValue>
+                    <booleanValue>false</booleanValue>
+                </rightValue>
+            </conditions>
+            <connector>
+                <targetReference>Screen_Error_Missing_Fields</targetReference>
+            </connector>
+            <label>Missing Required Fields</label>
+        </rules>
+    </decisions>
+    <decisions>
+        <name>Decision_Contact_Exists</name>
+        <label>Check for Existing Contact</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <defaultConnector>
+            <targetReference>Convert_Investor_Lead</targetReference>
+        </defaultConnector>
+        <defaultConnectorLabel>No Duplicate Found</defaultConnectorLabel>
+        <description>Checks whether a Contact record already exists with the same email address as the Lead. If a match is found, the flow shows the duplicate-contact error screen; otherwise it proceeds to convert the Lead.</description>
+        <rules>
+            <name>Contact_Found</name>
+            <conditionLogic>and</conditionLogic>
+            <conditions>
+                <leftValueReference>rec_ExistingContact</leftValueReference>
+                <operator>IsNull</operator>
+                <rightValue>
+                    <booleanValue>false</booleanValue>
+                </rightValue>
+            </conditions>
+            <connector>
+                <targetReference>Screen_Error_Duplicate_Contact</targetReference>
+            </connector>
+            <label>Contact Already Exists</label>
+        </rules>
+    </decisions>
+    <decisions>
+        <name>Decision_Conversion_Succeeded</name>
+        <label>Did Conversion Succeed?</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <defaultConnector>
+            <targetReference>Screen_Error_Conversion</targetReference>
+        </defaultConnector>
+        <defaultConnectorLabel>Conversion Failed</defaultConnectorLabel>
+        <description>Checks the result returned by the Lead conversion action. If conversion succeeded, the flow shows the success screen; otherwise it shows the conversion-failed error screen.</description>
+        <rules>
+            <name>Conversion_Succeeded</name>
+            <conditionLogic>and</conditionLogic>
+            <conditions>
+                <leftValueReference>var_Success</leftValueReference>
+                <operator>EqualTo</operator>
+                <rightValue>
+                    <booleanValue>true</booleanValue>
+                </rightValue>
+            </conditions>
+            <connector>
+                <targetReference>Screen_Success</targetReference>
+            </connector>
+            <label>Conversion Succeeded</label>
+        </rules>
+    </decisions>
+    <description>Investor Relations Create Profile. Validates that Email, Phone, Last Name and Is Accredited are populated, refuses if a Contact already exists with the Lead email, then converts the Lead via InvestorLeadConvertService. The conversion itself creates the Contact, which is why no standalone Contact insert happens here and why the org duplicate rule does not block it.</description>
+    <environments>Default</environments>
+    <interviewLabel>IR-Lead-Create-Profile Flow {!$Flow.CurrentDateTime}</interviewLabel>
+    <label>IR-Lead-Create-Profile Flow</label>
+    <processMetadataValues>
+        <name>BuilderType</name>
+        <value>
+            <stringValue>LightningFlowBuilder</stringValue>
+        </value>
+    </processMetadataValues>
+    <processMetadataValues>
+        <name>CanvasMode</name>
+        <value>
+            <stringValue>AUTO_LAYOUT_CANVAS</stringValue>
+        </value>
+    </processMetadataValues>
+    <processMetadataValues>
+        <name>OriginBuilderType</name>
+        <value>
+            <stringValue>LightningFlowBuilder</stringValue>
+        </value>
+    </processMetadataValues>
+    <processType>Flow</processType>
+    <recordLookups>
+        <name>Get_Lead</name>
+        <label>Get Lead</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <assignNullValuesIfNoRecordsFound>true</assignNullValuesIfNoRecordsFound>
+        <connector>
+            <targetReference>Decision_Is_Accredited</targetReference>
+        </connector>
+        <description>Retrieves the Lead record identified by the recordId input, including the fields required to validate the profile.</description>
+        <faultConnector>
+            <targetReference>Screen_Error_General</targetReference>
+        </faultConnector>
+        <filterLogic>and</filterLogic>
+        <filters>
+            <field>Id</field>
+            <operator>EqualTo</operator>
+            <value>
+                <elementReference>recordId</elementReference>
+            </value>
+        </filters>
+        <getFirstRecordOnly>true</getFirstRecordOnly>
+        <object>Lead</object>
+        <outputReference>rec_Lead</outputReference>
+        <queriedFields>Id</queriedFields>
+        <queriedFields>FirstName</queriedFields>
+        <queriedFields>LastName</queriedFields>
+        <queriedFields>Email</queriedFields>
+        <queriedFields>Phone</queriedFields>
+        <queriedFields>Is_Accredited__c</queriedFields>
+    </recordLookups>
+    <recordLookups>
+        <name>Get_Existing_Contact</name>
+        <label>Get Existing Contact</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <assignNullValuesIfNoRecordsFound>true</assignNullValuesIfNoRecordsFound>
+        <connector>
+            <targetReference>Decision_Contact_Exists</targetReference>
+        </connector>
+        <description>Looks up the most recently created Contact that shares the Lead email address, to check for a duplicate.</description>
+        <faultConnector>
+            <targetReference>Screen_Error_General</targetReference>
+        </faultConnector>
+        <filterLogic>and</filterLogic>
+        <filters>
+            <field>Email</field>
+            <operator>EqualTo</operator>
+            <value>
+                <elementReference>rec_Lead.Email</elementReference>
+            </value>
+        </filters>
+        <getFirstRecordOnly>true</getFirstRecordOnly>
+        <object>Contact</object>
+        <outputReference>rec_ExistingContact</outputReference>
+        <queriedFields>Id</queriedFields>
+        <queriedFields>Name</queriedFields>
+        <queriedFields>Email</queriedFields>
+        <sortField>CreatedDate</sortField>
+        <sortOrder>Desc</sortOrder>
+    </recordLookups>
+    <screens>
+        <name>Screen_Success</name>
+        <label>Create Profile</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <allowBack>false</allowBack>
+        <allowFinish>true</allowFinish>
+        <allowPause>false</allowPause>
+        <description>Displays a confirmation that the Lead was converted and the investor Contact was created.</description>
+        <fields>
+            <name>Success_Message</name>
+            <fieldType>DisplayText</fieldType>
+            <fieldText>&lt;p style=&quot;text-align: center;&quot;&gt;&lt;br&gt;&lt;/p&gt;&lt;p style=&quot;text-align: center;&quot;&gt;&lt;img src=&quot;/resource/Assets/success.png&quot; alt=&quot;Success&quot; width=&quot;96&quot; height=&quot;96&quot;&gt;&lt;/p&gt;&lt;p style=&quot;text-align: center;&quot;&gt;&lt;span style=&quot;font-size: 16px;&quot;&gt;Success! The Lead has been converted. The investor Contact has been created and the Lead status is now Converted.&lt;/span&gt;&lt;/p&gt;</fieldText>
+        </fields>
+        <nextOrFinishButtonLabel>Finish</nextOrFinishButtonLabel>
+        <showFooter>true</showFooter>
+        <showHeader>true</showHeader>
+    </screens>
+    <screens>
+        <name>Screen_Error_Not_Accredited</name>
+        <label>Create Profile</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <allowBack>false</allowBack>
+        <allowFinish>true</allowFinish>
+        <allowPause>false</allowPause>
+        <description>Displays an error explaining that the Lead must be marked Is Accredited before a profile can be created.</description>
+        <fields>
+            <name>Error_Not_Accredited_Message</name>
+            <fieldType>DisplayText</fieldType>
+            <fieldText>&lt;p style=&quot;text-align: center;&quot;&gt;&lt;br&gt;&lt;/p&gt;&lt;p style=&quot;text-align: center;&quot;&gt;&lt;img src=&quot;/resource/Assets/error.png&quot; alt=&quot;Error&quot; width=&quot;96&quot; height=&quot;96&quot;&gt;&lt;/p&gt;&lt;p style=&quot;text-align: center;&quot;&gt;&lt;span style=&quot;font-size: 16px;&quot;&gt;Error: This Lead must be marked Is Accredited before a profile can be created. Please update Is Accredited on the Lead and try again. No Contact was created and the Lead was not converted.&lt;/span&gt;&lt;/p&gt;</fieldText>
+        </fields>
+        <nextOrFinishButtonLabel>Finish</nextOrFinishButtonLabel>
+        <showFooter>true</showFooter>
+        <showHeader>true</showHeader>
+    </screens>
+    <screens>
+        <name>Screen_Error_Missing_Fields</name>
+        <label>Create Profile</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <allowBack>false</allowBack>
+        <allowFinish>true</allowFinish>
+        <allowPause>false</allowPause>
+        <description>Displays an error explaining that required fields must be completed before the Lead can be converted.</description>
+        <fields>
+            <name>Error_Missing_Fields_Message</name>
+            <fieldType>DisplayText</fieldType>
+            <fieldText>&lt;p style=&quot;text-align: center;&quot;&gt;&lt;br&gt;&lt;/p&gt;&lt;p style=&quot;text-align: center;&quot;&gt;&lt;img src=&quot;/resource/Assets/error.png&quot; alt=&quot;Error&quot; width=&quot;96&quot; height=&quot;96&quot;&gt;&lt;/p&gt;&lt;p style=&quot;text-align: center;&quot;&gt;&lt;span style=&quot;font-size: 16px;&quot;&gt;Error: This Lead cannot be converted yet. Name, Email, Phone and Is Accredited must all be completed before creating the investor profile. Please fill in the missing details on the Lead and try again. No Contact was created and the Lead was not converted.&lt;/span&gt;&lt;/p&gt;</fieldText>
+        </fields>
+        <nextOrFinishButtonLabel>Finish</nextOrFinishButtonLabel>
+        <showFooter>true</showFooter>
+        <showHeader>true</showHeader>
+    </screens>
+    <screens>
+        <name>Screen_Error_Duplicate_Contact</name>
+        <label>Create Profile</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <allowBack>false</allowBack>
+        <allowFinish>true</allowFinish>
+        <allowPause>false</allowPause>
+        <description>Displays an error explaining that a matching Contact already exists, showing its name and email.</description>
+        <fields>
+            <name>Error_Duplicate_Contact_Message</name>
+            <fieldType>DisplayText</fieldType>
+            <fieldText>&lt;p style=&quot;text-align: center;&quot;&gt;&lt;br&gt;&lt;/p&gt;&lt;p style=&quot;text-align: center;&quot;&gt;&lt;img src=&quot;/resource/Assets/error.png&quot; alt=&quot;Error&quot; width=&quot;96&quot; height=&quot;96&quot;&gt;&lt;/p&gt;&lt;p style=&quot;text-align: center;&quot;&gt;&lt;span style=&quot;font-size: 16px;&quot;&gt;Error: A Contact already exists for this email address, so this Lead was not converted.&lt;br&gt;Existing Contact Name: {!rec_ExistingContact.Name}&lt;br&gt;Existing Contact Email: {!rec_ExistingContact.Email}&lt;/span&gt;&lt;/p&gt;</fieldText>
+        </fields>
+        <nextOrFinishButtonLabel>Finish</nextOrFinishButtonLabel>
+        <showFooter>true</showFooter>
+        <showHeader>true</showHeader>
+    </screens>
+    <screens>
+        <name>Screen_Error_Conversion</name>
+        <label>Create Profile</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <allowBack>false</allowBack>
+        <allowFinish>true</allowFinish>
+        <allowPause>false</allowPause>
+        <description>Displays the error message returned by the Lead conversion action.</description>
+        <fields>
+            <name>Error_Conversion_Message</name>
+            <fieldType>DisplayText</fieldType>
+            <fieldText>&lt;p style=&quot;text-align: center;&quot;&gt;&lt;br&gt;&lt;/p&gt;&lt;p style=&quot;text-align: center;&quot;&gt;&lt;img src=&quot;/resource/Assets/error.png&quot; alt=&quot;Error&quot; width=&quot;96&quot; height=&quot;96&quot;&gt;&lt;/p&gt;&lt;p style=&quot;text-align: center;&quot;&gt;&lt;span style=&quot;font-size: 16px;&quot;&gt;Error: {!var_ErrorMessage}&lt;/span&gt;&lt;/p&gt;</fieldText>
+        </fields>
+        <nextOrFinishButtonLabel>Finish</nextOrFinishButtonLabel>
+        <showFooter>true</showFooter>
+        <showHeader>true</showHeader>
+    </screens>
+    <screens>
+        <name>Screen_Error_General</name>
+        <label>Create Profile</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <allowBack>false</allowBack>
+        <allowFinish>true</allowFinish>
+        <allowPause>false</allowPause>
+        <description>Displays an unexpected fault message if the Lead lookup or Contact lookup fails.</description>
+        <fields>
+            <name>Error_General_Message</name>
+            <fieldType>DisplayText</fieldType>
+            <fieldText>&lt;p style=&quot;text-align: center;&quot;&gt;&lt;br&gt;&lt;/p&gt;&lt;p style=&quot;text-align: center;&quot;&gt;&lt;img src=&quot;/resource/Assets/error.png&quot; alt=&quot;Error&quot; width=&quot;96&quot; height=&quot;96&quot;&gt;&lt;/p&gt;&lt;p style=&quot;text-align: center;&quot;&gt;&lt;span style=&quot;font-size: 16px;&quot;&gt;Error: An unexpected error occurred.&lt;br&gt;{!$Flow.FaultMessage}&lt;/span&gt;&lt;/p&gt;</fieldText>
+        </fields>
+        <nextOrFinishButtonLabel>Finish</nextOrFinishButtonLabel>
+        <showFooter>true</showFooter>
+        <showHeader>true</showHeader>
+    </screens>
+    <start>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <connector>
+            <targetReference>Get_Lead</targetReference>
+        </connector>
+    </start>
+    <status>Active</status>
+    <variables>
+        <name>recordId</name>
+        <dataType>String</dataType>
+        <isCollection>false</isCollection>
+        <isInput>true</isInput>
+        <isOutput>false</isOutput>
+    </variables>
+    <variables>
+        <name>rec_Lead</name>
+        <dataType>SObject</dataType>
+        <isCollection>false</isCollection>
+        <isInput>false</isInput>
+        <isOutput>false</isOutput>
+        <objectType>Lead</objectType>
+    </variables>
+    <variables>
+        <name>rec_ExistingContact</name>
+        <dataType>SObject</dataType>
+        <isCollection>false</isCollection>
+        <isInput>false</isInput>
+        <isOutput>false</isOutput>
+        <objectType>Contact</objectType>
+    </variables>
+    <variables>
+        <name>var_Success</name>
+        <dataType>Boolean</dataType>
+        <isCollection>false</isCollection>
+        <isInput>false</isInput>
+        <isOutput>false</isOutput>
+    </variables>
+    <variables>
+        <name>var_ErrorMessage</name>
+        <dataType>String</dataType>
+        <isCollection>false</isCollection>
+        <isInput>false</isInput>
+        <isOutput>false</isOutput>
+    </variables>
+    <variables>
+        <name>var_ContactId</name>
+        <dataType>String</dataType>
+        <isCollection>false</isCollection>
+        <isInput>false</isInput>
+        <isOutput>false</isOutput>
+    </variables>
+</Flow>

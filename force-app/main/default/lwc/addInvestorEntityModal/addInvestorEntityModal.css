@@ -1,0 +1,160 @@
+/*
+ * addInvestorEntityModal
+ *
+ * SLDS 2 styling hooks only (--slds-g-*) per ARCHITECTURE.md section 5 - colour, spacing, radius,
+ * type and border sizing all resolve from global hooks with a literal fallback, matching the
+ * convention already used across this repo's LWC CSS (see brokerAssignmentActions.css).
+ *
+ * The overlay is owned here rather than borrowing the global .slds-modal blueprint so the dialog
+ * renders identically whether or not global SLDS styles reach this bundle's shadow root.
+ */
+
+:host {
+    display: block;
+}
+
+.aie-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 8000;
+    background: var(--slds-g-color-neutral-base-10, #181818);
+    opacity: 0.5;
+}
+
+/*
+ * `display: flex` with `margin: auto` on the single child centres the dialog on both axes without
+ * the classic flex-centring bug that makes the top of an over-tall child unreachable when the
+ * overlay scrolls.
+ */
+.aie-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 8001;
+    display: flex;
+    overflow-y: auto;
+    padding: var(--slds-g-spacing-5, 24px);
+}
+
+.aie-overlay:focus {
+    outline: none;
+}
+
+/*
+ * Zero-size focus sentinels bracketing the card. They stay in the tab order (tabindex="0" in the
+ * template) so tabbing past either end of the dialog lands here and the JS bounces focus back in,
+ * which is what makes aria-modal="true" an honest claim. Do not give them box dimensions.
+ */
+.aie-sentinel {
+    width: 0;
+    height: 0;
+    overflow: hidden;
+    outline: none;
+}
+
+/*
+ * A modal is an overlay, not a container sitting on an existing surface, so it takes `surface-1`
+ * rather than `surface-container-1`, and `radius-border-4` (the cards/modals slot) rather than
+ * `radius-border-3` (menus/popovers). Shadow depth 4 is the modal slot.
+ */
+.aie-modal {
+    display: flex;
+    flex-direction: column;
+    margin: auto;
+    width: 100%;
+    max-width: 46rem;
+    max-height: 100%;
+    background: var(--slds-g-color-surface-1, #fff);
+    border-radius: var(--slds-g-radius-border-4, 12px);
+    box-shadow: var(--slds-g-shadow-4, 0 20px 60px rgba(4, 13, 28, 0.4));
+    overflow: hidden;
+}
+
+.aie-modal__header {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--slds-g-spacing-3, 12px);
+    padding: var(--slds-g-spacing-4, 16px) var(--slds-g-spacing-5, 24px);
+    border-bottom: var(--slds-g-sizing-border-1, 1px) solid var(--slds-g-color-border-1, #e2e0db);
+}
+
+.aie-modal__title {
+    margin: 0;
+    font-size: var(--slds-g-font-scale-3, 20px);
+    font-weight: var(--slds-g-font-weight-6, 600);
+    line-height: var(--slds-g-font-lineheight-2, 1.25);
+    color: var(--slds-g-color-on-surface-3, #181818);
+}
+
+.aie-modal__close {
+    flex-shrink: 0;
+}
+
+/* The hosted flow renders its own screens - and its own Next/Finish footer - inside this region. */
+.aie-modal__body {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    padding: var(--slds-g-spacing-4, 16px) var(--slds-g-spacing-5, 24px);
+    background: var(--slds-g-color-surface-1, #fff);
+}
+
+/*
+ * Always-present live region. It carries no box properties of its own so it collapses to zero
+ * height while empty; the children below own all spacing. Styled here rather than with SLDS
+ * blueprint utility classes for the same reason the overlay is - global SLDS rules are not
+ * guaranteed to reach this bundle's shadow root.
+ */
+.aie-alert:focus {
+    outline: none;
+}
+
+.aie-alert__heading {
+    margin: 0;
+    font-size: var(--slds-g-font-scale-1, 14px);
+    font-weight: var(--slds-g-font-weight-6, 600);
+    line-height: var(--slds-g-font-lineheight-2, 1.25);
+    color: var(--slds-g-color-error-1, #ba0517);
+}
+
+.aie-alert__text {
+    margin: var(--slds-g-spacing-2, 8px) 0 0;
+    font-size: var(--slds-g-font-scale-base, 13px);
+    line-height: var(--slds-g-font-lineheight-4, 1.5);
+    color: var(--slds-g-color-on-surface-2, #1a1714);
+}
+
+.aie-alert__detail {
+    margin: var(--slds-g-spacing-2, 8px) 0 0;
+    font-size: var(--slds-g-font-scale-neg-1, 12px);
+    line-height: var(--slds-g-font-lineheight-4, 1.5);
+    color: var(--slds-g-color-on-surface-1, #5c5c5c);
+}
+
+.aie-modal__footer {
+    display: flex;
+    flex-shrink: 0;
+    justify-content: flex-end;
+    padding: var(--slds-g-spacing-4, 16px) var(--slds-g-spacing-5, 24px);
+    border-top: var(--slds-g-sizing-border-1, 1px) solid var(--slds-g-color-border-1, #e2e0db);
+    background: var(--slds-g-color-surface-1, #fff);
+}
+
+/*
+ * Phones and narrow tablets: go full-bleed instead of squeezing the flow's inputs into a card that
+ * is barely narrower than the viewport.
+ */
+@media (max-width: 48em) {
+    .aie-overlay {
+        padding: 0;
+    }
+
+    .aie-modal {
+        width: 100%;
+        max-width: none;
+        height: 100%;
+        max-height: 100%;
+        border-radius: 0;
+    }
+}

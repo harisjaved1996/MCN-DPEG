@@ -1,11 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>Is_Primary_Contact__c</fullName>
-    <label>Is Primary Contact</label>
+    <defaultValue>false</defaultValue>
     <description>Indicates whether this Contact is the primary point of contact for this investing entity Account.</description>
     <inlineHelpText>Check if this Contact is the primary contact for this investing entity.</inlineHelpText>
-    <defaultValue>false</defaultValue>
-    <externalId>false</externalId>
-    <trackTrending>false</trackTrending>
+    <label>Is Primary Contact</label>
+    <trackFeedHistory>false</trackFeedHistory>
     <type>Checkbox</type>
 </CustomField>

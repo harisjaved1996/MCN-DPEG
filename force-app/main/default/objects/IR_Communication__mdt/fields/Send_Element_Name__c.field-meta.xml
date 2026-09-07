@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Send_Element_Name__c</fullName>
+    <label>Send Element Name</label>
+    <type>Text</type>
+    <length>255</length>
+    <required>false</required>
+    <unique>false</unique>
+    <inlineHelpText>Name of the send action inside the flow. Engagement run ids end in #ThisName, so tracking cannot match without it.</inlineHelpText>
+</CustomField>

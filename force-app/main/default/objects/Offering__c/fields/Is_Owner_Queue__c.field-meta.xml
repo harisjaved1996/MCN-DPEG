@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <!-- THIS NOTE LIVES IN A COMMENT INSIDE THE ROOT ELEMENT. A comment placed ABOVE
+         <CustomField> breaks `sf` deploy at source conversion with a misleading "unable to find
+         matching parent xml file" error (same gotcha documented on the Lead precedent below).
+
+         DERIVED, NEVER WRITTEN. This is a FORMULA field, not a stored checkbox - nothing sets
+         it directly and it cannot drift out of sync with OwnerId.
+
+         MODELED ON objects/Lead/fields/Is_Owner_Investor_Onboarding_Queue__c.field-meta.xml, but
+         DELIBERATELY WITHOUT its RecordType.DeveloperName condition: that second condition exists
+         on the Lead field only because Acquisition Broker Leads are ALSO queue-owned and needed to
+         be excluded. Offering__c has NO record types (no recordTypes/ subdirectory under this
+         object), so there is no second population to disambiguate from - the single owner-is-a-
+         queue test is complete on its own here.
+
+         Formula: LEFT(CASESAFEID(OwnerId), 3) = "00G" - "00G" is the key prefix for a Group/Queue
+         Id, "005" for a User Id. This exact idiom has in-repo precedent (see the Lead field above
+         and flows/Lead_Intake_Stamp.flow-meta.xml's `fOwnerIsUser` formula resource).
+
+         KNOWN DORMANT TODAY, BY DESIGN - NOT A BUG: no queue in this org currently supports
+         Offering__c as an ownable object, so this formula will correctly evaluate FALSE on every
+         real Offering__c record today. Per explicit design decision ("Offering Assign to Me +
+         Owner-Queue Gating"), this field/the Assign to Me flow/quick action are being built ahead
+         of any queue existing for this object - do not "fix" this by creating a queue as part of
+         this change; that is an explicit, separate decision the design intentionally deferred.
+
+         NOT ON ANY LAYOUT, DELIBERATELY. This field exists to drive Dynamic Actions visibility
+         rules on the FlexiPage (Offering__c.Pre_Launch vs. Offering__c.Assign_to_Me quick action
+         visibility), not to be read by a human on the record page - a Metadata-API-deployed field
+         is not auto-added to any layout, so simply omitting it here is sufficient.
+
+         FLS IS LOAD-BEARING. A field deployed through the Metadata API arrives with NO field
+         permissions for ANY profile, System Administrator included - the read grant ships in the
+         same change (DPEG_IR_Default_Access), and formula fields are read-only by construction, so
+         no `editable` grant is meaningful here. -->
+    <fullName>Is_Owner_Queue__c</fullName>
+    <label>Is Owner Queue?</label>
+    <description>Derived, never written directly. True only when the current owner of this Offering is a queue (Group) rather than a user. Offering__c has no record types, so unlike the Lead precedent (Is_Owner_Investor_Onboarding_Queue__c) no second condition is needed to scope this further. Drives Dynamic Actions visibility on the Offering record page (queue-owned "assign to me" action vs. user-owned "pre launch" action). No queue currently supports Offering__c as an ownable object, so this evaluates false on every real record today - that is expected, not a bug. Not placed on any layout.</description>
+    <inlineHelpText>System field. True when this Offering is currently owned by a queue rather than a user.</inlineHelpText>
+    <type>Checkbox</type>
+    <formula><![CDATA[LEFT(CASESAFEID(OwnerId), 3) = "00G"]]></formula>
+    <formulaTreatBlanksAs>BlankAsZero</formulaTreatBlanksAs>
+</CustomField>

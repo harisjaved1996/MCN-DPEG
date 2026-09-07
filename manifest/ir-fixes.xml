@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Package xmlns="http://soap.sforce.com/2006/04/metadata">
+    <types><members>IR_New_Launch</members><name>Flow</name></types>
+    <types><members>IR_Communication.IR_New_Launch</members><name>CustomMetadata</name></types>
+    <types><members>newOfferingLaunchWizard</members><name>LightningComponentBundle</name></types>
+    <types><members>Communication__c-Communication Layout</members><name>Layout</name></types>
+    <version>67.0</version>
+</Package>

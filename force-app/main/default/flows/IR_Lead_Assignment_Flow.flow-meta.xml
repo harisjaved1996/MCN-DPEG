@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Flow xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>67.0</apiVersion>
+    <assignments>
+        <name>Assign_Owner_To_Queue</name>
+        <label>Assign Owner to Investor Onboarding Queue</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <assignmentItems>
+            <assignToReference>$Record.OwnerId</assignToReference>
+            <operator>Assign</operator>
+            <value>
+                <elementReference>rec_Queue.Id</elementReference>
+            </value>
+        </assignmentItems>
+    </assignments>
+    <decisions>
+        <name>Is_Queue_Found</name>
+        <label>Queue Found?</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <defaultConnectorLabel>Queue Not Found</defaultConnectorLabel>
+        <rules>
+            <name>Queue_Found</name>
+            <conditionLogic>and</conditionLogic>
+            <conditions>
+                <leftValueReference>rec_Queue</leftValueReference>
+                <operator>IsNull</operator>
+                <rightValue>
+                    <booleanValue>false</booleanValue>
+                </rightValue>
+            </conditions>
+            <connector>
+                <targetReference>Assign_Owner_To_Queue</targetReference>
+            </connector>
+            <label>Queue Found</label>
+        </rules>
+    </decisions>
+    <description>Before-save flow (Create only) that assigns ownership of newly created Investor Onboarding Leads (RecordType.DeveloperName = &apos;Investor_Onboarding&apos;) to the Investor Onboarding Queue. The queue is resolved by Group.DeveloperName (&apos;Investor_Onboarding_Queue&apos;) AND Group.Type (&apos;Queue&apos;) -- both filters are required, because Group.DeveloperName is unique per Type rather than globally, so filtering on the name alone can match a public group of the same name. Never a hardcoded Id. Fails closed: if no matching queue is found, $Record.OwnerId is left untouched rather than written null. Before-save is deliberate -- the assignment happens in memory during the user&apos;s own save, so it costs no extra DML and no second trigger pass. SCOPE -- Lead_Intake_Stamp is the only other before-save flow on Lead. It is scoped to the Acquisition_Broker record type and this flow to Investor_Onboarding, so the two match disjoint populations and cannot race; no triggerOrder is needed on either while that split holds. If either flow&apos;s entry criteria is ever widened so both can match one record, revisit this: Lead_Intake_Stamp stamps DPEG_First__c only when the owner is a User (LEFT(CASESAFEID(OwnerId), 3) = &quot;005&quot;), so an owner reassignment to a queue running first would silently suppress that stamp. REPLACES the deactivated DPEG Lead Assignment Rule, and note the behaviour is wider: an assignment rule was opt-in and fired only when a caller requested it (e.g. the layout checkbox), whereas this flow fires on every qualifying Create -- including API, Apex and data-load paths -- with no per-record opt-out.</description>
+    <environments>Default</environments>
+    <interviewLabel>IR Lead Assignment Flow {!$Flow.CurrentDateTime}</interviewLabel>
+    <label>IR Lead Assignment Flow</label>
+    <processMetadataValues>
+        <name>CanvasMode</name>
+        <value>
+            <stringValue>AUTO_LAYOUT_CANVAS</stringValue>
+        </value>
+    </processMetadataValues>
+    <processType>AutoLaunchedFlow</processType>
+    <recordLookups>
+        <name>Get_Investor_Onboarding_Queue</name>
+        <label>Get Investor Onboarding Queue</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <assignNullValuesIfNoRecordsFound>true</assignNullValuesIfNoRecordsFound>
+        <connector>
+            <targetReference>Is_Queue_Found</targetReference>
+        </connector>
+        <filterLogic>and</filterLogic>
+        <filters>
+            <field>DeveloperName</field>
+            <operator>EqualTo</operator>
+            <value>
+                <stringValue>Investor_Onboarding_Queue</stringValue>
+            </value>
+        </filters>
+        <filters>
+            <field>Type</field>
+            <operator>EqualTo</operator>
+            <value>
+                <stringValue>Queue</stringValue>
+            </value>
+        </filters>
+        <getFirstRecordOnly>true</getFirstRecordOnly>
+        <object>Group</object>
+        <outputReference>rec_Queue</outputReference>
+        <queriedFields>Id</queriedFields>
+    </recordLookups>
+    <start>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <connector>
+            <targetReference>Get_Investor_Onboarding_Queue</targetReference>
+        </connector>
+        <filterFormula>{!$Record.RecordType.DeveloperName} = &apos;Investor_Onboarding&apos;</filterFormula>
+        <object>Lead</object>
+        <recordTriggerType>Create</recordTriggerType>
+        <triggerType>RecordBeforeSave</triggerType>
+    </start>
+    <status>Active</status>
+    <variables>
+        <name>rec_Queue</name>
+        <dataType>SObject</dataType>
+        <isCollection>false</isCollection>
+        <isInput>false</isInput>
+        <isOutput>false</isOutput>
+        <objectType>Group</objectType>
+    </variables>
+</Flow>

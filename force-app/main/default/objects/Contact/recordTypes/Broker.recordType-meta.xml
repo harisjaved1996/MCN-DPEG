@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<RecordType xmlns="http://soap.sforce.com/2006/04/metadata">
+    <!--
+        THE BROKER CONTACT. Every Contact that existed before 2026-08-10 is this type, and
+        every Contact the acquisitions pipeline (Lead conversion, the Broker Portal, manual
+        acquisitions entry) creates is this type.
+
+        CONTACT RECORD TYPES DRIVE LAYOUT, FLS AND REPORTING ONLY - NOT SHARING. Contact
+        sharing is inherited from its Account via ControlledByParent (target state - see the
+        comment in Account/recordTypes/Broker_Firm.recordType-meta.xml for the org's current,
+        measured OWD, which has not yet been corrected to match this design). MEASURED, not
+        assumed: Contact's live InternalSharingModel was queried via the Tooling API
+        (`SELECT InternalSharingModel FROM EntityDefinition WHERE DeveloperName = 'Contact'`)
+        on 2026-08-10 (Task 0 of this plan) and returned ReadWrite, contradicting this repo's
+        own Contact.object-meta.xml, which still declares ControlledByParent. The
+        Record_Type_Matches_Account validation rule (Task 8) is what keeps a Contact's own
+        record type from disagreeing with its parent Account's record type - without it a
+        Broker Contact could be filed under an Investing_Entity Account (or vice versa) and the
+        two segregation boundaries would silently diverge.
+
+        ⚠ FIX 2026-08-10 (code review, CRITICAL) - EVERY PICKLIST ON THE OBJECT IS ENUMERATED
+        BELOW - Salutation, LeadSource, OtherGeocodeAccuracy, MailingGeocodeAccuracy,
+        ContactSource, TitleType, DepartmentGroup, BuyerAttributes, Broker_Priority__c,
+        Broker_Specialty__c and Broker_Status__c - because a record type file that omits a
+        picklist silently drops ALL of that picklist's values from that type. This is the same
+        rule already enforced under NDA__c, Contract_Review__c, Disposition__c and LOI__c; the
+        original brief that produced this file omitted it, which was a plan defect, not a
+        deliberate narrowing. The full value set was pulled from a LIVE ORG DESCRIBE
+        (`sf sobject describe, sobject=Contact`), never from this repo's field files, because
+        `sf project retrieve` unions local and remote picklist values and a repo field file can
+        list values the org no longer has. Both Contact record types (this one and Investor)
+        carry the IDENTICAL, COMPLETE value set with the SAME defaults (Broker_Priority__c =
+        Standard, Broker_Specialty__c = Retail, Broker_Status__c = Active) - narrowing either
+        record type's values is a separate, deliberate change for later, and this fix is
+        deliberately behaviour-neutral for every existing Contact.
+
+        ⚠ FIX ROUND 2 (2026-08-10, check-only dry-run against usman-dpeg, deploy id
+        0Afiw000000HR8fCAG) - THE ContactSource BLOCK NAMED ABOVE WAS REMOVED. The describe used
+        to build the enumeration above reported ContactSource as a selectable picklist field
+        (type=picklist, restrictedPicklist=true, 4 active values), but the Metadata API rejected
+        it inside RecordType.picklistValues with "Field 'ContactSource' in 'Contact' is not a
+        picklist field" - the describe and the Metadata API DISAGREED on this one field.
+
+        A SECOND round of the same dry-run then rejected DepartmentGroup too, identical error
+        shape: "Field 'DepartmentGroup' in 'Contact' is not a picklist field" - also removed.
+
+        ⚠ FIX ROUND 3 (2026-08-10, iterative check-only dry-runs against usman-dpeg, root-caused
+        by bisection) - Salutation, MailingGeocodeAccuracy AND OtherGeocodeAccuracy REMOVED. All
+        three failed with a GENERIC "An unexpected error occurred... ErrorId..." rather than a
+        clean field-level message, which made them far harder to diagnose than ContactSource/
+        DepartmentGroup. Isolated by deploying single-picklist RecordType variants one at a time
+        against usman-dpeg via the `metadata` flag targeting RecordType:Contact.Broker: LeadSource
+        and the three custom fields deployed clean in isolation, both before and after the
+        failing ones were tested, ruling out org-side state pollution as the explanation. THE
+        ACTUAL ROOT CAUSE: all three failing fields are COMPOUND-FIELD SUB-COMPONENTS -
+        `compoundFieldName` in the live describe reads `Name` for Salutation, `MailingAddress`
+        for MailingGeocodeAccuracy, `OtherAddress` for OtherGeocodeAccuracy - confirmed by
+        cross-checking `compoundFieldName` for every picklist on this object: every field that
+        failed has one set, every field that passed does not. RecordType.picklistValues cannot
+        restrict a compound field's sub-picklist; the platform does not report this as a clean
+        validation error, it throws generically instead. This generalizes beyond Contact:
+        Lead.Salutation/GeocodeAccuracy (`Name`/`Address`) and
+        Account.BillingGeocodeAccuracy/ShippingGeocodeAccuracy (`BillingAddress`/
+        `ShippingAddress`) were removed from their record types for the identical, confirmed
+        reason - see those files' own comments. THE RULE: a picklist that is a compound-field
+        sub-component must NEVER be enumerated in a RecordType's picklistValues - check
+        `compoundFieldName` in the describe (not just `type`) before adding any field to this
+        file. ⚠ TitleType was NOT individually isolation-tested in this round (its
+        compoundFieldName is blank, so the compound-field theory correctly predicted it would be
+        safe from THAT failure mode) - that gap is what Fix Round 4 closes.
+
+        ⚠ FIX ROUND 4 (2026-08-10, full check-only dry-run against usman-dpeg after Round 3
+        landed) - TitleType REMOVED. It failed with the SAME clean, specific error shape as
+        ContactSource and DepartmentGroup: "Field 'TitleType' in 'Contact' is not a picklist
+        field" - NOT the generic compound-field error. This is a THIRD field in this same
+        describe/Metadata-API disagreement class, and it was missed in Round 2 (which only
+        caught ContactSource and DepartmentGroup) because Round 2's dry-runs never got past the
+        Lead businessProcess and compound-field errors far enough to reach TitleType's own
+        validation. Notably, BuyerAttributes - a multipicklist from the SAME Salesforce
+        "Contact enrichment" field family as TitleType/DepartmentGroup/ContactSource - is NOT in
+        this failing set; it deployed clean throughout. There is no reliable a-priori signal
+        (type, family, restrictedPicklist, compoundFieldName) that predicts which enrichment
+        fields the Metadata API will refuse inside a RecordType - each one had to be proven by an
+        actual dry-run. The remaining FIVE picklists below (LeadSource, Broker_Priority__c,
+        Broker_Specialty__c, Broker_Status__c, BuyerAttributes) are the fields that survived ALL
+        FOUR fix rounds and cleared a full dry-run of this exact file.
+    -->
+    <fullName>Broker</fullName>
+    <active>true</active>
+    <description>Broker contact. Layout/FLS/reporting only - sharing is inherited from the parent Account. See the XML comment in this file.</description>
+    <label>Broker</label>
+    <picklistValues>
+        <picklist>BuyerAttributes</picklist>
+        <values>
+            <fullName>Detractor</fullName>
+            <default>false</default>
+        </values>
+        <values>
+            <fullName>DecisionMaker</fullName>
+            <default>false</default>
+        </values>
+        <values>
+            <fullName>Buyer</fullName>
+            <default>false</default>
+        </values>
+        <values>
+            <fullName>ExecutiveSponsor</fullName>
+            <default>false</default>
+        </values>
+        <values>
+            <fullName>Champion</fullName>
+            <default>false</default>
+        </values>
+        <values>
+            <fullName>BusinessUser</fullName>
+            <default>false</default>
+        </values>
+        <values>
+            <fullName>Evaluator</fullName>
+            <default>false</default>
+        </values>
+        <values>
+            <fullName>TechnicalExpert</fullName>
+            <default>false</default>
+        </values>
+    </picklistValues>
+    <picklistValues>
+        <picklist>LeadSource</picklist>
+        <values>
+            <fullName>Email-to-Lead</fullName>
+            <default>false</default>
+        </values>
+        <values>
+            <fullName>Broker Portal</fullName>
+            <default>false</default>
+        </values>
+        <values>
+            <fullName>Manual Entry</fullName>
+            <default>false</default>
+        </values>
+        <values>
+            <fullName>Web</fullName>
+            <default>false</default>
+        </values>
+        <values>
+            <fullName>Phone Inquiry</fullName>
+            <default>false</default>
+        </values>
+        <values>
+            <fullName>Other</fullName>
+            <default>false</default>
+        </values>
+    </picklistValues>
+</RecordType>

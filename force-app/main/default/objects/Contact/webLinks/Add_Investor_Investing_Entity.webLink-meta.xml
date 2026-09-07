@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<WebLink xmlns="http://soap.sforce.com/2006/04/metadata">
+    <!--
+        CURRENT STATE - read this part first; the history at the bottom is background only.
+
+        LIST VIEW BUTTON on Contact that opens the c/addInvestorEntityModal LWC, which hosts the
+        IR_Add_Investor_Investing_Entity screen flow inside an SLDS modal-styled dialog.
+
+        Why a component URL and not /flow/ or a real modal: a list view WebLink can only perform URL
+        navigation, so it cannot open an overlay on top of the list. The platform workaround is to
+        navigate to a URL-addressable component (lightning__UrlAddressable target, reachable at
+        /lightning/cmp/c__addInvestorEntityModal) whose markup is dressed as a centred modal card
+        over a backdrop, with the flow hosted inside it. Renaming the LWC bundle breaks this URL.
+
+        Field-by-field rationale:
+        - openType=replace     navigates the whole page to the component page.
+        - displayType=massActionButton + requireRowSelection=false because the button creates a NEW
+          record and does not act on any selected list rows.
+        - encodingKey=UTF-8 is REQUIRED on every WebLink regardless of displayType/openType.
+        - No retURL query param: the component owns the return trip and navigates to the Contact
+          list itself, on Finish and on close, via NavigationMixin.
+        - The classic-UI popup GEOMETRY fields (hasMenubar, hasScrollbars, hasToolbar, height,
+          isResizable, position, showsLocation, showsStatus, width) carried by the repo's other
+          WebLink, objects/Campaign/webLinks/ViewCampaignInfluenceReport.webLink-meta.xml, are not
+          relevant to a massActionButton in `replace` mode and validate fine omitted.
+
+        HISTORY
+        2026-08-21  Created pointing at /flow/IR_Add_Investor_Investing_Entity?retURL=/lightning/o/
+                    Contact/list. Check-only validation rejected the first version with "encodingKey
+                    must be specified" - encodingKey had been wrongly grouped with the popup-only
+                    geometry fields above and omitted.
+        2026-08-21  url repointed from that bare /flow/ page to /lightning/cmp/
+                    c__addInvestorEntityModal and retURL dropped. Nothing else changed.
+    -->
+    <fullName>Add_Investor_Investing_Entity</fullName>
+    <availability>online</availability>
+    <displayType>massActionButton</displayType>
+    <encodingKey>UTF-8</encodingKey>
+    <linkType>url</linkType>
+    <masterLabel>Add Investor &amp; Investing Entity</masterLabel>
+    <openType>replace</openType>
+    <protected>false</protected>
+    <requireRowSelection>false</requireRowSelection>
+    <url>/lightning/cmp/c__addInvestorEntityModal</url>
+</WebLink>

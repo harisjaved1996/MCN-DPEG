@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<BusinessProcess xmlns="http://soap.sforce.com/2006/04/metadata">
+    <!--
+        THE SHARED LEAD BUSINESS PROCESS. Added 2026-08-10 (Task 1 fix round 2, root cause 2).
+
+        WHY THIS EXISTS AT ALL: Lead, Opportunity, Case and Solution record types each REQUIRE a
+        BusinessProcess - this is a platform rule, not a project convention (confirmed by a
+        check-only `sf project deploy start`, dry-run flag set, against usman-dpeg, deploy id
+        0Afiw000000HR8fCAG: "Required field is missing: businessProcess" on both Lead record
+        types). Lead had no BusinessProcess in this repo before this file, because Lead had no
+        record types at all before Task 1 of this plan.
+
+        THIS PROCESS IS USED BY Lead/recordTypes/Acquisition_Broker.recordType-meta.xml, which
+        references <businessProcess>Lead_Process</businessProcess>. This paragraph originally
+        claimed it was shared by BOTH Lead record types - that premise is now stale (CORRECTED
+        2026-08-25, code review C3). The other Lead record type referenced here as "IR_Investor"
+        was renamed to Investor_Onboarding (Lead/recordTypes/Investor_Onboarding.recordType-meta.xml;
+        there is no IR_Investor.recordType-meta.xml anywhere in this repo) and was later given its
+        OWN, separate business process, "Investor Onboarding Lead"
+        (objects/Lead/businessProcesses/Investor Onboarding Lead.businessProcess-meta.xml), with
+        its own Status value set (adds Create Profile, omits Qualified and Disqualified). Do not
+        assume every Lead record type shares this process - check each record type's own
+        <businessProcess> reference before editing either file.
+
+        VALUES DERIVED FROM A LIVE ORG DESCRIBE (`sf sobject describe, sobject=Lead` against
+        usman-dpeg), NOT from this repo's Status.field-meta.xml, which is a bare stub with no
+        picklist values declared in the file (the org's live values are the only source of
+        truth). Five active values, org default preserved: New (default), Under Review,
+        Qualified, Converted, Disqualified - identical to the picklist values already enumerated
+        on both Lead record types since the prior fix round. None of the five values contains a
+        `/` or any other character needing Dead%2FPass-style URL encoding (checked against the
+        live describe output before writing this file - the only escaped value in this repo's
+        BusinessProcess metadata remains Opportunity's Dead%2FPass).
+
+        THE Status PICKLISTVALUES BLOCK ON BOTH LEAD RECORD TYPES WAS LEFT IN PLACE, NOT REMOVED
+        - the same check-only dry-run that required this file to exist raised NO error, warning
+        or conflict about Status appearing in BOTH the RecordType's own <picklistValues> AND the
+        BusinessProcess it references. The two serve different purposes and coexist without
+        conflict: BusinessProcess.values is what the platform actually reads to determine which
+        Status values are available on records of a Lead record type that has a
+        <businessProcess> reference (this is the field the standard Status picklist is restricted
+        by, once a Lead record type declares one); RecordType.picklistValues for Status was
+        already correct and behaviour-neutral from the prior fix round and removing it was never
+        shown to be necessary by any validation error - the dry-run passing WITH both present is
+        the actual evidence, not an assumption either way. Kept both rather than guessing.
+    -->
+    <fullName>Lead_Process</fullName>
+    <isActive>true</isActive>
+    <values>
+        <fullName>Converted</fullName>
+        <default>false</default>
+    </values>
+    <values>
+        <fullName>Disqualified</fullName>
+        <default>false</default>
+    </values>
+    <values>
+        <fullName>New</fullName>
+        <default>true</default>
+    </values>
+    <values>
+        <fullName>Qualified</fullName>
+        <default>false</default>
+    </values>
+    <values>
+        <fullName>Under Review</fullName>
+        <default>false</default>
+    </values>
+</BusinessProcess>

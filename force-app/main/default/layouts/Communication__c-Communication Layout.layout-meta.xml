@@ -6,16 +6,13 @@
         <editHeading>true</editHeading>
         <label>Email</label>
         <layoutColumns>
-            <layoutItems><behavior>Readonly</behavior><field>Name</field></layoutItems>
+            <layoutItems><behavior>Required</behavior><field>Name</field></layoutItems>
             <layoutItems><behavior>Required</behavior><field>Offering__c</field></layoutItems>
             <layoutItems><behavior>Readonly</behavior><field>Email_Name__c</field></layoutItems>
-            <layoutItems><behavior>Readonly</behavior><field>Email_Subject__c</field></layoutItems>
         </layoutColumns>
         <layoutColumns>
             <layoutItems><behavior>Readonly</behavior><field>Status__c</field></layoutItems>
             <layoutItems><behavior>Readonly</behavior><field>Workspace_Name__c</field></layoutItems>
-            <layoutItems><behavior>Readonly</behavior><field>Skip_Without_Consent__c</field></layoutItems>
-            <layoutItems><behavior>Readonly</behavior><field>Audience_Filter__c</field></layoutItems>
         </layoutColumns>
         <style>TwoColumnsTopToBottom</style>
     </layoutSections>
@@ -31,8 +28,6 @@
         </layoutColumns>
         <layoutColumns>
             <layoutItems><behavior>Readonly</behavior><field>Total_Recipients__c</field></layoutItems>
-            <layoutItems><behavior>Readonly</behavior><field>Last_Metrics_Sync__c</field></layoutItems>
-            <layoutItems><behavior>Readonly</behavior><field>Batch_Job_Id__c</field></layoutItems>
         </layoutColumns>
         <style>TwoColumnsTopToBottom</style>
     </layoutSections>
@@ -43,13 +38,10 @@
         <label>Delivery</label>
         <layoutColumns>
             <layoutItems><behavior>Readonly</behavior><field>Sent_Count__c</field></layoutItems>
-            <layoutItems><behavior>Readonly</behavior><field>Blocked_No_Consent_Count__c</field></layoutItems>
-            <layoutItems><behavior>Readonly</behavior><field>Failed_Count__c</field></layoutItems>
             <layoutItems><behavior>Readonly</behavior><field>Skipped_No_Email_Count__c</field></layoutItems>
         </layoutColumns>
         <layoutColumns>
             <layoutItems><behavior>Readonly</behavior><field>Delivery_Rate__c</field></layoutItems>
-            <layoutItems><behavior>Readonly</behavior><field>Error_Message__c</field></layoutItems>
         </layoutColumns>
         <style>TwoColumnsTopToBottom</style>
     </layoutSections>
@@ -74,20 +66,27 @@
     <platformActionList>
         <actionListContext>Record</actionListContext>
         <platformActionListItems>
-            <actionName>Communication__c.Refresh_Metrics</actionName>
+            <actionName>Communication__c.Refresh_IR_Engagement</actionName>
             <actionType>QuickAction</actionType>
             <sortOrder>0</sortOrder>
+        </platformActionListItems>
+        <platformActionListItems>
+            <actionName>Communication__c.Refresh_Metrics</actionName>
+            <actionType>QuickAction</actionType>
+            <sortOrder>1</sortOrder>
         </platformActionListItems>
     </platformActionList>
     <relatedLists>
         <fields>NAME</fields>
         <fields>Individual_Name__c</fields>
+        <fields>Contact__c</fields>
         <fields>Email_Address__c</fields>
         <fields>Send_Status__c</fields>
         <fields>Engagement_Status__c</fields>
         <fields>Sent_At__c</fields>
         <fields>Opened_At__c</fields>
-        <fields>Failure_Reason__c</fields>
+        <fields>Clicked_At__c</fields>
+        <fields>Bounced_At__c</fields>
         <relatedList>Communication_Recipient__c.Communication__c</relatedList>
     </relatedLists>
     <showEmailCheckbox>false</showEmailCheckbox>

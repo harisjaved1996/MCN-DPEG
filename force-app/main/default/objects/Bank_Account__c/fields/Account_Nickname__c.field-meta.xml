@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Account_Nickname__c</fullName>
+    <description>Friendly, human-readable nickname for this bank account, used to distinguish it from other accounts on the same Offering or GP entity.</description>
+    <externalId>false</externalId>
+    <inlineHelpText>A short name to help identify this account at a glance, e.g. "Ops Checking".</inlineHelpText>
+    <label>Account Nickname</label>
+    <length>255</length>
+    <required>false</required>
+    <trackHistory>false</trackHistory>
+    <trackTrending>false</trackTrending>
+    <type>Text</type>
+    <unique>false</unique>
+</CustomField>

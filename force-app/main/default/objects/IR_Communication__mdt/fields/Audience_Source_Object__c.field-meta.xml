@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Audience_Source_Object__c</fullName>
+    <label>Audience Source Object</label>
+    <type>Text</type>
+    <length>100</length>
+    <required>false</required>
+    <unique>false</unique>
+    <inlineHelpText>Data Cloud ssot__DataSourceObjectId__c value the audience is filtered to. Defaults to Contact.</inlineHelpText>
+</CustomField>

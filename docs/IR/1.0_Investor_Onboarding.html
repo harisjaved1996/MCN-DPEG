@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Investor Onboarding</title>
+<style>
+  :root{
+    --paper:#FBF9F6; --card:#FFFFFF; --ink:#23262E; --muted:#6A6D75;
+    --line:#E7E0D6; --accent:#B85D0D; --accent-2:#D98324; --accent-soft:#FDF1E7;
+    --accent-ink:#8F480A; --code-bg:#F4EFE7; --good:#2E7D4F; --warn:#B7791F; --crit:#B3372E;
+    --good-soft:#EAF4EE; --warn-soft:#FAF3E4; --crit-soft:#F9ECEA;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper:#14161B; --card:#1B1E25; --ink:#E8E6E1; --muted:#9A9DA6;
+      --line:#2C2F37; --accent:#E08A3C; --accent-2:#D98324; --accent-soft:#2A2119;
+      --accent-ink:#EDB483; --code-bg:#20232B; --good:#67B48A; --warn:#D9A94E; --crit:#D97A72;
+      --good-soft:#1C2721; --warn-soft:#2A251A; --crit-soft:#2B1E1D;
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#14161B; --card:#1B1E25; --ink:#E8E6E1; --muted:#9A9DA6;
+    --line:#2C2F37; --accent:#E08A3C; --accent-2:#D98324; --accent-soft:#2A2119;
+    --accent-ink:#EDB483; --code-bg:#20232B; --good:#67B48A; --warn:#D9A94E; --crit:#D97A72;
+    --good-soft:#1C2721; --warn-soft:#2A251A; --crit-soft:#2B1E1D;
+  }
+  *{box-sizing:border-box; margin:0;}
+  body{
+    background:var(--paper); color:var(--ink);
+    font-family:"Segoe UI", -apple-system, Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-size:15.5px; line-height:1.65;
+  }
+  .wrap{max-width:920px; margin:0 auto; padding:0 24px 96px;}
+  h1,h2,h3{font-family:Georgia, "Times New Roman", serif; text-wrap:balance; font-weight:700;}
+  code,pre{font-family:Consolas, "Courier New", monospace; font-size:0.92em;}
+  code{background:var(--code-bg); padding:1px 6px; border-radius:4px;}
+  pre{background:var(--code-bg); border:1px solid var(--line); border-radius:8px;
+      padding:14px 18px; overflow-x:auto; line-height:1.55;}
+  pre code{background:none; padding:0;}
+  a{color:var(--accent); text-decoration:none;}
+  a:hover{text-decoration:underline;}
+  a:focus-visible{outline:2px solid var(--accent); outline-offset:2px; border-radius:2px;}
+
+  /* ── Ticket header ─────────────────────────────────────── */
+  .ticket{border-top:5px solid var(--accent); background:var(--card);
+    border-inline:1px solid var(--line); border-bottom:1px solid var(--line);
+    border-radius:0 0 14px 14px; padding:34px 38px 28px; margin-bottom:36px;}
+  .eyebrow{font-size:12px; letter-spacing:2px; text-transform:uppercase; color:var(--accent);
+    font-weight:600; margin-bottom:10px;}
+  .ticket h1{font-size:34px; line-height:1.15; margin-bottom:8px;}
+  .ticket .sub{color:var(--muted); max-width:62ch;}
+  .chips{display:flex; flex-wrap:wrap; gap:8px; margin-top:20px;}
+  .chip{background:var(--accent-soft); color:var(--accent-ink); border-radius:999px;
+    font-size:12.5px; padding:4px 12px; font-weight:600;}
+  .chip b{font-variant-numeric:tabular-nums;}
+  .chip.neutral{background:var(--code-bg); color:var(--muted);}
+
+  /* ── TOC ───────────────────────────────────────────────── */
+  .toc{display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:10px; margin:22px 0 8px;}
+  .toc a{display:flex; gap:10px; align-items:baseline; background:var(--card);
+    border:1px solid var(--line); border-radius:10px; padding:11px 14px; color:var(--ink);}
+  .toc a:hover{border-color:var(--accent); text-decoration:none;}
+  .toc .n{color:var(--accent); font-weight:700; font-variant-numeric:tabular-nums; font-size:13px;}
+
+  /* ── Sections ──────────────────────────────────────────── */
+  section{margin-top:56px;}
+  section > h2{font-size:25px; padding-bottom:10px; border-bottom:2px solid var(--line);
+    margin-bottom:20px; display:flex; gap:14px; align-items:baseline;}
+  section > h2 .n{color:var(--accent); font-size:16px; font-family:Consolas,monospace; font-weight:400;}
+  h3{font-size:18px; margin:28px 0 10px;}
+  p{margin:0 0 14px; max-width:74ch;}
+  ul,ol{margin:0 0 16px; padding-left:24px; max-width:74ch;}
+  li{margin-bottom:6px;}
+
+  /* ── Callouts ──────────────────────────────────────────── */
+  .callout{border-left:4px solid var(--accent); background:var(--accent-soft);
+    border-radius:0 10px 10px 0; padding:14px 18px; margin:18px 0; max-width:none;}
+  .callout .t{font-weight:700; color:var(--accent-ink); font-size:13px; letter-spacing:1px;
+    text-transform:uppercase; margin-bottom:4px;}
+  .callout p{margin:0; max-width:none;}
+  .callout.warn{border-color:var(--warn); background:var(--warn-soft);}
+  .callout.warn .t{color:var(--warn);}
+  .callout.crit{border-color:var(--crit); background:var(--crit-soft);}
+  .callout.crit .t{color:var(--crit);}
+
+  /* ── Tables ────────────────────────────────────────────── */
+  .tblwrap{overflow-x:auto; margin:16px 0 22px; border:1px solid var(--line); border-radius:10px;}
+  table{border-collapse:collapse; width:100%; background:var(--card); font-size:14.5px;}
+  th{background:var(--code-bg); text-align:left; font-size:12.5px; letter-spacing:0.6px;
+    text-transform:uppercase; color:var(--muted); padding:10px 14px; white-space:nowrap;}
+  td{padding:10px 14px; border-top:1px solid var(--line); vertical-align:top;}
+  td:first-child{white-space:nowrap;}
+
+  /* ── Pills ─────────────────────────────────────────────── */
+  .pill{display:inline-block; border-radius:999px; font-size:11.5px; font-weight:700;
+    padding:2px 10px; letter-spacing:0.4px; white-space:nowrap;}
+  .pill.new{background:var(--good-soft); color:var(--good);}
+  .pill.mod{background:var(--warn-soft); color:var(--warn);}
+  .pill.del{background:var(--crit-soft); color:var(--crit);}
+  .pill.open{background:var(--crit-soft); color:var(--crit);}
+  .pill.done{background:var(--good-soft); color:var(--good);}
+
+  /* ── Lifecycle diagram ─────────────────────────────────── */
+  .flow{display:flex; flex-wrap:wrap; align-items:stretch; gap:0; margin:22px 0; overflow-x:auto; padding-bottom:6px;}
+  .stage{background:var(--card); border:1.5px solid var(--line); border-radius:10px;
+    padding:12px 16px; min-width:170px; flex:1;}
+  .stage .s{font-family:Georgia,serif; font-weight:700; font-size:16px; color:var(--accent);}
+  .stage .d{font-size:13px; color:var(--muted); margin-top:4px; line-height:1.45;}
+  .arrow{align-self:center; padding:0 10px; color:var(--accent-2); font-size:20px; font-weight:700;}
+
+  /* ── Step list (conversion engine) ─────────────────────── */
+  .steps{counter-reset:st; list-style:none; padding:0; max-width:none;}
+  .steps li{counter-increment:st; display:flex; gap:16px; padding:13px 0;
+    border-bottom:1px dashed var(--line); margin:0;}
+  .steps li::before{content:counter(st); flex:0 0 30px; height:30px; border-radius:50%;
+    background:var(--accent-soft); color:var(--accent-ink); font-weight:700; display:flex;
+    align-items:center; justify-content:center; font-size:14px; font-variant-numeric:tabular-nums;}
+  .steps b{display:block;}
+  .steps .why{color:var(--muted); font-size:14px;}
+
+  /* ── Commit timeline ───────────────────────────────────── */
+  .timeline{list-style:none; padding:0; border-left:2px solid var(--line); margin-left:8px; max-width:none;}
+  .timeline li{position:relative; padding:0 0 22px 26px; margin:0;}
+  .timeline li::before{content:""; position:absolute; left:-7px; top:5px; width:12px; height:12px;
+    border-radius:50%; background:var(--accent); border:2.5px solid var(--paper);}
+  .timeline .h{font-family:Consolas,monospace; font-size:13px; color:var(--muted);}
+  .timeline .m{font-weight:600;}
+  .timeline .d{font-size:14px; color:var(--muted);}
+
+  footer{margin-top:70px; padding-top:18px; border-top:1px solid var(--line);
+    color:var(--muted); font-size:13px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="ticket">
+  <div class="eyebrow">DPEG &middot; Investor Relations &middot; Technical Design Document</div>
+  <h1>Investor Onboarding &mdash; Lead to Investor Contact</h1>
+  <p class="sub">Everything delivered on git branch <code>IR-Lead_Onboarding</code>: a complete
+  lead-intake-to-conversion pipeline for prospective investors, segregated from the Acquisitions
+  side of the org, ending in a standalone investor Contact with no Account and no Opportunity.</p>
+  <div class="chips">
+    <span class="chip"><b>8</b>&nbsp;commits</span>
+    <span class="chip"><b>67</b>&nbsp;files changed</span>
+    <span class="chip"><b>+5,734</b> / <b>&minus;2,142</b>&nbsp;lines</span>
+    <span class="chip neutral">Aug 11 &ndash; 17, 2026</span>
+    <span class="chip neutral">Author: Muhammad Haris Javed</span>
+    <span class="chip neutral">Org: DPEG-IR-Implementation</span>
+  </div>
+</header>
+
+<nav class="toc" aria-label="Contents">
+  <a href="#overview"><span class="n">01</span> What &amp; Why</a>
+  <a href="#lifecycle"><span class="n">02</span> The Lead Lifecycle</a>
+  <a href="#datamodel"><span class="n">03</span> Data Model</a>
+  <a href="#automation"><span class="n">04</span> Flows &amp; Quick Actions</a>
+  <a href="#apex"><span class="n">05</span> The Conversion Engine (Apex)</a>
+  <a href="#ui"><span class="n">06</span> Pages &amp; Layouts</a>
+  <a href="#security"><span class="n">07</span> Security &amp; Permissions</a>
+  <a href="#email"><span class="n">08</span> Email Templates</a>
+  <a href="#testing"><span class="n">09</span> Testing</a>
+  <a href="#cleanup"><span class="n">10</span> Cleanup &amp; Renames</a>
+  <a href="#commits"><span class="n">11</span> Commit History</a>
+  <a href="#followups"><span class="n">12</span> Known Issues &amp; Follow-ups</a>
+</nav>
+
+<!-- ══════════════════════════════ 01 ══════════════════════════════ -->
+<section id="overview">
+  <h2><span class="n">01</span> What &amp; Why</h2>
+  <p><b>What was built.</b> A dedicated onboarding funnel for prospective investors. A Lead
+  created with the <code>Investor Onboarding</code> record type is automatically routed to a
+  queue, the IR team is notified, a team member claims it, reviews it, and converts it &mdash;
+  and the conversion produces exactly one thing: an investor <b>Contact</b> (record type
+  <code>Investor</code>) with <b>no Account and no Opportunity</b> attached. The new investor
+  automatically receives a branded welcome email.</p>
+  <p><b>Why it exists.</b> DPEG runs two very different populations through the same standard
+  objects: acquisition brokers and investors. The Acquisitions side has its own heavy conversion
+  cascade (deal trees, Property records, Broker record-type stamping). Investors must never fall
+  into that machinery, and the business explicitly does not want investor Contacts parented to
+  Accounts or generating Opportunities. This branch builds the IR lane and the guardrails that
+  keep the two lanes apart.</p>
+  <div class="callout">
+    <div class="t">The one-sentence requirement</div>
+    <p>When a Lead with record type <i>Investor Onboarding</i> is converted, create only a
+    Contact &mdash; if the platform forces an Account into existence to make conversion legal,
+    create it temporarily, detach it from the Contact, and delete it permanently, all in the
+    same transaction.</p>
+  </div>
+</section>
+
+<!-- ══════════════════════════════ 02 ══════════════════════════════ -->
+<section id="lifecycle">
+  <h2><span class="n">02</span> The Lead Lifecycle</h2>
+  <p>The Status path is enforced by a dedicated Business Process and surfaced as a Path on the
+  record page. Each transition is driven by a quick action that only appears when it is the
+  correct next step (Dynamic Actions, section 06).</p>
+  <div class="flow">
+    <div class="stage"><div class="s">New</div><div class="d">Created via web, email-to-lead or
+      manual entry. A before-save flow assigns the Lead to the <b>Investor Onboarding Queue</b>;
+      an after-save flow emails every active queue member.</div></div>
+    <div class="arrow">&#8594;</div>
+    <div class="stage"><div class="s">New (claimed)</div><div class="d"><b>Assign to Me</b> &mdash;
+      a queue member takes ownership. Non-members are refused with an error screen.</div></div>
+    <div class="arrow">&#8594;</div>
+    <div class="stage"><div class="s">Under Review</div><div class="d"><b>Under Review</b> quick
+      action stamps the status while the IR rep vets the prospect.</div></div>
+    <div class="arrow">&#8594;</div>
+    <div class="stage"><div class="s">Converted</div><div class="d"><b>Create Profile</b> validates,
+      then converts via Apex: investor Contact created, temp Account destroyed, no
+      Opportunity. Welcome email sent.</div></div>
+  </div>
+  <p>Statuses for this record type: <code>New &rarr; Under Review &rarr; Create Profile &rarr;
+  Converted</code> (<code>LeadStatus</code> standard value set extended; only
+  <code>Converted</code> is flagged as a converted status).</p>
+</section>
+
+<!-- ══════════════════════════════ 03 ══════════════════════════════ -->
+<section id="datamodel">
+  <h2><span class="n">03</span> Data Model</h2>
+  <div class="tblwrap"><table>
+    <tr><th>Component</th><th>Type</th><th>What / Why</th></tr>
+    <tr><td><code>Lead.Investor_Onboarding</code></td><td>Record Type <span class="pill new">NEW</span></td>
+      <td>The IR lead population. Bound to the &ldquo;Investor Onboarding Lead&rdquo; business
+      process and the Investor Onboarding compact layout. LeadSource narrowed to IR-relevant values.</td></tr>
+    <tr><td>Investor Onboarding Lead</td><td>Business Process <span class="pill new">NEW</span></td>
+      <td>Scopes the 4-status path above to this record type only.</td></tr>
+    <tr><td><code>Lead.Is_Accredited__c</code></td><td>Checkbox <span class="pill new">NEW</span></td>
+      <td>Regulatory gate &mdash; conversion is refused until checked. Carried onto the Contact at conversion.</td></tr>
+    <tr><td><code>Lead.Referred_By__c</code></td><td>Lookup(Contact) <span class="pill new">NEW</span></td>
+      <td>Referral attribution. Carried onto the Contact at conversion (Id assigned straight across).</td></tr>
+    <tr><td><code>Lead.Is_Owner_Investor_Onboarding_Queue__c</code></td><td>Formula <span class="pill new">NEW</span></td>
+      <td>True when record type = Investor_Onboarding AND owner is a queue (<code>00G</code> prefix).
+      Drives Dynamic Actions visibility. A formula, not a stored flag, so it can never drift out of
+      sync with OwnerId. Both conditions are required &mdash; Acquisition Broker leads are also queue-owned.</td></tr>
+    <tr><td><code>Contact.Investor</code></td><td>Record Type <span class="pill mod">MODIFIED</span></td>
+      <td>The durable investor identity. Now assigns the Investor Compact Layout.</td></tr>
+    <tr><td><code>Contact.Is_Accredited__c</code>, <code>Contact.Referred_By__c</code></td><td>Fields <span class="pill new">NEW</span></td>
+      <td>Landing fields for the two values carried from the Lead.</td></tr>
+    <tr><td>Investor Onboarding Queue</td><td>Queue <span class="pill new">NEW</span></td>
+      <td>Single intake point for new IR leads. Resolved everywhere by DeveloperName + Type
+      (never a hardcoded Id) because Group names are only unique per type.</td></tr>
+    <tr><td>Email_Required_To_Convert / _To_Progress</td><td>Validation Rules <span class="pill mod">MODIFIED</span></td>
+      <td>Scoping tweaks so IR leads respect email requirements on progression.</td></tr>
+  </table></div>
+</section>
+
+<!-- ══════════════════════════════ 04 ══════════════════════════════ -->
+<section id="automation">
+  <h2><span class="n">04</span> Flows &amp; Quick Actions</h2>
+  <p>Six new flows plus two surgical modifications. Screen flows back the three quick actions;
+  record-triggered flows do routing and notifications.</p>
+  <div class="tblwrap"><table>
+    <tr><th>Flow</th><th>Trigger</th><th>What it does</th></tr>
+    <tr><td><code>IR_Lead_Assignment_Flow</code> <span class="pill new">NEW</span></td>
+      <td>Before-save, Create</td>
+      <td>Sets OwnerId to the Investor Onboarding Queue for new IR leads. Before-save = zero extra
+      DML. Fails closed: queue not found &rarr; owner untouched. <b>Replaces the old Lead
+      assignment rule</b> (now an empty ruleset).</td></tr>
+    <tr><td><code>IR_Lead_Notification_Flow</code> <span class="pill new">NEW</span></td>
+      <td>After-save, Create</td>
+      <td>Emails every <i>active</i> member of the queue, one send per user (the emailSimple action
+      cannot address a Group). Fails silently at every unresolved step. No Lead merge fields &mdash;
+      measured: WhatId is not available when the recipient is a User.</td></tr>
+    <tr><td><code>IR_Lead_Assignment_to_User</code> <span class="pill new">NEW</span></td>
+      <td>Screen &mdash; &ldquo;Assign to Me&rdquo;</td>
+      <td>Verifies the clicking user is a <b>direct member of the queue</b> (GroupMember lookup);
+      members get ownership, non-members get an error screen and nothing is written. Known limit:
+      nested/role-based membership is not expanded &mdash; consistent with the notification flow.</td></tr>
+    <tr><td><code>IR_Lead_Under_Review_Flow</code> <span class="pill new">NEW</span></td>
+      <td>Screen &mdash; &ldquo;Under Review&rdquo;</td>
+      <td>Stamps Status = Under Review, success/error confirmation screens.</td></tr>
+    <tr><td><code>IR_Lead_Create_Profile_Flow</code> <span class="pill new">NEW</span></td>
+      <td>Screen &mdash; &ldquo;Create Profile&rdquo;</td>
+      <td>Three read-only gates before anything is written: (1) Is Accredited checked, (2) Email /
+      Phone / Last Name populated, (3) no existing Contact with the same email (shows which one if
+      found). Only then calls the Apex conversion action and branches on its result.</td></tr>
+    <tr><td><code>Investor_Welcome_Flow</code> <span class="pill new">NEW</span></td>
+      <td>After-save, Contact Create</td>
+      <td>For record type Investor only: resolves the Lightning welcome template by DeveloperName
+      and emails the new investor, logged on their activity timeline.</td></tr>
+    <tr><td><code>Lead_Approved_Notify</code> <span class="pill mod">MODIFIED</span></td>
+      <td>Record-triggered</td>
+      <td>Null-guarded its required binding to <code>ConvertedOpportunityId</code> &mdash; this
+      unguarded binding was what made <code>setDoNotCreateOpportunity(true)</code> blow up with
+      UNKNOWN_EXCEPTION historically.</td></tr>
+    <tr><td><code>Lead_Intake_Stamp</code> <span class="pill mod">MODIFIED</span></td>
+      <td>Before-save</td>
+      <td>Entry criteria scoped to <code>Acquisition_Broker</code> so the two before-save flows
+      match disjoint populations and cannot race.</td></tr>
+  </table></div>
+
+  <h3>Quick actions (Dynamic Actions on the Lead record page)</h3>
+  <p>Visibility is driven by Status + the queue-ownership formula, so exactly one obvious next
+  step shows at any time:</p>
+  <div class="tblwrap"><table>
+    <tr><th>Button</th><th>Visible when</th></tr>
+    <tr><td>Assign to Me</td><td>Status = New <b>and</b> still queue-owned</td></tr>
+    <tr><td>Under Review</td><td>Status = New <b>and</b> user-owned (claimed)</td></tr>
+    <tr><td>Create Profile</td><td>Status = Under Review <b>and</b> user-owned</td></tr>
+  </table></div>
+</section>
+
+<!-- ══════════════════════════════ 05 ══════════════════════════════ -->
+<section id="apex">
+  <h2><span class="n">05</span> The Conversion Engine (Apex)</h2>
+  <p>Two new classes do the work; one existing class was modified to stay out of the way.</p>
+  <div class="tblwrap"><table>
+    <tr><th>Class</th><th>Layer</th><th>Role</th></tr>
+    <tr><td><code>InvestorLeadConvertService</code> <span class="pill new">NEW</span></td><td>Service</td>
+      <td>The whole conversion, exposed to Flow as the invocable action
+      <i>Convert Investor Lead</i>. Bulk-safe, index-parallel results, never throws into the
+      Flow fault path.</td></tr>
+    <tr><td><code>InvestorLeadConvertSelector</code> <span class="pill new">NEW</span></td><td>Selector</td>
+      <td>All SOQL for the feature. Lead read runs <code>WITH USER_MODE</code> (user-initiated);
+      the cascade-delete safety re-query runs <code>WITH SYSTEM_MODE</code> so an FLS gap cannot
+      disable the cleanup org-wide.</td></tr>
+    <tr><td><code>LeadConvertService</code> <span class="pill mod">MODIFIED</span></td><td>Service</td>
+      <td>The Acquisitions conversion cascade now <b>explicitly skips</b> any Lead on the
+      Investor_Onboarding record type. Without this guard it would stamp the investor Contact as
+      <i>Broker</i> and build Property records &mdash; a silent visibility change, since sharing
+      rules key on record type.</td></tr>
+  </table></div>
+
+  <h3>How a conversion runs &mdash; seven steps, one transaction</h3>
+  <ol class="steps">
+    <li><div><b>Insert a temporary Account</b> named
+      <code>IR Conversion Temp Account &lt;leadId&gt;</code>, record type
+      <code>Investor_Entity</code> (describe-resolved, never a hardcoded Id).
+      <span class="why">Why: Lead.Company is optional and Person Accounts are enabled &mdash;
+      left alone, the platform would mint a Person Account. Naming it after the Lead makes any
+      orphan self-identifying.</span></div></li>
+    <li><div><b>Convert</b> via <code>Database.convertLead</code> with the temp Account,
+      <code>setDoNotCreateOpportunity(true)</code>, status Converted &mdash; and deliberately
+      <b>no <code>setContactId</code></b>.
+      <span class="why">Why: pre-creating a Contact always tripped DUPLICATES_DETECTED, because the
+      org&rsquo;s Contact duplicate rule matches new Contacts against open Leads &mdash; i.e. the very
+      Lead being converted. Letting the conversion mint the Contact sidesteps the rule entirely.</span></div></li>
+    <li><div><b>Read the new Contact Id</b> from the conversion result.
+      <span class="why">Name, Email and Phone are mapped by the platform itself &mdash; Apex never
+      copies standard fields.</span></div></li>
+    <li><div><b>Detach</b> &mdash; one update writing <code>AccountId = null</code> and
+      <i>nothing else</i>.
+      <span class="why">Why one field: any extra field is another way for this safety write to fail.
+      A previous combined write failed on an unrelated field, stranded the temp Account, and a later
+      manual cleanup cascade-deleted two real investor Contacts. This design is the post-mortem fix.</span></div></li>
+    <li><div><b>Confirm from the database</b> &mdash; re-query the Contacts and only trust a stored
+      <code>AccountId = null</code>.
+      <span class="why">Why: a SaveResult proves a statement was accepted, not that a field holds a
+      value. Deleting an Account cascade-deletes its Contacts, so the only safe precondition is a
+      re-read. Fails closed: an unreadable Contact strands the Account instead of risking the Contact.</span></div></li>
+    <li><div><b>Delete the temp Account &mdash; permanently.</b> <code>Database.delete</code>
+      followed by <code>Database.emptyRecycleBin</code>, the purge scoped to Investor_Onboarding
+      leads only.
+      <span class="why">Why hard delete: the requirement is &ldquo;removed from the org, not
+      restorable.&rdquo; Measured: same-transaction emptyRecycleBin works &mdash; a subsequent
+      undelete fails with UNDELETE_FAILED, while the soft-delete control arm restores fine. The row
+      may still read IsDeleted = true under ALL ROWS until the background purge; that is retention,
+      not failure.</span></div></li>
+    <li><div><b>Enrich</b> &mdash; stamp Contact record type <code>Investor</code> and carry
+      <code>Is_Accredited__c</code> + <code>Referred_By__c</code> from the Lead.
+      <span class="why">Why last: a failure here costs two field values an admin can set by hand;
+      nothing is at risk because the Contact is already detached and the Account already gone.</span></div></li>
+  </ol>
+
+  <div class="callout">
+    <div class="t">Governor shape is a contract</div>
+    <p><b>2 SOQL / at most 5 DML + 1 convertLead call &mdash; constant regardless of how many
+    Leads are converted.</b> The safety re-query (SOQL&nbsp;2) and the standalone detach (DML&nbsp;2)
+    were deliberate widenings of an older, cheaper, unsafe shape; the class header forbids
+    &ldquo;optimising&rdquo; them back out.</p>
+  </div>
+
+  <div class="callout crit">
+    <div class="t">After conversion &mdash; read the right field</div>
+    <p>The Lead&rsquo;s <code>ConvertedAccountId</code> points at the deleted temporary Account
+    &mdash; do not navigate to it. The durable link is <code>ConvertedContactId</code>.
+    <code>ConvertedOpportunityId</code> is null by construction.</p>
+  </div>
+</section>
+
+<!-- ══════════════════════════════ 06 ══════════════════════════════ -->
+<section id="ui">
+  <h2><span class="n">06</span> Pages &amp; Layouts</h2>
+  <div class="tblwrap"><table>
+    <tr><th>Component</th><th>Type</th><th>What / Why</th></tr>
+    <tr><td><code>Investor_Onboarding_Lead_Record_Page</code></td><td>FlexiPage <span class="pill new">NEW</span></td>
+      <td>The Lead record page: Path, Dynamic Actions (the visibility matrix in section 04),
+      highlights and details for the IR field set.</td></tr>
+    <tr><td><code>Investor_Record_Page</code></td><td>FlexiPage <span class="pill new">NEW</span></td>
+      <td>The Contact record page for investors: Name / Email / Phone / Is Accredited / Referred By
+      in highlights and details, Activity panel (Log a Call, Email, Task) in the sidebar.</td></tr>
+    <tr><td>Investor Onboarding Layout</td><td>Lead Layout + Compact <span class="pill new">NEW</span></td>
+      <td>IR lead page layout and compact layout (Name, Status, Owner).</td></tr>
+    <tr><td>Investor Layout</td><td>Contact Layout <span class="pill new">NEW</span></td>
+      <td>The five requested fields plus <code>AccountId</code> as <b>read-only</b> &mdash; the
+      platform refuses a Contact layout without it, and read-only stops anyone hand-reattaching an
+      Account to an investor. File name <code>Contact-Investor Layout</code> is DX convention
+      (Object-Name); the layout&rsquo;s actual name is &ldquo;Investor Layout&rdquo;.</td></tr>
+    <tr><td>Investor Compact Layout</td><td>Contact Compact <span class="pill new">NEW</span></td>
+      <td>Shows the Contact name; bound to the record type via
+      <code>compactLayoutAssignment</code> (the binding lives on the RecordType, not the layout).</td></tr>
+    <tr><td>Investor Onboarding Path</td><td>Path Assistant <span class="pill new">NEW</span></td>
+      <td>Status path UI for the IR record type.</td></tr>
+    <tr><td><code>Investor_Relations</code> app</td><td>Custom App <span class="pill mod">MODIFIED</span></td>
+      <td>Label &ldquo;Investor Relation&rdquo;; tabs Lead / Contact / Account / Reports; and three
+      <code>profileActionOverrides</code> binding the record pages to App + Record Type + Profile
+      (Lead page for IR profile and Admin; Contact page for the IR profile).
+      <b>Warning:</b> this element replaces wholesale on deploy &mdash; all entries must always
+      ship together.</td></tr>
+    <tr><td>Assets (success.png, error.png)</td><td>Static Resource <span class="pill new">NEW</span></td>
+      <td>Icons for the flow success / error screens.</td></tr>
+  </table></div>
+</section>
+
+<!-- ══════════════════════════════ 07 ══════════════════════════════ -->
+<section id="security">
+  <h2><span class="n">07</span> Security &amp; Permissions</h2>
+  <p>Access is granted through permission sets, not profiles &mdash; profiles are excluded from
+  deployment in this repo (<code>.forceignore</code>) because they are unportable and produced
+  394 errors. The profile carries only what cannot live anywhere else: layout assignments.</p>
+  <div class="tblwrap"><table>
+    <tr><th>Component</th><th>Status</th><th>Purpose</th></tr>
+    <tr><td><code>DPEG_App_IR</code></td><td><span class="pill new">NEW</span> (renamed)</td>
+      <td>App-level access: the Investor Relation app and its tabs. Replaces
+      <code>DPEG_App_Investor_Relations</code>.</td></tr>
+    <tr><td><code>DPEG_IR_Default_Access</code></td><td><span class="pill new">NEW</span></td>
+      <td>The working IR persona: Lead + Contact + Account object permissions, IR field FLS,
+      record type visibility (Lead.Investor_Onboarding, Contact.Investor, Account.Investor_Entity),
+      the three flows, the conversion Apex class, ConvertLeads, and email template management.</td></tr>
+    <tr><td><code>DPEG_IR_Principle_Read</code></td><td><span class="pill new">NEW</span> (reworked)</td>
+      <td>Read-only mirror of the same surface for principals.</td></tr>
+    <tr><td><code>DPEG-IR-SF-Minimum Access</code> profile</td><td><span class="pill mod">PARTIAL</span></td>
+      <td>Layout assignments only: Investor Layout &rarr; Contact.Investor, Contact Layout &rarr;
+      Broker + master default, Investor Onboarding Layout &rarr; Lead.Investor_Onboarding. Applied
+      via a metadata-format package from outside <code>force-app</code> (documented in the file
+      header) because the normal source deploy skips profiles.</td></tr>
+  </table></div>
+  <div class="callout warn">
+    <div class="t">The FLS lesson this branch paid for</div>
+    <p><code>Contact.AccountId</code> read/edit was missing from every parent the IR persona held
+    &mdash; and it is the one field the detach step writes. The symptom: record type and Is
+    Accredited saved (step 7) while the Contact stayed attached to its temp Account (step 4
+    failed), for IR users only, while admins converted cleanly. The grant now lives explicitly in
+    <code>DPEG_IR_Default_Access</code> with a comment marking it load-bearing.</p>
+  </div>
+</section>
+
+<!-- ══════════════════════════════ 08 ══════════════════════════════ -->
+<section id="email">
+  <h2><span class="n">08</span> Email Templates</h2>
+  <p>Two Lightning (SFX) templates in the <code>IR_Email_Templates_Lightning</code> folder:</p>
+  <ul>
+    <li><b>IR Lead Notification Email</b> &mdash; sent to each queue member when a new IR lead
+    arrives. Deliberately carries no Lead merge fields (measured platform limit when the
+    recipient is a User).</li>
+    <li><b>Investor Welcome Email</b> (<code>Investor_Welcome_Email_LTN</code>) &mdash; branded,
+    table-based, inline-styled HTML welcome sent to the new investor Contact. The
+    <code>_LTN</code> suffix exists because EmailTemplate DeveloperName is unique org-wide and a
+    classic template already owned the natural name.</li>
+  </ul>
+  <div class="callout warn">
+    <div class="t">Templates are records, not metadata &mdash; and the Builder can destroy them</div>
+    <p>The Metadata API cannot carry HtmlValue as Lightning Builder content, so both templates are
+    loaded as <i>data</i> by <code>scripts/load-lightning-email-templates.apex</code> (idempotent
+    upsert by DeveloperName; body embedded as base64; script kept under the ~32,000-character
+    anonymous Apex ceiling). Source of truth is the paired <code>.html</code>/<code>.json</code>
+    files in <code>scripts/email-templates/</code>. <b>Never edit these templates in Email Template
+    Builder</b> &mdash; saving there regenerates HtmlValue from the canvas and wipes the designed
+    body (this happened once and reduced the welcome email to a single plain-text line). To change
+    a template: edit the HTML file, regenerate the blob, re-run the loader.</p>
+  </div>
+</section>
+
+<!-- ══════════════════════════════ 09 ══════════════════════════════ -->
+<section id="testing">
+  <h2><span class="n">09</span> Testing</h2>
+  <p>The suite was rewritten against the current design (the original tests asserted the
+  pre-redesign &ldquo;convert onto an existing Contact&rdquo; premise and failed against correct
+  code). What the suite pins down now:</p>
+  <ul>
+    <li><b>The four invariants</b>, each with its own falsifier: a Contact is created; it ends
+    with no Account; the temp Account is permanently gone; no Opportunity exists.</li>
+    <li><b>Hard delete is asserted by undeletability</b> &mdash; <code>Database.undelete</code>
+    must fail &mdash; never by <code>IsDeleted</code>, which stays true under ALL ROWS until the
+    background purge. A non-IR control arm proves the test can tell hard from soft.</li>
+    <li><b>Refusals</b>: null/empty input, non-Lead Id, already converted &mdash; all typed
+    messages, index-parallel results in mixed batches.</li>
+    <li><b>Governor shape at bulk</b>: 50 leads convert with the contracted 2 SOQL / &le;5 DML.
+    50, not the project-standard 251, because <code>Database.convertLead</code> caps at 100 per
+    transaction &mdash; a 251 test would fail on the platform limit before proving anything. The
+    constant-cost assertion is strictly stronger than a volume test.</li>
+    <li><b>New factory method</b> <code>TestDataFactory.createInvestorOnboardingLeads</code>:
+    builds IR-record-type leads that satisfy the Create Profile gates, then hands ownership back
+    to the running user &mdash; because the assignment flow queues new leads and
+    <code>convertLead</code> refuses queue-owned ones (measured error documented in the method).</li>
+    <li><code>InvestorLeadConvertSelectorTest</code> covers the selector directly, including the
+    empty-input SOQL short-circuits (asserted via <code>Limits.getQueries()</code>, not just empty
+    results) and the attached-vs-detached readings of the safety re-query.</li>
+  </ul>
+</section>
+
+<!-- ══════════════════════════════ 10 ══════════════════════════════ -->
+<section id="cleanup">
+  <h2><span class="n">10</span> Cleanup &amp; Renames</h2>
+  <p>The branch also removed an earlier, abandoned iteration of IR metadata and some stale
+  boilerplate:</p>
+  <ul>
+    <li><span class="pill del">DELETED</span>&nbsp; <code>Lead.IR_Investor</code> record type
+    (379 lines) &mdash; superseded by <code>Investor_Onboarding</code>.</li>
+    <li><span class="pill del">DELETED</span>&nbsp; <code>DPEG_IR_Edit</code> permission set and
+    <code>Investor_Relations_PSG</code> permission set group &mdash; replaced by the
+    Default_Access / Principle_Read pair.</li>
+    <li><span class="pill del">DELETED</span>&nbsp; Lead sharing rules file, stale Campaign and
+    Price Book Entry layouts.</li>
+    <li><span class="pill mod">MODIFIED</span>&nbsp; <code>Lead.assignmentRules</code> emptied
+    &mdash; queue routing moved into the before-save flow (which, unlike an assignment rule, fires
+    on every create path including API and Apex).</li>
+    <li><span class="pill mod">MODIFIED</span>&nbsp; <code>ARCHITECTURE.md</code> slimmed by
+    ~1,100 lines and updated for the IR conventions.</li>
+  </ul>
+</section>
+
+<!-- ══════════════════════════════ 11 ══════════════════════════════ -->
+<section id="commits">
+  <h2><span class="n">11</span> Commit History</h2>
+  <ul class="timeline">
+    <li><div class="h">372b980 &middot; 2026-08-11</div>
+      <div class="m">remove record type</div>
+      <div class="d">Dropped the abandoned IR_Investor Lead record type.</div></li>
+    <li><div class="h">afaf1fa &middot; 2026-08-11</div>
+      <div class="m">Remove IR related things from IR-Lead_Onboarding</div>
+      <div class="d">Cleared the earlier IR iteration (old permission sets, PSG) to start clean.</div></li>
+    <li><div class="h">4f0d041 &middot; 2026-08-12</div>
+      <div class="m">milestone 1 + milestone 2 completed</div>
+      <div class="d">Core intake: record type, business process, statuses, fields, queue,
+      assignment + notification flows, quick actions, Lead record page, app rename.</div></li>
+    <li><div class="h">5f05363 &middot; 2026-08-12</div>
+      <div class="m">IR onboarding taks changes</div>
+      <div class="d">Conversion redesign: the conversion itself creates the Contact; IR exclusion
+      guard added to the Acquisitions cascade.</div></li>
+    <li><div class="h">a5b66f3 &middot; 2026-08-13</div>
+      <div class="m">investor onboarding changes</div>
+      <div class="d">Create Profile flow gates, permission set work, welcome flow, email folder.</div></li>
+    <li><div class="h">8acd586 &middot; 2026-08-16</div>
+      <div class="m">investor onboarding related changes</div>
+      <div class="d">The data-loss post-mortem hardening (detach &rarr; confirm &rarr; delete),
+      hard delete of the temp Account, queue-membership gate on Assign to Me, Contact.AccountId
+      FLS fix, welcome email redesign, test suite rewrite.</div></li>
+    <li><div class="h">f2d2c9b &middot; 2026-08-17</div>
+      <div class="m">update architecture.md file</div>
+      <div class="d">Architecture doc updated for the IR module.</div></li>
+    <li><div class="h">5aa47a3 &middot; 2026-08-17</div>
+      <div class="m">contact page layout with record type investor and compact layout</div>
+      <div class="d">Investor Layout, Investor Compact Layout, Investor Record Page, profile
+      layout assignments, app override for the Contact page.</div></li>
+  </ul>
+</section>
+
+<!-- ══════════════════════════════ 12 ══════════════════════════════ -->
+<section id="followups">
+  <h2><span class="n">12</span> Known Issues &amp; Follow-ups</h2>
+  <div class="tblwrap"><table>
+    <tr><th>Item</th><th>Status</th><th>Detail</th></tr>
+    <tr><td>Create Profile flow hides warnings</td><td><span class="pill open">OPEN</span></td>
+      <td>The flow branches on <code>success</code> only. A conversion whose cleanup partially
+      failed reports success = true with the explanation in <code>errorMessage</code> &mdash;
+      which the success screen discards. The user sees &ldquo;Success!&rdquo; over a broken record.
+      Fix: surface <code>errorMessage</code> on the success screen when non-null.</td></tr>
+    <tr><td>Layout assignment across all profiles</td><td><span class="pill open">OPEN</span></td>
+      <td>Lightning&rsquo;s Contact detail panel requires <i>every</i> profile (84 in the org) to
+      have a layout assigned for record type Investor; a metadata-created record type assigns none.
+      One profile is fixed in source; the rest need the Setup &rarr; Page Layout Assignment grid
+      (one save covers all).</td></tr>
+    <tr><td>No Admin override for the Contact record page</td><td><span class="pill open">OPEN</span></td>
+      <td>The Lead page has App overrides for both the IR profile and Admin; the Contact page has
+      the IR profile only. Admins see the org default page for investor Contacts.</td></tr>
+    <tr><td>Service coverage 83% vs the 90% target</td><td><span class="pill open">OPEN</span></td>
+      <td>Every uncovered line is a failure/warning branch that requires DML to fail on command;
+      the class has no injection seam. A small <code>@TestVisible</code> failure-injection flag
+      would cover ~35 more lines.</td></tr>
+    <tr><td>Root cause of the IR-user detach failure</td><td><span class="pill open">OPEN</span></td>
+      <td>The missing <code>Contact.AccountId</code> grant fits all evidence, but Apex DML
+      normally ignores FLS &mdash; a confirming conversion as the IR persona (debug trace was
+      armed) has not been run yet.</td></tr>
+    <tr><td>Unused selector method</td><td><span class="pill open">OPEN</span></td>
+      <td><code>selectContactsByEmails</code> survives from the pre-redesign flow and has no
+      production caller; kept tested, flagged for a future prune.</td></tr>
+  </table></div>
+</section>
+
+<footer>
+  Generated 2026-08-19 from branch <code>IR-Lead_Onboarding</code> (8 commits, Aug 11&ndash;17 2026)
+  &middot; DPEG Salesforce &middot; Prepared by Avanza Solutions
+</footer>
+
+</div>
+</body>
+</html>

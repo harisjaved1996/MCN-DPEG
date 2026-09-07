@@ -1,50 +1,237 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Layout xmlns="http://soap.sforce.com/2006/04/metadata">
+    <!--
+        THE INVESTOR CONTACT PAGE LAYOUT. Carries exactly the five requested fields: Name, Email,
+        Phone, Is Accredited and Referred By.
+
+        🔴 THIS FILE CANNOT ASSIGN ITSELF TO A PROFILE + RECORD TYPE. Layout assignment lives in
+        Profile metadata (<layoutAssignments>), and profiles are .forceignore'd in this repo
+        (see .forceignore line 28 - they were excluded because they are unportable and produced
+        394 deploy errors). So deploying this file CREATES the layout but leaves it unassigned;
+        binding it to Contact.Investor for the DPEG-IR-SF-Minimum Access profile is a manual step
+        in Setup, or requires un-ignoring profiles. Documented rather than silently skipped.
+
+        ACTIVITY IS NOT A LAYOUT SECTION IN LIGHTNING. The requested "Activity section with Log a
+        Call / Email / Task" is delivered by the ACTIVITY PANEL on the Lightning record page
+        (flexipages/Investor_Record_Page, sidebar region,
+        runtime_sales_activities:activityPanel), not by this layout. What the layout DOES control
+        is which actions appear in the highlights action bar and the mobile action list, so
+        LogACall, SendEmail and NewTask are declared in <platformActionList> below - those three
+        are what populate the Activity composer's tabs.
+
+        RELATED LISTS: Open + History activity related lists are included so the Activity timeline
+        has something to render against on the Related tab.
+    -->
+    <fullName>Contact-Investor Layout</fullName>
     <layoutSections>
-        <customLabel>true</customLabel>
+        <customLabel>false</customLabel>
         <detailHeading>false</detailHeading>
         <editHeading>true</editHeading>
         <label>Information</label>
         <layoutColumns>
-            <layoutItems><behavior>Required</behavior><field>Name</field></layoutItems>
-            <layoutItems><behavior>Edit</behavior><field>AccountId</field></layoutItems>
-            <layoutItems><behavior>Edit</behavior><field>Email</field></layoutItems>
+            <layoutItems>
+                <behavior>Required</behavior>
+                <field>Name</field>
+            </layoutItems>
+            <!--
+                AccountId IS NOT OPTIONAL HERE AND IS NOT A DESIGN CHOICE. It was not in the
+                requested field list, but the platform REFUSES the layout without it:
+                "Layout must contain an item for required layout field: AccountId" (measured on a
+                check-only deploy, 2026-08-17). It is declared Readonly rather than Edit because
+                an IR investor Contact is created ACCOUNT-LESS by design - the conversion detaches
+                it and deletes the temporary Account - so this field should be visible for
+                diagnosis but never hand-edited into pointing at an Account again.
+            -->
+            <layoutItems>
+                <behavior>Readonly</behavior>
+                <field>AccountId</field>
+            </layoutItems>
+            <layoutItems>
+                <behavior>Edit</behavior>
+                <field>Email</field>
+            </layoutItems>
+            <layoutItems>
+                <behavior>Edit</behavior>
+                <field>Phone</field>
+            </layoutItems>
         </layoutColumns>
         <layoutColumns>
-            <layoutItems><behavior>Edit</behavior><field>Phone</field></layoutItems>
-            <layoutItems><behavior>Edit</behavior><field>Is_Accredited__c</field></layoutItems>
-            <layoutItems><behavior>Edit</behavior><field>Referred_By__c</field></layoutItems>
+            <layoutItems>
+                <behavior>Edit</behavior>
+                <field>Is_Accredited__c</field>
+            </layoutItems>
+            <layoutItems>
+                <behavior>Edit</behavior>
+                <field>Referred_By__c</field>
+            </layoutItems>
+        </layoutColumns>
+        <style>TwoColumnsTopToBottom</style>
+    </layoutSections>
+    <!--
+        ⚠ ADDED (this change) - INVESTOR METRICS SECTION. Carries the 10 investor-tracking fields
+        requested for this layout: 4 activation/status checkboxes, 5 lifetime/position metrics,
+        and the AppFolio external ID. Appfolio_ID__c is Readonly, matching the established
+        "do not edit directly, integration-populated" convention already used for every other
+        ExternalId field in this repo (see e.g. objects/Property_Registry__c/fields/Property_Key__c).
+        The other 9 fields are Edit, matching the Read/Write FLS this same change grants them via
+        DPEG_IR_Default_Access - a Readonly layout item would contradict that grant.
+    -->
+    <layoutSections>
+        <customLabel>true</customLabel>
+        <detailHeading>true</detailHeading>
+        <editHeading>true</editHeading>
+        <label>Investor Metrics</label>
+        <layoutColumns>
+            <layoutItems>
+                <behavior>Edit</behavior>
+                <field>Portal_Activated__c</field>
+            </layoutItems>
+            <layoutItems>
+                <behavior>Edit</behavior>
+                <field>Mobile_Activated__c</field>
+            </layoutItems>
+            <layoutItems>
+                <behavior>Edit</behavior>
+                <field>Active_Investor__c</field>
+            </layoutItems>
+            <layoutItems>
+                <behavior>Edit</behavior>
+                <field>Repeat_Investor__c</field>
+            </layoutItems>
+            <layoutItems>
+                <behavior>Readonly</behavior>
+                <field>Appfolio_ID__c</field>
+            </layoutItems>
+        </layoutColumns>
+        <layoutColumns>
+            <layoutItems>
+                <behavior>Edit</behavior>
+                <field>Total_Investing_Entities__c</field>
+            </layoutItems>
+            <layoutItems>
+                <behavior>Edit</behavior>
+                <field>Active_Positions__c</field>
+            </layoutItems>
+            <layoutItems>
+                <behavior>Edit</behavior>
+                <field>Total_Commitments__c</field>
+            </layoutItems>
+            <layoutItems>
+                <behavior>Edit</behavior>
+                <field>Lifetime_Invested__c</field>
+            </layoutItems>
+            <layoutItems>
+                <behavior>Edit</behavior>
+                <field>Total_Distributed__c</field>
+            </layoutItems>
         </layoutColumns>
         <style>TwoColumnsTopToBottom</style>
     </layoutSections>
     <layoutSections>
-        <customLabel>true</customLabel>
+        <customLabel>false</customLabel>
         <detailHeading>false</detailHeading>
         <editHeading>true</editHeading>
-        <label>Investor Metrics</label>
-        <layoutColumns>
-            <layoutItems><behavior>Edit</behavior><field>Portal_Activated__c</field></layoutItems>
-            <layoutItems><behavior>Edit</behavior><field>Mobile_Activated__c</field></layoutItems>
-            <layoutItems><behavior>Edit</behavior><field>Active_Investor__c</field></layoutItems>
-            <layoutItems><behavior>Edit</behavior><field>Repeat_Investor__c</field></layoutItems>
-            <layoutItems><behavior>Edit</behavior><field>Appfolio_ID__c</field></layoutItems>
-        </layoutColumns>
-        <layoutColumns>
-            <layoutItems><behavior>Edit</behavior><field>Total_Investing_Entities__c</field></layoutItems>
-            <layoutItems><behavior>Edit</behavior><field>Active_Positions__c</field></layoutItems>
-            <layoutItems><behavior>Edit</behavior><field>Total_Commitments__c</field></layoutItems>
-            <layoutItems><behavior>Edit</behavior><field>Lifetime_Invested__c</field></layoutItems>
-            <layoutItems><behavior>Edit</behavior><field>Total_Distributed__c</field></layoutItems>
-        </layoutColumns>
-        <style>TwoColumnsTopToBottom</style>
+        <label>Custom Links</label>
+        <layoutColumns/>
+        <layoutColumns/>
+        <style>CustomLinks</style>
     </layoutSections>
+    <platformActionList>
+        <actionListContext>Record</actionListContext>
+        <platformActionListItems>
+            <actionName>LogACall</actionName>
+            <actionType>QuickAction</actionType>
+            <sortOrder>0</sortOrder>
+        </platformActionListItems>
+        <platformActionListItems>
+            <actionName>SendEmail</actionName>
+            <actionType>QuickAction</actionType>
+            <sortOrder>1</sortOrder>
+        </platformActionListItems>
+        <platformActionListItems>
+            <actionName>NewTask</actionName>
+            <actionType>QuickAction</actionType>
+            <sortOrder>2</sortOrder>
+        </platformActionListItems>
+    </platformActionList>
+    <quickActionList>
+        <quickActionListItems>
+            <quickActionName>LogACall</quickActionName>
+        </quickActionListItems>
+        <quickActionListItems>
+            <quickActionName>SendEmail</quickActionName>
+        </quickActionListItems>
+        <quickActionListItems>
+            <quickActionName>NewTask</quickActionName>
+        </quickActionListItems>
+    </quickActionList>
+    <!--
+        ⚠ ADDED 2026-08-21 (post-deploy UX request) - "Related Accounts" related list, surfacing
+        every Investing Entity Account linked to this investor Contact via AccountContactRelation
+        (both direct and indirect), with the relationship-detail columns.
+
+        ⚠ REWORKED 2026-08-21 (discovery, after the first guess `RelatedAccountRelationList` was
+        REJECTED: "Cannot find related list:RelatedAccountRelationList"). No further inference was
+        attempted - the real token was DISCOVERED by a narrow, manifest-based retrieve (never a
+        parent-level/wildcard retrieve) of exact named Contact layouts into the scratchpad
+        directory (not force-app), then grepped for the ACR related list:
+          1. Queried `Layout WHERE TableEnumOrId='Contact'` via Tooling API (PowerShell `sf data
+             query` with the tooling-api flag - Bash's `sf` is broken in this environment, same
+             'C:\Program' PATH issue seen earlier in this project; PowerShell works) to enumerate
+             every Contact layout in the org: B2B Contact Layout, Contact (Marketing/Sales/
+             Support) Layout, Contact Layout, Investor Layout, SDO - Contact, SDO - Partner
+             Contact.
+          2. Narrow-retrieved exactly 3 candidates NOT already in this repo (`Layout:Contact-B2B
+             Contact Layout`, `Layout:Contact-SDO - Contact`, `Layout:Contact-SDO - Partner
+             Contact`) into scratchpad/layout-discovery/ via `sf project retrieve start`, with
+             the metadata and output-dir flags targeting exactly those 3 named components.
+          3. FOUND in `Contact-SDO - Contact.layout-meta.xml`:
+             `<relatedList>RelatedContactAccountRelationList</relatedList>` (NOT
+             RelatedAccountRelationList - the real token has an extra "Contact" in it), with
+             `<fields>ACCOUNT.NAME</fields>` and `<fields>ACCCONRELATION.ROLES</fields>` as its
+             two existing columns (Account Name and the standard Roles multipicklist).
+          4. The SAME retrieved layout set separately confirmed, in a DIFFERENT relatedList
+             (`Contact-SDO - Partner Contact.layout-meta.xml`, the
+             `SDO_ChannelPartner_Certification__c.Contact__c` related list), that CUSTOM fields in
+             this metadata type are referenced by their PLAIN, real field API name
+             (`Status__c`, `Score__c` - mixed case, `__c` suffix, no object prefix, no ALL-CAPS
+             transform) - the ALL-CAPS "OBJECT.FIELD" SOAP-style tokens (ACCOUNT.NAME,
+             ACCCONRELATION.ROLES) are specific to STANDARD fields, which have those legacy
+             aliases; custom fields don't get one and are referenced as-is.
+        Combining both confirmed facts: `ACCOUNT.NAME` copied verbatim for the entity name column,
+        and the three custom ACR fields referenced by their real plain API names
+        (Is_Primary_Contact__c, Is_Required_Signer__c, Signing_Order__c) - NOT the ALL-CAPS
+        ACCCONRELATION-prefixed guess this comment originally proposed before finding the
+        Status__c/Score__c counter-example. This is now an evidence-based construction, not an
+        inference - the relatedList token and the standard-field convention are copied verbatim
+        from a real org example, and the custom-field convention is confirmed from a second real
+        example in the same retrieved set. The scratchpad copies used for this discovery were
+        deleted after extraction; nothing from the discovery retrieve was added to force-app/.
+
+        FOURTH COLUMN FLAGGED: only Account/Entity Name, Is Primary Contact and Is Required
+        Signer were explicitly requested. Signing Order (Signing_Order__c) was added as a fourth
+        column since it's the one remaining relationship field on AccountContactRelation and is
+        clearly useful alongside the other two - flagging this addition so the user can veto it
+        if unwanted.
+    -->
     <relatedLists>
+        <fields>ACCOUNT.NAME</fields>
+        <fields>Is_Primary_Contact__c</fields>
+        <fields>Is_Required_Signer__c</fields>
+        <fields>Signing_Order__c</fields>
         <relatedList>RelatedContactAccountRelationList</relatedList>
     </relatedLists>
     <relatedLists>
+        <fields>TASK.SUBJECT</fields>
+        <fields>ACTIVITY.TASK</fields>
+        <fields>TASK.DUE_DATE</fields>
+        <fields>TASK.STATUS</fields>
         <relatedList>RelatedActivityList</relatedList>
     </relatedLists>
     <relatedLists>
+        <fields>TASK.SUBJECT</fields>
+        <fields>ACTIVITY.TASK</fields>
+        <fields>TASK.LAST_UPDATE</fields>
         <relatedList>RelatedHistoryList</relatedList>
     </relatedLists>
     <showEmailCheckbox>false</showEmailCheckbox>
@@ -52,10 +239,4 @@
     <showInteractionLogPanel>false</showInteractionLogPanel>
     <showRunAssignmentRulesCheckbox>false</showRunAssignmentRulesCheckbox>
     <showSubmitAndAttachButton>false</showSubmitAndAttachButton>
-    <summaryLayout>
-        <masterLabel>00h000000000000AAA</masterLabel>
-        <sizeX>4</sizeX>
-        <sizeY>0</sizeY>
-        <sizeZ>0</sizeZ>
-    </summaryLayout>
 </Layout>

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Batch_Scope__c</fullName>
+    <label>Batch Scope</label>
+    <type>Number</type>
+    <precision>5</precision>
+    <scale>0</scale>
+    <required>false</required>
+    <unique>false</unique>
+    <inlineHelpText>Recipients written per batch transaction. Defaults to 200.</inlineHelpText>
+</CustomField>

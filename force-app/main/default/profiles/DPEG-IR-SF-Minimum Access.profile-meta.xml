@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Profile xmlns="http://soap.sforce.com/2006/04/metadata">
+    <!--
+        SOURCE OF TRUTH FOR THIS PROFILE'S LAYOUT ASSIGNMENTS ONLY. Deliberately partial: it
+        carries layoutAssignments and NOTHING else (no tab visibility, no userPermissions, no
+        object/field permissions). Everything else this persona needs is granted through permission
+        sets - DPEG_IR_Default_Access, DPEG_App_IR, DPEG_IR_Principle_Read - which is the pattern
+        this whole project uses.
+
+        🔴 THIS FILE DOES NOT DEPLOY FROM A NORMAL SOURCE DEPLOY, AND THAT IS INTENTIONAL.
+        force-app/main/default/profiles/** is excluded in .forceignore (line 28): deploying whole
+        profiles produced 394 errors in this org (392 tab-visibility + 2 userLicense), because the
+        source profiles reference ~14 standard tabs this org does not have. The exclusion stays.
+        This file is kept as the DIFFABLE RECORD of what was applied, so the assignments are not
+        invisible org-only state.
+
+        ── HOW TO APPLY IT (measured working, 2026-08-17) ──────────────────────────────────────
+        Deploy it as a METADATA-FORMAT package from OUTSIDE the package directory, so .forceignore
+        (which is scoped to force-app) never applies, and profile deploys stay PARTIAL - only the
+        elements present in the file are written, so nothing else on the profile is disturbed:
+
+            <tmp>/package.xml          <- Profile member "DPEG-IR-SF-Minimum Access", version 66.0
+            <tmp>/profiles/DPEG-IR-SF-Minimum Access.profile   <- a copy of this file's content
+            sf project deploy start --metadata-dir <tmp> --target-org <alias>
+
+        ⚠ THE `.profile-meta.xml` SUFFIX IS SOURCE FORMAT. In the metadata-format package above the
+        file must be named `DPEG-IR-SF-Minimum Access.profile` (no -meta.xml), or the API ignores it.
+
+        ── WHY ALL FOUR ENTRIES, NOT JUST THE INVESTOR ONE ─────────────────────────────────────
+        A layoutAssignments deploy can reset assignments it does not list. Contact.Investor is the
+        entry that fixes the reported bug ("One or more profiles have no page layout assigned for
+        the 'Contact' Object", raised when Fiaz Hirani opened the Details tab of an Investor
+        Contact), but shipping it alone risked trading that break for the same break on Broker or
+        on the master default. All four are therefore declared together.
+
+        ⚠ RETRIEVING THIS BACK IS NOT A SIMPLE ROUND TRIP. A record-type-scoped layoutAssignment is
+        only returned by the Metadata API when the RECORD TYPE'S OWN OBJECT is also a member of the
+        retrieve manifest. A manifest of Profile + Layout alone returns ONLY the un-scoped
+        `Contact-Contact Layout` line and silently omits the other three - measured 2026-08-17, and
+        it reads exactly like the assignments failed to deploy when they did not. Any verification
+        retrieve must include `<name>CustomObject</name>` members for Contact and Lead.
+    -->
+    <layoutAssignments>
+        <layout>Contact-Investor Layout</layout>
+        <recordType>Contact.Investor</recordType>
+    </layoutAssignments>
+    <layoutAssignments>
+        <layout>Contact-Contact Layout</layout>
+        <recordType>Contact.Broker</recordType>
+    </layoutAssignments>
+    <layoutAssignments>
+        <layout>Contact-Contact Layout</layout>
+    </layoutAssignments>
+    <layoutAssignments>
+        <layout>Lead-Investor Onboarding Layout</layout>
+        <recordType>Lead.Investor_Onboarding</recordType>
+    </layoutAssignments>
+    <!--
+        ⚠ ADDED (Account/Contact junction change, 2026-08-20) - the Account "Investing Entity"
+        record-type-scoped layout. Same deploy mechanics as every entry above: this file is
+        diffable documentation only (profiles/** is .forceignore'd); applying it requires the
+        metadata-format partial-profile deploy documented at the top of this file. Retrieving this
+        back also requires a CustomObject member for Account in the manifest, per the same
+        measured finding documented above for Contact/Lead.
+    -->
+    <layoutAssignments>
+        <layout>Account-Investing Entity Layout</layout>
+        <recordType>Account.Investing_Entity</recordType>
+    </layoutAssignments>
+    <!--
+        ⚠ REWORKED 2026-08-20 - NO recordType element, DELIBERATELY. AccountContactRelation cannot
+        have a custom Record Type on this org (measured deploy-validation rejection - see the
+        comment in layouts/AccountContactRelation-Investor-Investing Entity Layout.layout-meta.xml),
+        so there is no `AccountContactRelation.<RecordType>` key to scope this assignment to. The
+        reference pattern for "default/master layout for this profile+object, no record type" is
+        already present in THIS SAME FILE - see the un-scoped `Contact-Contact Layout` entry above
+        (no <recordType> child), which is the master default layout assignment for Contact under
+        this profile. This entry mirrors that shape: it makes the reworked layout the default
+        layout AccountContactRelation records use under this profile, since there is no record
+        type to key a more specific assignment to.
+    -->
+    <layoutAssignments>
+        <layout>AccountContactRelation-Investor-Investing Entity Layout</layout>
+    </layoutAssignments>
+</Profile>

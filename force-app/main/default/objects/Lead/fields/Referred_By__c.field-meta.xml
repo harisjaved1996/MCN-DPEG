@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Referred_By__c</fullName>
+    <deleteConstraint>SetNull</deleteConstraint>
+    <description>Lookup to the Contact who referred this investor Lead. Changed from Text(255) to Lookup(Contact) on 2026-08-15 by explicit user decision, superseding this field's previous description, which argued the opposite ("Deliberately Text, not a Lookup... Do not 'correct' this into a lookup"). The field held zero rows at the time of the change, so nothing was lost. ACCEPTED CONSEQUENCE: a referrer who is not a Salesforce Contact can no longer be recorded here — such a referral must either be created as a Contact first or captured in Description. This field now conforms to ARCHITECTURE.md §1 rule 3 (a role-named _By__c field is a lookup). It is carried to Contact.Referred_By__c on conversion by InvestorLeadConvertService.</description>
+    <inlineHelpText>Select the Contact who referred this investor, if they are already a Salesforce Contact.</inlineHelpText>
+    <label>Referred By</label>
+    <referenceTo>Contact</referenceTo>
+    <relationshipLabel>Referred Leads</relationshipLabel>
+    <relationshipName>Referred_Leads</relationshipName>
+    <required>false</required>
+    <trackFeedHistory>false</trackFeedHistory>
+    <type>Lookup</type>
+</CustomField>

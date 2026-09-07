@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Send_Run_Id__c</fullName>
+    <description>GUID generated once per send. Ties this Communication to the Send_Exclusion__c rows written for the individuals the sender unticked, and is passed to the IR New Launch broadcast flow so the flow can skip them.</description>
+    <externalId>true</externalId>
+    <inlineHelpText>Correlation id for this send run. Set automatically.</inlineHelpText>
+    <label>Send Run Id</label>
+    <length>60</length>
+    <required>false</required>
+    <trackFeedHistory>false</trackFeedHistory>
+    <type>Text</type>
+    <unique>false</unique>
+</CustomField>

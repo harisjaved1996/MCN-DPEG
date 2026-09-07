@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Valuation__c</fullName>
+    <description>Current estimated valuation of this Property (e.g. from appraisal or internal underwriting), distinct from Asking_Price__c which is the Offering Memorandum listed asking price. Used together with Loan_Balance__c to calculate Loan_to_Value__c.</description>
+    <inlineHelpText>Enter the property's current estimated valuation.</inlineHelpText>
+    <label>Valuation</label>
+    <precision>18</precision>
+    <required>false</required>
+    <scale>2</scale>
+    <trackHistory>false</trackHistory>
+    <trackTrending>false</trackTrending>
+    <type>Currency</type>
+</CustomField>

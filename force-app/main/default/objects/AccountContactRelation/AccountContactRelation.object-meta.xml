@@ -1,4 +1,38 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">
+    <!--
+        ⚠ NET NEW FILE (Account/Contact junction change, reworked 2026-08-20). AccountContactRelation
+        had NO object-meta.xml in this repo before this change - only its fields/ and (now-deleted)
+        recordTypes/ subfolders existed, since deploying custom fields onto an already-existing
+        standard object does not require a companion object-meta.xml file.
+
+        WHY THIS FILE EXISTS NOW: AccountContactRelation cannot have a custom Record Type on this
+        org (measured deploy-validation rejection - see the comment in
+        layouts/AccountContactRelation-Investor-Investing Entity Layout.layout-meta.xml), so the
+        RecordType-level <compactLayoutAssignment> mechanism used everywhere else in this repo
+        (Account.Investing_Entity, Contact.Investor) is not available here. The equivalent,
+        record-type-free mechanism is the OBJECT's OWN <compactLayoutAssignment> element below -
+        this is the same "Primary Compact Layout" setting Setup shows for an object with no record
+        types, and it mirrors how Account.object-meta.xml and Contact.object-meta.xml already carry
+        this element (both currently set to "SYSTEM" = platform default).
+
+        🔴 DELIBERATELY MINIMAL, NOT A FULL RETRIEVE. This file intentionally carries ONLY
+        <compactLayoutAssignment> - it does NOT declare label/pluralLabel/sharingModel/
+        deploymentStatus/nameField/etc. the way a custom (__c) object would, because those do not
+        apply to an existing STANDARD object being partially customized (Account.object-meta.xml
+        and Contact.object-meta.xml follow the identical minimal shape - compare their own files).
+        A full `CustomObject` retrieve for a standard object this large was deliberately NOT
+        performed to write this file, to avoid pulling every existing standard field into this
+        repo as new field-meta.xml files (the exact "parent-level retrieve" risk this project's
+        conventions warn against) - the value below was authored directly rather than round-tripped
+        through a retrieve.
+
+        ⚠ UNVERIFIED BY DRY-RUN. No `salesforce-api-context` MCP tool or live check-only deploy was
+        available in the session that authored this file. The mechanism (object-level
+        compactLayoutAssignment as the record-type-free primary compact layout binding) is standard,
+        well-documented Salesforce platform behavior and is not a guess, but this specific file has
+        not been deploy-validated against this org - flagging for devops to confirm on the next
+        validation pass, same as every other change in this workstream.
+    -->
     <compactLayoutAssignment>Investor_Investing_Entity</compactLayoutAssignment>
 </CustomObject>

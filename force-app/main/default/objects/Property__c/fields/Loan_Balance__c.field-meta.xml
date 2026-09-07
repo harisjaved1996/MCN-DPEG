@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Loan_Balance__c</fullName>
+    <description>Outstanding loan balance secured against this Property as of the most recent update. Used together with Valuation__c to calculate Loan_to_Value__c.</description>
+    <inlineHelpText>Enter the current outstanding balance on the loan secured by this property.</inlineHelpText>
+    <label>Loan Balance</label>
+    <precision>18</precision>
+    <required>false</required>
+    <scale>2</scale>
+    <trackHistory>false</trackHistory>
+    <trackTrending>false</trackTrending>
+    <type>Currency</type>
+</CustomField>

@@ -4,19 +4,42 @@
     <description>The legal entity type of this investing entity Account (individual, corporation, trust, etc.), used to drive tax treatment, K-1 preparation, and onboarding document requirements.</description>
     <inlineHelpText>Select the legal structure of this investing entity.</inlineHelpText>
     <label>Entity Type</label>
-    <required>false</required>
+    <trackFeedHistory>false</trackFeedHistory>
     <type>Picklist</type>
     <valueSet>
         <restricted>true</restricted>
         <valueSetDefinition>
             <sorted>false</sorted>
-            <value><fullName>Individual</fullName><default>false</default><label>Individual</label></value>
-            <value><fullName>Corporation</fullName><default>false</default><label>Corporation</label></value>
-            <value><fullName>Estate or Trust</fullName><default>false</default><label>Estate or Trust</label></value>
-            <value><fullName>Partnership or LLC</fullName><default>false</default><label>Partnership or LLC</label></value>
-            <value><fullName>Exempt Organization</fullName><default>false</default><label>Exempt Organization</label></value>
-            <value><fullName>IRA</fullName><default>false</default><label>IRA</label></value>
+            <value>
+                <fullName>Individual</fullName>
+                <default>false</default>
+                <label>Individual</label>
+            </value>
+            <value>
+                <fullName>Corporation</fullName>
+                <default>false</default>
+                <label>Corporation</label>
+            </value>
+            <value>
+                <fullName>Estate or Trust</fullName>
+                <default>false</default>
+                <label>Estate or Trust</label>
+            </value>
+            <value>
+                <fullName>Partnership or LLC</fullName>
+                <default>false</default>
+                <label>Partnership or LLC</label>
+            </value>
+            <value>
+                <fullName>Exempt Organization</fullName>
+                <default>false</default>
+                <label>Exempt Organization</label>
+            </value>
+            <value>
+                <fullName>IRA</fullName>
+                <default>false</default>
+                <label>IRA</label>
+            </value>
         </valueSetDefinition>
     </valueSet>
-    <trackFeedHistory>false</trackFeedHistory>
 </CustomField>

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Workspace_Name__c</fullName>
+    <label>Workspace Name</label>
+    <type>Text</type>
+    <length>255</length>
+    <required>true</required>
+    <unique>false</unique>
+    <inlineHelpText>Display name of the Salesforce CMS workspace holding the email.</inlineHelpText>
+</CustomField>

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Is_Accredited__c</fullName>
+    <defaultValue>false</defaultValue>
+    <description>Indicates whether this investor Lead has self-attested or been verified as an accredited investor per SEC Regulation D. Drives IR onboarding eligibility checks in later milestones.</description>
+    <inlineHelpText>Check if this investor has confirmed accredited investor status.</inlineHelpText>
+    <label>Is Accredited</label>
+    <trackFeedHistory>false</trackFeedHistory>
+    <type>Checkbox</type>
+</CustomField>

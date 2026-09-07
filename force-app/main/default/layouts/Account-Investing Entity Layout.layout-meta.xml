@@ -1,35 +1,117 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Layout xmlns="http://soap.sforce.com/2006/04/metadata">
+    <!--
+        THE INVESTING ENTITY ACCOUNT PAGE LAYOUT. Carries standard Name plus the four new
+        investing-entity fields: Entity Type, Tax ID, Tax Address, Appfolio ID.
+
+        ⚠ ADDED 2026-08-20 (deployment validation fix) - ParentId is a required layout field on
+        Account (the platform rejects any Account layout that omits it), mirroring how
+        layouts/Account-Account Layout.layout-meta.xml already includes it (Edit behavior, placed
+        immediately after Name). Not one of the four requested fields, but not optional either.
+
+        🔴 THIS FILE CANNOT ASSIGN ITSELF TO A PROFILE + RECORD TYPE. Layout assignment lives in
+        Profile metadata (<layoutAssignments>), and profiles are .forceignore'd in this repo
+        (see .forceignore line 28 / the comment in profiles/DPEG-IR-SF-Minimum Access.profile-meta.xml).
+        So deploying this file CREATES the layout but leaves it unassigned; binding it to
+        Account.Investing_Entity for the DPEG-IR-SF-Minimum Access profile requires the same
+        metadata-format partial-profile deploy documented in that profile file.
+
+        ACTIVITY IS NOT A LAYOUT SECTION IN LIGHTNING. The requested "Activities section enabled
+        for Log a Call / Log an Email / Task" is delivered by the ACTIVITY PANEL on the Lightning
+        record page (flexipages/Investing_Entity_Record_Page, sidebar region,
+        runtime_sales_activities:activityPanel), not by this layout. What the layout DOES control
+        is which actions appear in the highlights action bar and the mobile action list, so
+        LogACall, SendEmail and NewTask are declared in <platformActionList> below - those three
+        are what populate the Activity composer's tabs. Mirrors layouts/Contact-Investor Layout.
+
+        RELATED LISTS: Open + History activity related lists are included so the Activity timeline
+        has something to render against on the Related tab.
+    -->
+    <fullName>Account-Investing Entity Layout</fullName>
     <layoutSections>
-        <customLabel>true</customLabel>
+        <customLabel>false</customLabel>
         <detailHeading>false</detailHeading>
         <editHeading>true</editHeading>
         <label>Information</label>
         <layoutColumns>
-            <layoutItems><behavior>Required</behavior><field>Name</field></layoutItems>
-            <layoutItems><behavior>Edit</behavior><field>ParentId</field></layoutItems>
-            <layoutItems><behavior>Edit</behavior><field>Entity_Type__c</field></layoutItems>
+            <layoutItems>
+                <behavior>Required</behavior>
+                <field>Name</field>
+            </layoutItems>
+            <layoutItems>
+                <behavior>Edit</behavior>
+                <field>ParentId</field>
+            </layoutItems>
+            <layoutItems>
+                <behavior>Edit</behavior>
+                <field>Entity_Type__c</field>
+            </layoutItems>
+            <layoutItems>
+                <behavior>Edit</behavior>
+                <field>Tax_ID__c</field>
+            </layoutItems>
         </layoutColumns>
         <layoutColumns>
-            <layoutItems><behavior>Edit</behavior><field>Tax_ID__c</field></layoutItems>
-            <layoutItems><behavior>Edit</behavior><field>Tax_Address__c</field></layoutItems>
-            <layoutItems><behavior>Edit</behavior><field>Appfolio_ID__c</field></layoutItems>
+            <layoutItems>
+                <behavior>Edit</behavior>
+                <field>Tax_Address__c</field>
+            </layoutItems>
+            <layoutItems>
+                <behavior>Readonly</behavior>
+                <field>Appfolio_ID__c</field>
+            </layoutItems>
         </layoutColumns>
         <style>TwoColumnsTopToBottom</style>
     </layoutSections>
+    <layoutSections>
+        <customLabel>false</customLabel>
+        <detailHeading>false</detailHeading>
+        <editHeading>true</editHeading>
+        <label>Custom Links</label>
+        <layoutColumns/>
+        <layoutColumns/>
+        <style>CustomLinks</style>
+    </layoutSections>
+    <platformActionList>
+        <actionListContext>Record</actionListContext>
+        <platformActionListItems>
+            <actionName>LogACall</actionName>
+            <actionType>QuickAction</actionType>
+            <sortOrder>0</sortOrder>
+        </platformActionListItems>
+        <platformActionListItems>
+            <actionName>SendEmail</actionName>
+            <actionType>QuickAction</actionType>
+            <sortOrder>1</sortOrder>
+        </platformActionListItems>
+        <platformActionListItems>
+            <actionName>NewTask</actionName>
+            <actionType>QuickAction</actionType>
+            <sortOrder>2</sortOrder>
+        </platformActionListItems>
+    </platformActionList>
+    <quickActionList>
+        <quickActionListItems>
+            <quickActionName>LogACall</quickActionName>
+        </quickActionListItems>
+        <quickActionListItems>
+            <quickActionName>SendEmail</quickActionName>
+        </quickActionListItems>
+        <quickActionListItems>
+            <quickActionName>NewTask</quickActionName>
+        </quickActionListItems>
+    </quickActionList>
     <relatedLists>
-        <fields>CONTACT.FULL_NAME</fields>
-        <fields>Is_Primary_Contact__c</fields>
-        <fields>Is_Required_Signer__c</fields>
-        <fields>Signing_Order__c</fields>
-        <relatedList>RelatedAccountContactRelationList</relatedList>
-        <sortField>Signing_Order__c</sortField>
-        <sortOrder>Asc</sortOrder>
-    </relatedLists>
-    <relatedLists>
+        <fields>TASK.SUBJECT</fields>
+        <fields>ACTIVITY.TASK</fields>
+        <fields>TASK.DUE_DATE</fields>
+        <fields>TASK.STATUS</fields>
         <relatedList>RelatedActivityList</relatedList>
     </relatedLists>
     <relatedLists>
+        <fields>TASK.SUBJECT</fields>
+        <fields>ACTIVITY.TASK</fields>
+        <fields>TASK.LAST_UPDATE</fields>
         <relatedList>RelatedHistoryList</relatedList>
     </relatedLists>
     <showEmailCheckbox>false</showEmailCheckbox>
@@ -37,10 +119,4 @@
     <showInteractionLogPanel>false</showInteractionLogPanel>
     <showRunAssignmentRulesCheckbox>false</showRunAssignmentRulesCheckbox>
     <showSubmitAndAttachButton>false</showSubmitAndAttachButton>
-    <summaryLayout>
-        <masterLabel>00h000000000000AAA</masterLabel>
-        <sizeX>4</sizeX>
-        <sizeY>0</sizeY>
-        <sizeZ>0</sizeZ>
-    </summaryLayout>
 </Layout>

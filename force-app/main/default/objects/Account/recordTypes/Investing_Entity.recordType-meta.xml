@@ -1,77 +1,306 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <RecordType xmlns="http://soap.sforce.com/2006/04/metadata">
+    <!--
+        ⚠ RENAMED 2026-08-20 - this file was `Investor_Entity.recordType-meta.xml` (label
+        "Investor Entity") until this change. Nothing had been deployed yet, so this was a clean
+        rename (not a new record type alongside the old one) to make this the canonical
+        "Investing Entity" record type going forward, per explicit user decision. Every reference
+        to `Account.Investor_Entity` in files touched during that same work session was updated to
+        `Account.Investing_Entity` (permission sets, profile, app, compact layout comment). All
+        history below this note predates the rename and still describes the SAME record type -
+        the org fact-finding, picklist enumeration, and dry-run results below remain valid; only
+        the API name and label changed.
+
+        THE INVESTING ENTITY ACCOUNT. Net new as of 2026-08-10 - no existing Account carries
+        this type.
+
+        THE IR BOUNDARY. Assumes investors are modelled as ENTITIES (LLCs, trusts, funds), each
+        with its own Account - see the spec section 3 switch point if that assumption turns out
+        to be wrong for how IR actually onboards investors. As with Broker_Firm, this record
+        type - not Contact's own - is the real sharing key, because Contact sharing is
+        ControlledByParent.
+
+        MEASURED ORG FACT (2026-08-10): Contact.object-meta.xml currently declares
+        sharingModel = ControlledByParent, but the org's LIVE Contact OWD is actually
+        ReadWrite, not ControlledByParent - a later task in this plan corrects that mismatch.
+        Until it does, this record type's role as the IR sharing boundary is the TARGET state
+        this feature is building toward, not yet the enforced state. MEASURED, not assumed:
+        queried via the Tooling API
+        (`SELECT InternalSharingModel FROM EntityDefinition WHERE DeveloperName = 'Contact'`)
+        on 2026-08-10, Task 0 of this plan - result ReadWrite.
+
+        ⚠ FIX 2026-08-10 (code review, CRITICAL) - EVERY PICKLIST ON THE OBJECT IS ENUMERATED
+        BELOW - Type, BillingGeocodeAccuracy, ShippingGeocodeAccuracy, Industry, Ownership and
+        AccountSource - because a record type file that omits a picklist silently drops ALL of
+        that picklist's values from that type. This is the same rule already enforced under
+        NDA__c, Contract_Review__c, Disposition__c and LOI__c; the original brief that produced
+        this file omitted it, which was a plan defect, not a deliberate narrowing. The full
+        value set was pulled from a LIVE ORG DESCRIBE (`sf sobject describe, sobject=Account`),
+        never from this repo's field files, because `sf project retrieve` unions local and
+        remote picklist values and a repo field file can list values the org no longer has. Note
+        that standard Account.Type already carries a value literally named 'Investor' -
+        coincidental overlap with this record type's own concept, not a dependency; nothing here
+        reads or writes Account.Type. Both Account record types (this one and Broker_Firm) carry
+        the IDENTICAL, COMPLETE value set - the org has no default on any of these six
+        picklists, so no <default>true</default> appears anywhere in this file. This type
+        carries no existing rows today, so "behaviour-neutral" here means it is created with the
+        full value set available from day one, matching its sibling. Narrowing either record
+        type's values is a separate, deliberate change for later.
+
+        ⚠ FIX ROUND 3 (2026-08-10, iterative check-only dry-runs against usman-dpeg, root-caused
+        by bisection on Contact/recordTypes/Broker.recordType-meta.xml) - BillingGeocodeAccuracy
+        AND ShippingGeocodeAccuracy REMOVED. Both failed with a GENERIC "An unexpected error
+        occurred... ErrorId..." rather than a clean field-level message. Root cause, confirmed by
+        bisection on the Contact sibling case (identical shape, cheaper to isolate there): both
+        are COMPOUND-FIELD SUB-COMPONENTS - `compoundFieldName` in the live describe reads
+        `BillingAddress` for BillingGeocodeAccuracy and `ShippingAddress` for
+        ShippingGeocodeAccuracy - and every field that failed had this set while every field that
+        passed did not. RecordType.picklistValues cannot restrict a compound field's
+        sub-picklist; the platform does not report this as a clean validation error, it throws
+        generically instead. THE RULE FOR ALL FUTURE TASKS IN THIS PLAN: a picklist that is a
+        compound-field sub-component must NEVER be enumerated in a RecordType's picklistValues -
+        check `compoundFieldName` in the describe, not just `type`, before adding any field to
+        this file. The remaining FOUR picklists below (AccountSource, Industry, Ownership, Type)
+        were each dry-run-validated (via the sibling Broker_Firm.recordType-meta.xml, identical
+        value set) and remain enumerated identically on both Account record types.
+    -->
     <fullName>Investing_Entity</fullName>
     <active>true</active>
+    <!--
+        COMPACT LAYOUT BINDING LIVES HERE, NOT ON THE COMPACT LAYOUT (same pattern as
+        Contact/recordTypes/Investor.recordType-meta.xml). A CompactLayout file does not name the
+        record type it serves; this assignment is the only thing that connects
+        Investing_Entity_Compact_Layout to this record type, so the two files must deploy TOGETHER.
+    -->
     <compactLayoutAssignment>Investing_Entity_Compact_Layout</compactLayoutAssignment>
-    <description>Investing entity account. The IR sharing boundary - assumes investors are modelled as entities (LLCs, trusts, funds), each with its own Account.</description>
+    <description>Investing entity account. The IR sharing boundary - assumes investors are modelled as entities. See the XML comment in this file.</description>
     <label>Investing Entity</label>
+    <!--
+        ⚠ ADDED (this change) - Entity_Type__c IS A BRAND-NEW RESTRICTED PICKLIST FIELD ON
+        ACCOUNT, added by this same change. Every picklist on the object must be enumerated on a
+        RecordType file per the rule documented at length elsewhere in this file's comments
+        (a picklist omitted here can silently end up with no available values for this record
+        type) - so its full value set is declared below, with no default, matching the "no
+        <default>true</default> anywhere" pattern already used by every other picklist on this
+        record type.
+    -->
     <picklistValues>
         <picklist>Entity_Type__c</picklist>
-        <values><fullName>Individual</fullName><default>false</default></values>
-        <values><fullName>Corporation</fullName><default>false</default></values>
-        <values><fullName>Estate%20or%20Trust</fullName><default>false</default></values>
-        <values><fullName>Partnership%20or%20LLC</fullName><default>false</default></values>
-        <values><fullName>Exempt%20Organization</fullName><default>false</default></values>
-        <values><fullName>IRA</fullName><default>false</default></values>
-    </picklistValues>
-    <picklistValues>
-        <picklist>Type</picklist>
-        <values><fullName>Broker%20Firm</fullName><default>false</default></values>
-        <values><fullName>Seller</fullName><default>false</default></values>
-        <values><fullName>Title%20Company</fullName><default>false</default></values>
-        <values><fullName>Investor</fullName><default>false</default></values>
-        <values><fullName>Prospect</fullName><default>false</default></values>
-        <values><fullName>Other</fullName><default>false</default></values>
+        <values>
+            <fullName>Individual</fullName>
+            <default>false</default>
+        </values>
+        <values>
+            <fullName>Corporation</fullName>
+            <default>false</default>
+        </values>
+        <values>
+            <fullName>Estate or Trust</fullName>
+            <default>false</default>
+        </values>
+        <values>
+            <fullName>Partnership or LLC</fullName>
+            <default>false</default>
+        </values>
+        <values>
+            <fullName>Exempt Organization</fullName>
+            <default>false</default>
+        </values>
+        <values>
+            <fullName>IRA</fullName>
+            <default>false</default>
+        </values>
     </picklistValues>
     <picklistValues>
         <picklist>AccountSource</picklist>
-        <values><fullName>Email-to-Lead</fullName><default>false</default></values>
-        <values><fullName>Broker%20Portal</fullName><default>false</default></values>
-        <values><fullName>Manual%20Entry</fullName><default>false</default></values>
-        <values><fullName>Web</fullName><default>false</default></values>
-        <values><fullName>Phone%20Inquiry</fullName><default>false</default></values>
-        <values><fullName>Other</fullName><default>false</default></values>
+        <values>
+            <fullName>Email-to-Lead</fullName>
+            <default>false</default>
+        </values>
+        <values>
+            <fullName>Broker Portal</fullName>
+            <default>false</default>
+        </values>
+        <values>
+            <fullName>Manual Entry</fullName>
+            <default>false</default>
+        </values>
+        <values>
+            <fullName>Web</fullName>
+            <default>false</default>
+        </values>
+        <values>
+            <fullName>Phone Inquiry</fullName>
+            <default>false</default>
+        </values>
+        <values>
+            <fullName>Other</fullName>
+            <default>false</default>
+        </values>
     </picklistValues>
     <picklistValues>
         <picklist>Industry</picklist>
-        <values><fullName>Agriculture</fullName><default>false</default></values>
-        <values><fullName>Apparel</fullName><default>false</default></values>
-        <values><fullName>Banking</fullName><default>false</default></values>
-        <values><fullName>Biotechnology</fullName><default>false</default></values>
-        <values><fullName>Chemicals</fullName><default>false</default></values>
-        <values><fullName>Communications</fullName><default>false</default></values>
-        <values><fullName>Construction</fullName><default>false</default></values>
-        <values><fullName>Consulting</fullName><default>false</default></values>
-        <values><fullName>Education</fullName><default>false</default></values>
-        <values><fullName>Electronics</fullName><default>false</default></values>
-        <values><fullName>Energy</fullName><default>false</default></values>
-        <values><fullName>Engineering</fullName><default>false</default></values>
-        <values><fullName>Entertainment</fullName><default>false</default></values>
-        <values><fullName>Environmental</fullName><default>false</default></values>
-        <values><fullName>Financial%20Services</fullName><default>false</default></values>
-        <values><fullName>Food%20%26%20Beverage</fullName><default>false</default></values>
-        <values><fullName>Government</fullName><default>false</default></values>
-        <values><fullName>Healthcare%20%26%20Life%20Sciences</fullName><default>false</default></values>
-        <values><fullName>Hospitality</fullName><default>false</default></values>
-        <values><fullName>Insurance</fullName><default>false</default></values>
-        <values><fullName>Machinery</fullName><default>false</default></values>
-        <values><fullName>Manufacturing</fullName><default>false</default></values>
-        <values><fullName>Media</fullName><default>false</default></values>
-        <values><fullName>Not%20For%20Profit</fullName><default>false</default></values>
-        <values><fullName>Other</fullName><default>false</default></values>
-        <values><fullName>Recreation</fullName><default>false</default></values>
-        <values><fullName>Retail</fullName><default>false</default></values>
-        <values><fullName>Shipping</fullName><default>false</default></values>
-        <values><fullName>Technology</fullName><default>false</default></values>
-        <values><fullName>Telecommunications</fullName><default>false</default></values>
-        <values><fullName>Transportation</fullName><default>false</default></values>
-        <values><fullName>Utilities</fullName><default>false</default></values>
+        <values>
+            <fullName>Agriculture</fullName>
+            <default>false</default>
+        </values>
+        <values>
+            <fullName>Apparel</fullName>
+            <default>false</default>
+        </values>
+        <values>
+            <fullName>Banking</fullName>
+            <default>false</default>
+        </values>
+        <values>
+            <fullName>Biotechnology</fullName>
+            <default>false</default>
+        </values>
+        <values>
+            <fullName>Chemicals</fullName>
+            <default>false</default>
+        </values>
+        <values>
+            <fullName>Communications</fullName>
+            <default>false</default>
+        </values>
+        <values>
+            <fullName>Construction</fullName>
+            <default>false</default>
+        </values>
+        <values>
+            <fullName>Consulting</fullName>
+            <default>false</default>
+        </values>
+        <values>
+            <fullName>Education</fullName>
+            <default>false</default>
+        </values>
+        <values>
+            <fullName>Electronics</fullName>
+            <default>false</default>
+        </values>
+        <values>
+            <fullName>Energy</fullName>
+            <default>false</default>
+        </values>
+        <values>
+            <fullName>Engineering</fullName>
+            <default>false</default>
+        </values>
+        <values>
+            <fullName>Entertainment</fullName>
+            <default>false</default>
+        </values>
+        <values>
+            <fullName>Environmental</fullName>
+            <default>false</default>
+        </values>
+        <values>
+            <fullName>Government</fullName>
+            <default>false</default>
+        </values>
+        <values>
+            <fullName>Hospitality</fullName>
+            <default>false</default>
+        </values>
+        <values>
+            <fullName>Insurance</fullName>
+            <default>false</default>
+        </values>
+        <values>
+            <fullName>Machinery</fullName>
+            <default>false</default>
+        </values>
+        <values>
+            <fullName>Manufacturing</fullName>
+            <default>false</default>
+        </values>
+        <values>
+            <fullName>Media</fullName>
+            <default>false</default>
+        </values>
+        <values>
+            <fullName>Not For Profit</fullName>
+            <default>false</default>
+        </values>
+        <values>
+            <fullName>Recreation</fullName>
+            <default>false</default>
+        </values>
+        <values>
+            <fullName>Retail</fullName>
+            <default>false</default>
+        </values>
+        <values>
+            <fullName>Shipping</fullName>
+            <default>false</default>
+        </values>
+        <values>
+            <fullName>Technology</fullName>
+            <default>false</default>
+        </values>
+        <values>
+            <fullName>Telecommunications</fullName>
+            <default>false</default>
+        </values>
+        <values>
+            <fullName>Transportation</fullName>
+            <default>false</default>
+        </values>
+        <values>
+            <fullName>Utilities</fullName>
+            <default>false</default>
+        </values>
+        <values>
+            <fullName>Other</fullName>
+            <default>false</default>
+        </values>
     </picklistValues>
     <picklistValues>
         <picklist>Ownership</picklist>
-        <values><fullName>Public</fullName><default>false</default></values>
-        <values><fullName>Private</fullName><default>false</default></values>
-        <values><fullName>Subsidiary</fullName><default>false</default></values>
-        <values><fullName>Other</fullName><default>false</default></values>
+        <values>
+            <fullName>Public</fullName>
+            <default>false</default>
+        </values>
+        <values>
+            <fullName>Private</fullName>
+            <default>false</default>
+        </values>
+        <values>
+            <fullName>Subsidiary</fullName>
+            <default>false</default>
+        </values>
+        <values>
+            <fullName>Other</fullName>
+            <default>false</default>
+        </values>
+    </picklistValues>
+    <picklistValues>
+        <picklist>Type</picklist>
+        <values>
+            <fullName>Broker Firm</fullName>
+            <default>false</default>
+        </values>
+        <values>
+            <fullName>Seller</fullName>
+            <default>false</default>
+        </values>
+        <values>
+            <fullName>Title Company</fullName>
+            <default>false</default>
+        </values>
+        <values>
+            <fullName>Investor</fullName>
+            <default>false</default>
+        </values>
+        <values>
+            <fullName>Prospect</fullName>
+            <default>false</default>
+        </values>
+        <values>
+            <fullName>Other</fullName>
+            <default>false</default>
+        </values>
     </picklistValues>
 </RecordType>

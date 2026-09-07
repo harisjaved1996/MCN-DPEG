@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Contact__c</fullName>
+    <deleteConstraint>SetNull</deleteConstraint>
+    <description>The Contact this recipient resolves to. Data Cloud sources these individuals from Contact, so ssot__Individual__dlm.ssot__Id__c is the Contact Id and is stored here directly.</description>
+    <inlineHelpText>The Contact behind this Data Cloud individual.</inlineHelpText>
+    <label>Contact</label>
+    <referenceTo>Contact</referenceTo>
+    <relationshipLabel>Communication Recipients</relationshipLabel>
+    <relationshipName>Communication_Recipients</relationshipName>
+    <required>false</required>
+    <trackFeedHistory>false</trackFeedHistory>
+    <type>Lookup</type>
+</CustomField>

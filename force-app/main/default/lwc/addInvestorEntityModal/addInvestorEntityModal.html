@@ -1,0 +1,88 @@
+<template>
+    <!--
+        Presentational backdrop only. Clicking it deliberately does NOT dismiss the dialog: this is a
+        URL-addressable PAGE styled as a modal, so there is nothing behind it to return to, and a
+        stray click would silently discard a part-filled multi-screen flow interview. The header
+        close button is the single explicit exit.
+    -->
+    <div class="aie-backdrop" aria-hidden="true"></div>
+
+    <section
+        role="dialog"
+        tabindex="-1"
+        aria-modal="true"
+        aria-labelledby="aie-heading"
+        class="aie-overlay"
+        onkeydown={handleKeyDown}>
+
+        <!-- Focus sentinel: catches Shift+Tab off the top of the dialog. See the JS class header. -->
+        <div class="aie-sentinel" tabindex="0" onfocus={handleLeadingSentinelFocus}></div>
+
+        <div class="aie-modal">
+            <header class="aie-modal__header">
+                <h1 id="aie-heading" class="aie-modal__title">{modalTitle}</h1>
+                <lightning-button-icon
+                    class="aie-modal__close"
+                    icon-name="utility:close"
+                    variant="bare"
+                    size="large"
+                    alternative-text={closeAlternativeText}
+                    title={closeAlternativeText}
+                    onclick={handleClose}>
+                </lightning-button-icon>
+            </header>
+
+            <div class="aie-modal__body">
+                <!--
+                    Live region is rendered unconditionally and only its CONTENT is swapped, so it
+                    already exists in the accessibility tree when an error arrives - screen readers
+                    announce insertions into an existing live region far more reliably than they
+                    announce a region that appears with its text already in place. Collapses to zero
+                    height while empty. tabindex="-1" lets renderedCallback park focus here once the
+                    flow it replaced has unmounted.
+                -->
+                <div
+                    class="aie-alert"
+                    role="alert"
+                    aria-live="assertive"
+                    aria-atomic="true"
+                    tabindex="-1">
+                    <template lwc:if={hasError}>
+                        <h2 class="aie-alert__heading">{errorHeading}</h2>
+                        <p class="aie-alert__text">{errorMessage}</p>
+                        <template lwc:if={hasErrorDetail}>
+                            <p class="aie-alert__detail">{errorDetail}</p>
+                        </template>
+                    </template>
+                </div>
+
+                <!-- Unmounted on a launch failure so a dead interview cannot sit under the alert. -->
+                <template lwc:if={showFlow}>
+                    <lightning-flow
+                        flow-api-name={flowApiName}
+                        onstatuschange={handleStatusChange}>
+                    </lightning-flow>
+                </template>
+            </div>
+
+            <!--
+                Shown once the interview reaches a terminal state - the flow's Success screen, one of
+                its five validation screens, Screen_Error_General, or a launch failure. It guarantees
+                a visible way out regardless of which finish status the runtime reports.
+            -->
+            <template lwc:if={showExitFooter}>
+                <footer class="aie-modal__footer">
+                    <lightning-button
+                        class="aie-modal__exit"
+                        variant="neutral"
+                        label={exitLabel}
+                        onclick={handleClose}>
+                    </lightning-button>
+                </footer>
+            </template>
+        </div>
+
+        <!-- Focus sentinel: catches Tab off the end of the dialog. -->
+        <div class="aie-sentinel" tabindex="0" onfocus={handleTrailingSentinelFocus}></div>
+    </section>
+</template>

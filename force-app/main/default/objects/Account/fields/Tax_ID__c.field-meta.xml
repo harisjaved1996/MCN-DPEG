@@ -1,13 +1,65 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <!--
+        ⚠ REPLACED 2026-08-20, NOT AN IN-PLACE TYPE CHANGE. This field was originally deployed as
+        a plain Text field (length 20) earlier in this workstream. Salesforce does not support
+        converting an existing custom field's type between Text and Text (Encrypted) in place -
+        this is a long-standing, stable platform restriction (the Setup UI never offers "Text
+        (Encrypted)" as a target when editing an existing Text field, and the same restriction
+        applies via the Metadata API). No live `salesforce-api-context`/Tooling API check or web
+        search was available in this session to re-confirm this specific fact against this org, so
+        this is applied on established platform knowledge, not a live measurement - flagging that
+        distinction explicitly, same as every other platform-restriction note in this workstream.
+
+        PATH TAKEN: delete-and-recreate under the SAME field name (Tax_ID__c), not a renamed field
+        (e.g. Tax_ID_Encrypted__c). This keeps every existing reference (layouts/Account-Investing
+        Entity Layout.layout-meta.xml, both DPEG_IR_* permission sets' fieldPermissions) valid
+        without any further edits - only this one file needed to change for the field itself.
+
+        🔴 DEPLOY SEQUENCING (RESOLVED 2026-08-20 - FIELD IS NOW LIVE). This field's mere
+        presence in the repo never deletes the old org field by itself (a standard
+        `sf project deploy start` is additive; deleting the file from source control is not the
+        same as an org-side delete) - the OLD Text Tax_ID__c had to be explicitly deleted from the
+        org before the new EncryptedText version could be created, since the two cannot coexist
+        under one API name. This field was also still referenced on
+        flexipages/Investing_Entity_Record_Page.flexipage-meta.xml, which blocked the delete until
+        those two field items were temporarily stripped from that page - both have since been
+        re-added there, unchanged.
+
+        ⚠ UPDATE 2026-08-20 (devops finding, confirmed): an earlier version of this comment
+        predicted a 15-day Recycle Bin API-name reservation requiring a manual permanent-erase step
+        between delete and recreate. That concern turned out not to apply at all, not merely to be
+        avoidable - devops's atomic delete+recreate PACKAGE (both operations in one deploy unit)
+        means the API name was never actually released or reserved in the first place, so there was
+        no reservation window to work around. This atomic-package approach is the PROVEN, WORKING
+        PATTERN for this exact Text -> EncryptedText scenario on this org - Account.Tax_ID__c is
+        now live as Encrypted Text (verified, new field Id, correct mask/length) - and should be
+        the default approach for any future Text <-> EncryptedText conversion in this project,
+        rather than a separate delete-deploy-then-wait-then-create sequence.
+
+        LENGTH CORRECTED 255 -> 175. The requested length was 255, but Encrypted Text custom fields
+        have a PLATFORM-ENFORCED MAXIMUM of 175 characters (unrelated to the general 255 cap on
+        plain Text fields) - deploying 255 here would fail validation outright. 175 is used instead;
+        flagging this deviation from the literal request since it is a hard platform ceiling, not a
+        judgment call.
+
+        maskType=lastFour ("Mask Type should be Last Four Characters Clear" per the request) and
+        maskChar=asterisk ("Mask Type should be '*'" per the request, which is actually the
+        maskChar/mask-CHARACTER property, not a second maskType - EncryptedFieldMaskType and
+        EncryptedFieldMaskChar are two separate CustomField attributes) are both valid values from
+        Salesforce's documented EncryptedFieldMaskType / EncryptedFieldMaskChar picklists.
+
+        Encrypted Text fields cannot be marked unique or externalId (platform restriction) - this
+        field was never externalId/unique, so no further change was needed there.
+    -->
     <fullName>Tax_ID__c</fullName>
     <description>The Tax Identification Number (SSN, EIN, or ITIN) for this investing entity, used for tax reporting (K-1 issuance) and AML/KYC compliance. Stored as Text (Encrypted, Classic Encryption) - masked to the last four characters for users without the View Encrypted Data permission.</description>
-    <inlineHelpText>Enter the entity&apos;s SSN, EIN, or ITIN. Only the last four characters are shown unless you have View Encrypted Data access.</inlineHelpText>
+    <inlineHelpText>Enter the entity's SSN, EIN, or ITIN. Only the last four characters are shown unless you have View Encrypted Data access.</inlineHelpText>
     <label>Tax ID</label>
     <length>175</length>
     <maskChar>asterisk</maskChar>
     <maskType>lastFour</maskType>
     <required>false</required>
-    <type>EncryptedText</type>
     <trackFeedHistory>false</trackFeedHistory>
+    <type>EncryptedText</type>
 </CustomField>

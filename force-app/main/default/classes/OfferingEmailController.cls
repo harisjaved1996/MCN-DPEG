@@ -101,7 +101,13 @@ public with sharing class OfferingEmailController {
             ManagedContent content = [
                 SELECT Id, Name, ContentKey FROM ManagedContent WHERE Id = :managedContentId LIMIT 1];
 
+            // Name became a Text field when the New Offering Launch path needed
+            // meaningful record names, so it has to be set explicitly here too.
+            // Left unset it would autonumber no longer and simply be blank.
+            Offering__c offering = [SELECT Id, Name FROM Offering__c WHERE Id = :offeringId LIMIT 1];
+
             Communication__c c = new Communication__c(
+                Name = content.Name + ' - ' + offering.Name,
                 Offering__c = offeringId,
                 Email_Name__c = content.Name,
                 Content_Key__c = content.ContentKey,

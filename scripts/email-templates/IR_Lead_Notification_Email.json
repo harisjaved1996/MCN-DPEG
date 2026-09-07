@@ -1,0 +1,23 @@
+{
+  "_readme": "Record-based source of truth for the EmailTemplate 'IR Lead Notification Email'. Loaded by scripts/load-lightning-email-templates.apex via idempotent upsert-by-DeveloperName DML (NOT Metadata API deploy). This file is the human-readable/diffable copy of the scalar fields the loader writes; the loader embeds its own copies of these same values directly in Apex (Apex cannot read files at runtime), so if you change a value here, update the loader script to match. The HTML body lives alongside this file in IR_Lead_Notification_Email.html and is embedded in the loader as a base64 string (avoids Apex single-quote escaping issues from the apostrophes in the body's HTML comment) - regenerate that base64 blob if the .html changes.",
+
+  "DeveloperName": "IR_Lead_Notification_Email",
+  "Name": "IR Lead Notification Email",
+  "FolderDeveloperName": "IR_Email_Templates_Lightning",
+  "_FolderId_note": "Never hardcode a Folder Id. The loader resolves FolderId at runtime via [SELECT Id FROM Folder WHERE DeveloperName = 'IR_Email_Templates_Lightning' AND Type = 'EmailTemplate'] and fails loudly if the folder is missing. This is the entire portability mechanism for the org-specific Id. MEASURED 2026-08-15: the Folder.Type value for an email-template folder is the literal string 'EmailTemplate', not 'Email' -- verified by direct query against this org's live folder record before hardcoding the filter.",
+
+  "Subject": "New Investor Onboarding lead in the IR queue",
+  "UiType": "SFX",
+  "TemplateType": "custom",
+  "RelatedEntityType": "Lead",
+  "TemplateStyle": "none",
+  "Encoding": "UTF-8",
+  "IsActive": true,
+  "Description": "Lightning (SFX) notification email sent to Investor Onboarding Queue members when a new Investor Onboarding lead arrives in the queue. Sent by IR_Lead_Notification_Flow to each active queue member individually (recipientId = the member User). RelatedEntityType is set to Lead per requirement, but no Lead merge fields are used in the body -- see the body's own HTML comment and IR_Lead_Notification_Flow's description for why (measured: an emailSimple send to a User recipientId cannot also carry a Lead relatedRecordId in this org).",
+
+  "_TemplateStyle_writability_note": "MEASURED 2026-08-15 via EmailTemplate describe: TemplateStyle is createable=true but updateable=false. The loader therefore sets it only on INSERT (new-org load) and never includes it in the UPDATE branch (existing-record refresh) -- attempting to change a non-updateable field's value on an update DML risks a FIELD_INTEGRITY_EXCEPTION on some field types, and there is no reason to touch it since the value never changes.",
+
+  "_Markup_NOT_INCLUDED": "MEASURED 2026-08-15, decisive finding: Markup is describe-writable (createable=true, updateable=true, i.e. FLS/CRUD says yes) but an actual DML attempt to set it on this record was REJECTED at the platform business-rule layer with FIELD_INTEGRITY_EXCEPTION: 'Markup can only be specified for template of type Visualforce'. This template's TemplateType is 'custom' (SFX/Lightning), not 'visualforce', so Markup can NEVER be set for it via DML, in this org or any other org, regardless of user permissions. This is a hard platform restriction tied to TemplateType, not an FLS/permission gap -- there is nothing a permission set or profile change could do to make this writable. Markup is therefore intentionally absent from this JSON and from the loader's field list.",
+
+  "_IsBuilderContent_NOT_INCLUDED": "IsBuilderContent is describe createable=false, updateable=false -- not settable via DML under any circumstance, confirmed by describe alone (no DML attempt needed). MEASURED via a disposable insert+delete probe: a plain DML insert of a UiType='SFX', TemplateType='custom' EmailTemplate produces IsBuilderContent=false, NOT true. The live source record currently reads IsBuilderContent=true only because a human opened it in Setup's Email Template Builder UI at least once; that state cannot be reproduced by any API-based load. A record loaded by this script into a new org will read IsBuilderContent=false. This is not expected to affect what the template actually sends (HtmlValue is the field Messaging/Flow email actions render from, confirmed separately), but a user opening the loaded record in Setup may see it offered as a plain/classic-style editable template rather than opening directly into the Builder canvas, until they choose to edit it in Builder for the first time in that org."
+}

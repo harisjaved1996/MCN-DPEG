@@ -1,0 +1,2187 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Flow xmlns="http://soap.sforce.com/2006/04/metadata">
+    <!--
+        ⚠ AUTHOR CONFIDENCE NOTES (2026-08-21) - no salesforce-api-context MCP or web search was
+        available in this session; this file was hand-authored against `.claude/skills/sf-flow`
+        (SKILL.md, screen-flow-template.xml, screen-flow-example.md, xml-gotchas.md,
+        multi-step-dml-rollback-example.md) and this repo's own deployed
+        flows/IR_Lead_Create_Profile_Flow.flow-meta.xml (screens/faults/DisplayText/
+        processMetadataValues/element-ordering pattern) and flows/Lease_Inquiry_Create_Lease.flow-
+        meta.xml (recordCreates inputAssignments shape). Confidence by area:
+
+        HIGH CONFIDENCE (directly modeled on this repo's own deployed flow XML): screens,
+        DisplayText, decisions/rules/conditions, recordLookups, recordCreates, recordUpdates
+        (filter-by-Id + inputAssignments shape), fault-connector routing, InputField/Checkbox/
+        RadioButtons/DropdownBox/Number screen fields, static <choices>, PicklistChoiceSet
+        <dynamicChoiceSets>, root-level alphabetical element-type grouping.
+
+        VALIDATION HISTORY (check-only, no deploy) - errors are revealed SERIALLY, not all at
+        once: Salesforce's flow validator reports only the first error per component, AND (per
+        round 2's finding) can miss deeper issues on OTHER components until earlier-round errors
+        elsewhere are cleared. Confirming a component clean in one round is therefore evidence,
+        not proof, that nothing further will surface on it in a later round. Do not assume round
+        N+1 is silent just because round N was; keep re-validating.
+        - ROUND 1 (60/63 passed, 3 errors): WebLink missing encodingKey (fixed - see that file);
+          Contact.object-meta.xml lookupPhoneDialogsAdditionalFields over the 10-item platform max
+          (fixed - see that file, pre-existing latent defect unrelated to this flow);
+          flowruntime:address (Address_Tax) rejected an unsupported `label` inputParameter (fixed
+          below). recordRollbacks and flowruntime:lookup's inputParameter NAMES both validated
+          clean in this round.
+        - ROUND 2 (62/63 passed, 1 error, after the round-1 fixes): Address_Tax validated FULLY
+          CLEAN with the `label` parameter removed.
+          ⚠ CORRECTED 2026-08-21 (post-deploy comment fix) - the ORIGINAL version of this entry
+          claimed round 2 "PLATFORM-VERIFIES the Address_Tax.province -> Account.
+          Tax_Address__State__s subfield-output mapping." That claim was wrong, and specifically
+          wrong for conflating three SEPARATE claims into one:
+            1. SCHEMA-SHAPE ACCEPTANCE - is Address_Tax.province a syntactically valid dot-notation
+               elementReference for a flowruntime:address component? Round 2 DID establish this
+               (Address_Tax itself validated with zero errors once `label` was removed).
+            2. FIELD EXISTENCE - does the Account field it was being assigned to
+               (Tax_Address__State__s) actually exist? Round 2 proved NOTHING about this -
+               validation had not reached that inputAssignment's field-existence check yet. It
+               turned out NOT to exist at all (round 6: the correct field is
+               Tax_Address__StateCode__s, State/Country Picklists being enabled on this org).
+            3. RUNTIME VALUE COMPATIBILITY - does the value Address_Tax.province actually produces
+               (a display name like "Texas", or a code like "TX") match what the now-corrected
+               Tax_Address__StateCode__s field requires (codes only)? NO validation round has
+               tested this - it is a data-shape question invisible to check-only deploy
+               validation. This remains OPEN, pending the user's manual Case-2 verification test
+               (enter a real state/country, confirm the Account record actually saves).
+          Round 2 established ONLY claim 1. Do not read "validated clean" as covering 2 or 3 -
+          those are distinct claims requiring separate proof, and this file's own history is the
+          cautionary example of why conflating them is a mistake. The one actual remaining error
+          in round 2 was on Lookup_Investing_Entity: "A required input parameter is missing:
+          fieldApiName" - NOT caught in round 1 despite that component's inputParameter names
+          having validated clean there, illustrating the serial/masking behavior described above.
+        - ROUND 3 (this fix): flowruntime:lookup (Lookup_Investing_Entity) requires binding to a
+          specific LOOKUP FIELD, not just a target object. Changed objectApiName from `Account`
+          (the natural-but-wrong guess) to `Contact` (the object that OWNS the lookup field) and
+          added fieldApiName=`AccountId` (the lookup field itself) - this is exactly the plan's
+          originally-named fallback shape ("flowruntime:lookup on Contact.AccountId"). The
+          component's selected-record-Id output is exposed as `Lookup_Investing_Entity.recordId`
+          (not the bare field name) - every downstream reference (Decision_Entity_Selected's
+          IsNull check, Get_Selected_Entity's filter, Create_Contact_Existing_Entity's AccountId
+          inputAssignment, Get_ACR_Signing_Order's and Get_ACR_Existing_Entity's AccountId
+          filters) was updated to `Lookup_Investing_Entity.recordId` accordingly. This was the
+          LAST flagged medium-confidence area from the original author-confidence notes; pending
+          round 4 re-validation to confirm.
+        - ROUND 4 (lookup fix validated clean): the round-3 flowruntime:lookup fix (objectApiName/
+          fieldApiName/`.recordId` wiring) passed with zero errors - ALL originally-flagged
+          medium-confidence areas from the initial author-confidence notes are now
+          platform-verified. ONE new error surfaced in previously-untested territory:
+          Picklist_Entity_Type_Choices (the PicklistChoiceSet dynamicChoiceSet) - "The data type
+          of "Picklist_Entity_Type_Choices" can't be "String"." A picklist-backed choice set
+          must declare <dataType>Picklist</dataType>, not String (String is only valid for
+          record-backed choice sets, i.e. a genuine Record Choice Set, which this flow does not
+          use). Fixed below - the CHOICE SET's dataType changed to Picklist; the REFERENCING
+          screen field (Picklist_Entity_Type) keeps its own dataType=String unchanged, which is
+          the correct, standard pairing (Picklist choice set -> String-typed screen field
+          consuming it via choiceReferences, value passed as picklist API-name text) - confirmed
+          consistent by inspection.
+        - ROUND 5 (dataType=Picklist fix validated clean): the round-4 choice-set dataType fix
+          passed with zero errors. ONE new error, again in previously-untested territory, and NOT
+          named to a specific component by the platform: "isRequired can't be set to false for
+          screen input fields of type boolean." Devops located both offenders by scanning every
+          Boolean-typed screen field in the flow: Checkbox_Is_Accredited and
+          Checkbox_Is_Required_Signer both carried <isRequired>false</isRequired>. Fixed by
+          REMOVING the <isRequired> element entirely from both (NOT setting it to true - for a
+          checkbox that would mean "must be checked", which is not the intent; a checkbox is
+          inherently a two-state/optional control and the element is simply omitted). Every other
+          screen field in the flow was enumerated programmatically (dataType/fieldType/isRequired
+          for all fields on all 8 screens) to confirm these are the ONLY two Boolean InputFields
+          in the flow - no third instance exists.
+        - ROUND 6 (boolean isRequired fix validated clean): the round-5 fix passed with zero
+          errors. New error, a field-existence mismatch on Create_Account_Entity's
+          inputAssignments: "The field "Tax_Address__Country__s" for the object "Account"
+          doesn't exist." Devops measured directly against the live org (SOQL): State & Country
+          Picklists ARE ENABLED on this org - correcting the earlier claim in this file's history
+          (this author's original live `sf sobject describe -s Account` check, performed before
+          any of this flow's fields existed, concluded picklists were NOT enabled because it saw
+          plain `BillingState`/`BillingCountry` and not the Code variants). THAT CHECK WAS
+          MISLEADING, not wrong on its own terms: standard compound address fields (Billing/
+          Shipping/Mailing) expose BOTH the plain and Code forms simultaneously once picklists are
+          enabled, so seeing `BillingState` proves nothing either way about picklist enablement.
+          CUSTOM compound address fields (like Tax_Address__c here) do NOT get this leniency -
+          they expose ONLY the Code variant (`Tax_Address__StateCode__s` /
+          `Tax_Address__CountryCode__s`) once picklists are enabled, and the plain
+          `Tax_Address__State__s` / `Tax_Address__Country__s` forms genuinely do not exist.
+          Devops confirmed both Code fields exist and Street/City/PostalCode are unaffected.
+          Fixed: `Tax_Address__State__s` -> `Tax_Address__StateCode__s` and
+          `Tax_Address__Country__s` -> `Tax_Address__CountryCode__s` in Create_Account_Entity;
+          Street/City/PostalCode inputAssignments unchanged.
+          ⚠ NEW RUNTIME CAVEAT, NOT CATCHABLE BY CHECK-ONLY VALIDATION: `*Code__s` fields accept
+          ONLY ISO/picklist code values (e.g. `TX`, `US`), never display names (e.g.
+          "Texas"/"United States"). Whether the flowruntime:address component's
+          `.province`/`.country` outputs actually supply codes or display names is UNVERIFIABLE by
+          check-only deploy validation - it is a runtime data-shape question, not a schema one. If
+          the component emits display names, this flow will deploy clean but FAIL AT RUNTIME on
+          Create_Account_Entity the first time a real user enters a state/country. This must be
+          the FIRST thing manual verification probes: run Case 2 end-to-end with a state and
+          country actually entered in the Address_Tax component and confirm Create_Account_Entity
+          succeeds, before considering this flow verified.
+        - ROUND 7 (63/63, DEPLOYED): the round-6 field-rename fix passed with zero errors across
+          all 63 components. Flow deployed Active v1; WebLink, Contact.object-meta.xml
+          searchLayouts (listViewButtons), and the DPEG_IR_Default_Access flowAccesses entry all
+          verified live in the org. Post-deploy, the round-2 history entry above was corrected
+          (comment-only, no redeploy) to stop conflating three separate claims - schema-shape
+          acceptance, field existence, and runtime value compatibility - since round 2 had only
+          ever established the first of the three, and the runtime-value-compatibility caveat
+          from round 6 remains genuinely open pending manual testing.
+        - ROUND 8 (post-deploy UX revisions, user tested the live flow): three changes, still
+          declarative-only, made AFTER the flow was already deployed and working:
+          1. Checkbox_Is_Accredited is now MANDATORY (must be checked to proceed) via a per-field
+             <validationRule> (`{!Checkbox_Is_Accredited} = true`) - the same mechanism already
+             proven for Input_Tax_ID/Input_Signing_Order, since round 5 already proved
+             <isRequired> is invalid on Boolean screen fields. This fires on Next click (screen
+             field validation timing), not inline as-you-type - accepted platform behavior.
+          2. Screen_Add_Investor's flat field list was reorganized into three Section/Region
+             screen fields (Section_Investor_Information, Section_New_Entity_Details,
+             Section_Existing_Entity_Selection), each with `regionContainerType>SectionWithHeader`
+             and a single-column child Region - REINTRODUCING the exact nested shape that was
+             deliberately flattened in the very first authoring pass (see design deviation B
+             below) for deploy-confidence reasons. This is a FIRST ATTEMPT at this shape with NO
+             verified reference anywhere in this repo or the sf-flow skill (searched again per
+             instruction - genuinely does not exist) - confidence is materially lower than every
+             other element type in this file, all of which by now have at least one real
+             validation round behind them. Per-field visibilityRule conditions were CONSOLIDATED
+             UP to the owning Section (Radio_Path=NewEntity / Radio_Path=ExistingEntity) since a
+             hidden Section hides its children automatically; Input_Signing_Order keeps its OWN
+             narrower visibilityRule (just Checkbox_Is_Required_Signer=true, the Radio_Path
+             condition dropped as redundant once nested inside the ExistingEntity section).
+             DELIBERATELY KEPT FLAT: multi-column (side-by-side) layout within a section (e.g.
+             First/Last name side by side) - this is the LOWEST-confidence sub-shape (Region
+             column-width inputParameters), so every section here uses exactly one full-width
+             Region child rather than gambling a validation round on column widths too. Expect
+             this to be the mostly likely source of a round 9 (or later) error, if any remain.
+          3. objects/Contact/Contact.object-meta.xml gained `<excludedStandardButtons>` entries
+             (New, PrintableListView, Import) in the same searchLayouts block - see that file's
+             own comment for full reasoning, the org-wide (not per-profile) blast-radius warning,
+             and why "Intelligence View" was NOT attempted (likely a different, non-SearchLayouts
+             mechanism).
+        - ROUND 9 (round-8 batch, definitive fix known before validation): the outer container
+          fieldType for all three sections was wrong - `Section` is not a valid
+          FlowScreenFieldType enum value; the correct outer fieldType is `RegionContainer`. The
+          inner `Region` fieldTypes and the three `regionContainerType>SectionWithHeader` elements
+          were already correct and are unchanged - only the three outer `<fieldType>` values
+          (Section_Investor_Information, Section_New_Entity_Details,
+          Section_Existing_Entity_Selection) were corrected from Section to RegionContainer. This
+          was a PARSE-LEVEL error, so nothing else in the flow was validated in that round
+          (including the new Checkbox_Is_Accredited validationRule from round 8) - still pending
+          confirmation. This is genuinely the first real signal on the Section/Region shape flagged
+          as lowest-confidence in round 8 - one wrong enum value, rest still unconfirmed.
+        - ROUND 10: the round-9 RegionContainer fix worked - parse error gone, semantic
+          validation reached further into the flow for the first time. BOTH Contact
+          excludedStandardButtons tokens (NewContact, PrintableListView) validated clean in this
+          same round - that file's change is done. New flow error: every `Region` (column) inside
+          a `RegionContainer` requires an `inputParameters` entry named `width` (SLDS 12-column
+          grid string value; a single full-width column is `12`) - none of the three Regions had
+          one. Added `width=12` (stringValue) to all three:
+          Section_Investor_Information_Column1, Section_New_Entity_Details_Column1,
+          Section_Existing_Entity_Selection_Column1 - all single-column (full-width), consistent
+          with the round-8 decision not to attempt multi-column layouts. The error only named the
+          first Region (serial pattern, as with every other multi-instance error in this file);
+          fixed all three in one pass rather than waiting for two more rounds to name the others.
+          Checkbox_Is_Accredited's validationRule (added round 8) STILL has not been reached by
+          any validation round - remains genuinely unconfirmed, not just "passed silently".
+        - ROUND 11 (deployed clean as v2 after round 10; this is the NEXT revision, not a
+          validation-error fix): user testing of the live v2 flow surfaced two RUNTIME errors on
+          Create_Account_Entity - INVALID_OR_NULL_FOR_RESTRICTED_PICKLIST on
+          Tax_Address__CountryCode__s (free-text "United States" entered) and
+          FIELD_INTEGRITY_EXCEPTION on Tax_Address__StateCode__s (free-text "California"
+          entered). Both fields are restricted picklists requiring codes ("US"/"CA"), not display
+          names - this is exactly the runtime data-shape risk flagged as unverifiable by
+          check-only validation back in round 6. Fix (Option B, user-approved): added
+          `countryOptions`/`provinceOptions` inputParameters to Address_Tax, forcing Country and
+          State to render as DROPDOWNS emitting codes instead of free-text inputs. Values are two
+          new `<constants>` (con_Country_Options_US, con_Province_Options_US) holding serialized
+          JSON arrays of {"label":...,"value":...} objects - see the dedicated comment directly
+          above the `<constants>` block for the full format-confidence writeup. This format is a
+          MEDIUM-confidence best-effort guess, NOT verified against flowruntime:address
+          specifically (no working example found anywhere in this repo or the sf-flow skill), and
+          - critically - check-only validation CANNOT prove it right or wrong: countryOptions/
+          provinceOptions are untyped strings to the schema, so a clean validation round here
+          means only "this deploys," never "the dropdowns render and emit codes." A single-country
+          default/preselect (so the user doesn't have to pick "United States" manually) was
+          considered but NOT implemented - no clean, confidently-correct mechanism for it was
+          identified on this component, and forcing a guess here risked a fourth runtime-only
+          failure mode stacked on an already runtime-unverifiable change. THE ACTUAL GATE FOR THIS
+          CHANGE IS A MANUAL RE-TEST OF CASE 2, not a green validation round - confirm Country/
+          State render as dropdowns, confirm picking values populates the Code fields correctly,
+          and confirm Create_Account_Entity succeeds without either of the two errors above.
+        - ROUND 12 (2026-08-21 - round 11's fix FAILED VALIDATION; the component was REPLACED, not
+          re-configured): the round-11 inputParameters were rejected outright - "Address_Tax (Screen
+          Component) - We can't find this input attribute: `countryOptions`" (serial reporting as
+          always: `provinceOptions` was never reached, but is equally unsupported under that name).
+          The round-11 JSON-array-of-{label,value} format had been copied from the LWC
+          `lightning-input-address`'s country-options/province-options properties - a DIFFERENT
+          component with a different attribute contract - which is exactly the risk that comment
+          flagged as MEDIUM confidence.
+          DOCS ACTUALLY READ THIS TIME (web research was available this session; it was not in
+          rounds 1-11, which is why so much of this file was guesswork):
+            * Address Screen Input Component -
+              https://help.salesforce.com/s/articleView?id=platform.flow_ref_elements_screencmp_address.htm&amp;language=en_US&amp;type=5
+            * Spring '25 release note, "Update Records Using the State and Country Codes Selected in
+              Address Screen Components" -
+              https://help.salesforce.com/s/articleView?id=release-notes.rn_automate_flow_builder_state_country_codes_address_screen_components.htm&amp;language=en_US&amp;release=250&amp;type=5
+          THREE FINDINGS, AND WHY THEY ADD UP TO "REPLACE THE COMPONENT":
+          1. The component DOES document "Country Options" and "State or Province Options"
+             attributes - but their documented value is "a comma-delimited set of countries and
+             territories" / "of states", NOT a JSON array of label/value pairs. And the
+             metadata-level attribute NAMES are not `countryOptions`/`provinceOptions` (proven by
+             the validation error above; compare round 1, where the equally-documented "Label"
+             attribute rejected the obvious name `label`). A comma-delimited list carries LABELS
+             only, so even the correctly-named attribute could not have guaranteed that CODES
+             rather than display names reach Tax_Address__*Code__s.
+          2. The doc's Considerations are explicit that Country and State/Province "show as
+             picklists instead of text fields" ONLY when the screen flow is embedded in a Lightning
+             Experience (LWR) site, or in an Aura Experience site with State and Country/Territory
+             Picklists enabled. THIS flow is launched from a Contact list view button in internal
+             Lightning Experience - neither case - which is precisely why it rendered free text
+             despite the org setting being on. That is a documented limitation of the component,
+             not a misconfiguration of it.
+          3. The doc's own remedy for restricted-picklist orgs is to consume the Country Code /
+             State or Province Code OUTPUTS instead of the Value outputs (the round-6 assignments
+             used the Value outputs `.country`/`.province`, which is the direct cause of the two
+             round-11 runtime errors). On its own, though, switching to the Code outputs would NOT
+             have fixed this flow: with the fields rendering as free text per finding 2, nothing
+             populates the code outputs, so the two loud runtime errors would simply have been
+             traded for SILENT data loss - the Account saving with an empty state and country.
+          FIX IMPLEMENTED: Address_Tax (flowruntime:address) is DELETED and replaced by five plain
+          screen fields in the same section, every one of them an element type this file has already
+          put through at least one clean validation round: Input_Tax_Street, Input_Tax_City and
+          Input_Tax_Postal_Code (String InputField); Picklist_Tax_State (DropdownBox over 51 static
+          <choices> - 50 states + DC - whose choiceText is the state NAME and whose value is the
+          USPS 2-letter CODE); and Picklist_Tax_Country (DropdownBox over the single static choice
+          Choice_Country_US, choiceText "United States", value "US", preselected via
+          defaultSelectedChoiceReference so a US-only user never has to pick it). Create_Account_
+          Entity's five address inputAssignments now read from those fields instead of
+          Address_Tax.*; the FIELD side of those assignments (Tax_Address__Street__s / __City__s /
+          __StateCode__s / __PostalCode__s / __CountryCode__s) is untouched and stays deploy-proven
+          from rounds 6-7. The round-11 <constants> con_Country_Options_US and
+          con_Province_Options_US are now unreferenced and were DELETED with their comment block.
+          WHY STATIC <choices> RATHER THAN A PicklistChoiceSet OVER Tax_Address__StateCode__s: a
+          dynamicChoiceSet over the org's own state/country picklist would be far less verbose and
+          self-maintaining, but whether Flow accepts an address *Code__s subfield as a
+          <picklistField> is unverified - and this file's history is a list of unverified guesses
+          costing one validation round each. Static choices carry zero runtime unknowns: the label
+          the user sees and the code the flow writes are both literal text in this file.
+          GUARD ADDED (⚠ SUPERSEDED BY ROUND 13 - the mechanism was wrong, the guard itself was
+          kept): Picklist_Tax_State carries a per-field <validationRule> requiring a Country
+          whenever a State is chosen, because a StateCode with no CountryCode is a
+          FIELD_INTEGRITY_EXCEPTION on save. It cannot misfire on the blank-address path - the same
+          doc states screen-field validation is skipped when an optional field is left blank. Note
+          this is the FIRST <validationRule> on a DropdownBox in this file (the three existing ones
+          are on InputFields); the doc's "Validate Input" section is written as applying to screen
+          components generally, but if a round 13 is needed, this is the likeliest source.
+          [It was. See ROUND 13.]
+          COUNTRY IS OPTIONAL BUT PRESELECTED: Picklist_Tax_Country keeps isRequired=false so a
+          user can still leave the whole Tax Address blank, but defaultSelectedChoiceReference
+          means the normal path always has "United States" already chosen. The trade-off accepted
+          here is that an Account created with no address at all still gets
+          Tax_Address__CountryCode__s = US. Making the field required instead would not change that
+          outcome; it would only remove the user's ability to blank it.
+          STILL RUNTIME-VERIFIABLE ONLY (a much smaller surface than round 11, but not zero): that
+          DropdownBox + defaultSelectedChoiceReference really does preselect "United States"; that
+          the new validationRule's formula behaves as intended (the same standing caveat as every
+          other per-field validationRule here); and that 51 choiceReferences on one DropdownBox
+          render acceptably. What is NO LONGER runtime-only is the thing that actually broke: the
+          value written to the restricted picklists is now a literal code declared in this file,
+          not an opaque component output of unknown shape.
+        - ROUND 13 (round-12 validation failed on exactly the watch-item round 12 predicted): the
+          error was "Picklist_Tax_State (Screen Component) - The screen field of type DropdownBox
+          doesn't support validation rules." SOURCE FOR THIS RULE IS THE DEPLOY ERROR ITSELF, not a
+          doc - the Help article's "Validate Input" section is written as though it applies to
+          screen components generally and does NOT call out the exclusion. The real behaviour is
+          per-fieldType: <validationRule> deploys fine on InputField (this file already has three,
+          on String, Number and Boolean fields) and is rejected outright on DropdownBox. Treat
+          "the docs describe it at the component level" as insufficient evidence that a given
+          fieldType supports it.
+          FIX: the <validationRule> was REMOVED from Picklist_Tax_State and the same guard was
+          relocated to a post-screen Decision, using only the two most-validated shapes in this
+          file (Decision + Screen) and introducing no new element types:
+            * Decision_State_Requires_Country - inserted on the Case-2 branch only, between
+              Decision_Path's Path_New_Entity rule and Get_Existing_Entity_By_Name (that rule's
+              connector was retargeted; the Decision's defaultConnector now carries the normal path
+              on to Get_Existing_Entity_By_Name). Its one rule fires when Picklist_Tax_State IsNull
+              false AND Picklist_Tax_Country IsNull true. Placed BEFORE the duplicate-name query so
+              nothing is queried or created on input that cannot save. IsNull against a text-valued
+              screen field is already proven in this file by Decision_Entity_Selected's check on
+              Lookup_Investing_Entity.recordId.
+            * Screen_Error_State_No_Country - allowBack=true, copied verbatim in shape from the
+              five existing input-correction error screens (error.png DisplayText, Finish button,
+              header/footer shown), so the user can go Back and fix the address.
+          The guard is deliberately NOT dropped as near-redundant against the Country preselect:
+          defaultSelectedChoiceReference is still an UNREACHED watch-item (see below), so the guard
+          is currently the only thing standing between a state-without-country entry and a
+          FIELD_INTEGRITY_EXCEPTION. It stays even after the preselect is confirmed - a user can
+          still set Country back to the blank "None" choice while leaving a State selected.
+          (Written as "None" rather than with the surrounding double-hyphens the picklist actually
+          shows: a double hyphen cannot appear inside an XML comment, and doing so here broke this
+          file's well-formedness once already before the pre-write check caught it.)
+          WATCH-ITEM STATUS after this round, stated precisely because this file's own history is
+          the cautionary example: round 12's watch-item #1 (DropdownBox validationRule) is now
+          RESOLVED-BY-REMOVAL. Watch-item #2 (does DropdownBox honour
+          defaultSelectedChoiceReference) is UNREACHED, not cleared - the round-13 failure was a
+          per-component capability rejection on Picklist_Tax_State, which is exactly the serial
+          masking described at the top of this file, so validation may not have looked at
+          Picklist_Tax_Country at all yet. Watch-item #3 (51 choiceReferences rendering
+          acceptably) remains runtime-only either way.
+        - Per-field <validationRule> as the mechanism for "required only when checkbox is true"
+          (Input_Signing_Order) has not been rejected by any validation round so far, but
+          check-only validation proves schema shape, not runtime formula behavior - confirm this
+          one in Flow Builder / manual testing regardless of how many more rounds pass clean.
+
+        DELIBERATE DESIGN DEVIATIONS FROM THE PLAN (both flagged, not silent):
+        A. CHOICE LOOKUP vs FALLBACK: the plan's primary design was a "Choice Lookup" component
+           bound to a Record Choice Set (RCS_Investing_Entities) pre-filtered to
+           Account.Investing_Entity records, for type-ahead search. That specific bound-lookup
+           XML shape (extensionName/inputParameters for binding a Lookup component to a
+           pre-built Record Choice Set) is a newer, less common feature this author does not have
+           high confidence reproducing correctly from memory alone. Per the plan's own named
+           fallback, THIS FILE USES: a plain flowruntime:lookup on Account (unfiltered, standard,
+           well-documented component) + a post-pick Get_Selected_Entity lookup + Decision_Valid_Entity
+           check against rec_RT_InvestingEntity.Id + Screen_Error_Invalid_Entity (allowBack=true) if
+           the picked Account is not an Investing Entity. The RCS_Investing_Entities dynamicChoiceSet
+           was NOT created since it is unused by this approach.
+        B. SECTIONS -> FLAT VISIBILITY RULES (SUPERSEDED IN ROUND 8 - see below). Originally, the
+           plan's "two conditionally-visible sections" were flattened to per-field visibilityRule
+           for deployment-confidence reasons (identical show/hide behavior, no visual grouping
+           box), traded off against how much else in this flow was flagged at the time. ROUND 8
+           (post-deploy UX polish, requested after the flat version was already live and working)
+           REINTRODUCED Section/Region grouping - three sections now exist
+           (Section_Investor_Information, Section_New_Entity_Details,
+           Section_Existing_Entity_Selection), each a single-column Region, with visibilityRule
+           moved to the Section level where a whole section shares one condition. This is a FIRST
+           ATTEMPT at the Section/Region shape with no verified reference found anywhere (searched
+           this repo's other flows and the sf-flow skill again in round 8 - still does not exist);
+           genuinely lower confidence than the rest of this file, all of which now has at least
+           one real validation round behind it. Multi-column (side-by-side) layout WITHIN a
+           section was deliberately NOT attempted (kept single-column) as the single
+           lowest-confidence sub-shape - see the round 8 history entry above for the full
+           reasoning and what to expect if a further validation round is needed.
+    -->
+    <apiVersion>67.0</apiVersion>
+    <choices>
+        <name>Choice_Investor_Only</name>
+        <choiceText>Investor Only</choiceText>
+        <dataType>String</dataType>
+        <value>
+            <stringValue>InvestorOnly</stringValue>
+        </value>
+    </choices>
+    <choices>
+        <name>Choice_New_Entity</name>
+        <choiceText>New Investing Entity</choiceText>
+        <dataType>String</dataType>
+        <value>
+            <stringValue>NewEntity</stringValue>
+        </value>
+    </choices>
+    <choices>
+        <name>Choice_Existing_Entity</name>
+        <choiceText>Existing Investing Entity</choiceText>
+        <dataType>String</dataType>
+        <value>
+            <stringValue>ExistingEntity</stringValue>
+        </value>
+    </choices>
+    <!--
+        ⚠ ADDED 2026-08-21 (round 12 - replaces the round-11 constants, which are DELETED). These
+        52 static choices back the two DropdownBox screen fields that replaced the
+        flowruntime:address component on Screen_Add_Investor: Picklist_Tax_Country (one choice)
+        and Picklist_Tax_State (51 choices - the 50 states plus the District of Columbia,
+        alphabetical). In every one of them choiceText is the NAME the user reads and
+        <stringValue> is the ISO/USPS CODE the flow writes, which is the whole point: Account's
+        Tax_Address__CountryCode__s and Tax_Address__StateCode__s are restricted picklists that
+        accept codes only. US territories (PR, GU, VI, AS, MP) are deliberately excluded - DPEG is
+        US-only - and can be added here as further <choices> plus matching <choiceReferences> on
+        Picklist_Tax_State if that ever changes. See the ROUND 12 entry at the top of this file for
+        the doc URLs and for why the address component could not be made to do this itself.
+    -->
+    <choices>
+        <name>Choice_Country_US</name>
+        <choiceText>United States</choiceText>
+        <dataType>String</dataType>
+        <value>
+            <stringValue>US</stringValue>
+        </value>
+    </choices>
+    <choices>
+        <name>Choice_State_AL</name>
+        <choiceText>Alabama</choiceText>
+        <dataType>String</dataType>
+        <value>
+            <stringValue>AL</stringValue>
+        </value>
+    </choices>
+    <choices>
+        <name>Choice_State_AK</name>
+        <choiceText>Alaska</choiceText>
+        <dataType>String</dataType>
+        <value>
+            <stringValue>AK</stringValue>
+        </value>
+    </choices>
+    <choices>
+        <name>Choice_State_AZ</name>
+        <choiceText>Arizona</choiceText>
+        <dataType>String</dataType>
+        <value>
+            <stringValue>AZ</stringValue>
+        </value>
+    </choices>
+    <choices>
+        <name>Choice_State_AR</name>
+        <choiceText>Arkansas</choiceText>
+        <dataType>String</dataType>
+        <value>
+            <stringValue>AR</stringValue>
+        </value>
+    </choices>
+    <choices>
+        <name>Choice_State_CA</name>
+        <choiceText>California</choiceText>
+        <dataType>String</dataType>
+        <value>
+            <stringValue>CA</stringValue>
+        </value>
+    </choices>
+    <choices>
+        <name>Choice_State_CO</name>
+        <choiceText>Colorado</choiceText>
+        <dataType>String</dataType>
+        <value>
+            <stringValue>CO</stringValue>
+        </value>
+    </choices>
+    <choices>
+        <name>Choice_State_CT</name>
+        <choiceText>Connecticut</choiceText>
+        <dataType>String</dataType>
+        <value>
+            <stringValue>CT</stringValue>
+        </value>
+    </choices>
+    <choices>
+        <name>Choice_State_DE</name>
+        <choiceText>Delaware</choiceText>
+        <dataType>String</dataType>
+        <value>
+            <stringValue>DE</stringValue>
+        </value>
+    </choices>
+    <choices>
+        <name>Choice_State_DC</name>
+        <choiceText>District of Columbia</choiceText>
+        <dataType>String</dataType>
+        <value>
+            <stringValue>DC</stringValue>
+        </value>
+    </choices>
+    <choices>
+        <name>Choice_State_FL</name>
+        <choiceText>Florida</choiceText>
+        <dataType>String</dataType>
+        <value>
+            <stringValue>FL</stringValue>
+        </value>
+    </choices>
+    <choices>
+        <name>Choice_State_GA</name>
+        <choiceText>Georgia</choiceText>
+        <dataType>String</dataType>
+        <value>
+            <stringValue>GA</stringValue>
+        </value>
+    </choices>
+    <choices>
+        <name>Choice_State_HI</name>
+        <choiceText>Hawaii</choiceText>
+        <dataType>String</dataType>
+        <value>
+            <stringValue>HI</stringValue>
+        </value>
+    </choices>
+    <choices>
+        <name>Choice_State_ID</name>
+        <choiceText>Idaho</choiceText>
+        <dataType>String</dataType>
+        <value>
+            <stringValue>ID</stringValue>
+        </value>
+    </choices>
+    <choices>
+        <name>Choice_State_IL</name>
+        <choiceText>Illinois</choiceText>
+        <dataType>String</dataType>
+        <value>
+            <stringValue>IL</stringValue>
+        </value>
+    </choices>
+    <choices>
+        <name>Choice_State_IN</name>
+        <choiceText>Indiana</choiceText>
+        <dataType>String</dataType>
+        <value>
+            <stringValue>IN</stringValue>
+        </value>
+    </choices>
+    <choices>
+        <name>Choice_State_IA</name>
+        <choiceText>Iowa</choiceText>
+        <dataType>String</dataType>
+        <value>
+            <stringValue>IA</stringValue>
+        </value>
+    </choices>
+    <choices>
+        <name>Choice_State_KS</name>
+        <choiceText>Kansas</choiceText>
+        <dataType>String</dataType>
+        <value>
+            <stringValue>KS</stringValue>
+        </value>
+    </choices>
+    <choices>
+        <name>Choice_State_KY</name>
+        <choiceText>Kentucky</choiceText>
+        <dataType>String</dataType>
+        <value>
+            <stringValue>KY</stringValue>
+        </value>
+    </choices>
+    <choices>
+        <name>Choice_State_LA</name>
+        <choiceText>Louisiana</choiceText>
+        <dataType>String</dataType>
+        <value>
+            <stringValue>LA</stringValue>
+        </value>
+    </choices>
+    <choices>
+        <name>Choice_State_ME</name>
+        <choiceText>Maine</choiceText>
+        <dataType>String</dataType>
+        <value>
+            <stringValue>ME</stringValue>
+        </value>
+    </choices>
+    <choices>
+        <name>Choice_State_MD</name>
+        <choiceText>Maryland</choiceText>
+        <dataType>String</dataType>
+        <value>
+            <stringValue>MD</stringValue>
+        </value>
+    </choices>
+    <choices>
+        <name>Choice_State_MA</name>
+        <choiceText>Massachusetts</choiceText>
+        <dataType>String</dataType>
+        <value>
+            <stringValue>MA</stringValue>
+        </value>
+    </choices>
+    <choices>
+        <name>Choice_State_MI</name>
+        <choiceText>Michigan</choiceText>
+        <dataType>String</dataType>
+        <value>
+            <stringValue>MI</stringValue>
+        </value>
+    </choices>
+    <choices>
+        <name>Choice_State_MN</name>
+        <choiceText>Minnesota</choiceText>
+        <dataType>String</dataType>
+        <value>
+            <stringValue>MN</stringValue>
+        </value>
+    </choices>
+    <choices>
+        <name>Choice_State_MS</name>
+        <choiceText>Mississippi</choiceText>
+        <dataType>String</dataType>
+        <value>
+            <stringValue>MS</stringValue>
+        </value>
+    </choices>
+    <choices>
+        <name>Choice_State_MO</name>
+        <choiceText>Missouri</choiceText>
+        <dataType>String</dataType>
+        <value>
+            <stringValue>MO</stringValue>
+        </value>
+    </choices>
+    <choices>
+        <name>Choice_State_MT</name>
+        <choiceText>Montana</choiceText>
+        <dataType>String</dataType>
+        <value>
+            <stringValue>MT</stringValue>
+        </value>
+    </choices>
+    <choices>
+        <name>Choice_State_NE</name>
+        <choiceText>Nebraska</choiceText>
+        <dataType>String</dataType>
+        <value>
+            <stringValue>NE</stringValue>
+        </value>
+    </choices>
+    <choices>
+        <name>Choice_State_NV</name>
+        <choiceText>Nevada</choiceText>
+        <dataType>String</dataType>
+        <value>
+            <stringValue>NV</stringValue>
+        </value>
+    </choices>
+    <choices>
+        <name>Choice_State_NH</name>
+        <choiceText>New Hampshire</choiceText>
+        <dataType>String</dataType>
+        <value>
+            <stringValue>NH</stringValue>
+        </value>
+    </choices>
+    <choices>
+        <name>Choice_State_NJ</name>
+        <choiceText>New Jersey</choiceText>
+        <dataType>String</dataType>
+        <value>
+            <stringValue>NJ</stringValue>
+        </value>
+    </choices>
+    <choices>
+        <name>Choice_State_NM</name>
+        <choiceText>New Mexico</choiceText>
+        <dataType>String</dataType>
+        <value>
+            <stringValue>NM</stringValue>
+        </value>
+    </choices>
+    <choices>
+        <name>Choice_State_NY</name>
+        <choiceText>New York</choiceText>
+        <dataType>String</dataType>
+        <value>
+            <stringValue>NY</stringValue>
+        </value>
+    </choices>
+    <choices>
+        <name>Choice_State_NC</name>
+        <choiceText>North Carolina</choiceText>
+        <dataType>String</dataType>
+        <value>
+            <stringValue>NC</stringValue>
+        </value>
+    </choices>
+    <choices>
+        <name>Choice_State_ND</name>
+        <choiceText>North Dakota</choiceText>
+        <dataType>String</dataType>
+        <value>
+            <stringValue>ND</stringValue>
+        </value>
+    </choices>
+    <choices>
+        <name>Choice_State_OH</name>
+        <choiceText>Ohio</choiceText>
+        <dataType>String</dataType>
+        <value>
+            <stringValue>OH</stringValue>
+        </value>
+    </choices>
+    <choices>
+        <name>Choice_State_OK</name>
+        <choiceText>Oklahoma</choiceText>
+        <dataType>String</dataType>
+        <value>
+            <stringValue>OK</stringValue>
+        </value>
+    </choices>
+    <choices>
+        <name>Choice_State_OR</name>
+        <choiceText>Oregon</choiceText>
+        <dataType>String</dataType>
+        <value>
+            <stringValue>OR</stringValue>
+        </value>
+    </choices>
+    <choices>
+        <name>Choice_State_PA</name>
+        <choiceText>Pennsylvania</choiceText>
+        <dataType>String</dataType>
+        <value>
+            <stringValue>PA</stringValue>
+        </value>
+    </choices>
+    <choices>
+        <name>Choice_State_RI</name>
+        <choiceText>Rhode Island</choiceText>
+        <dataType>String</dataType>
+        <value>
+            <stringValue>RI</stringValue>
+        </value>
+    </choices>
+    <choices>
+        <name>Choice_State_SC</name>
+        <choiceText>South Carolina</choiceText>
+        <dataType>String</dataType>
+        <value>
+            <stringValue>SC</stringValue>
+        </value>
+    </choices>
+    <choices>
+        <name>Choice_State_SD</name>
+        <choiceText>South Dakota</choiceText>
+        <dataType>String</dataType>
+        <value>
+            <stringValue>SD</stringValue>
+        </value>
+    </choices>
+    <choices>
+        <name>Choice_State_TN</name>
+        <choiceText>Tennessee</choiceText>
+        <dataType>String</dataType>
+        <value>
+            <stringValue>TN</stringValue>
+        </value>
+    </choices>
+    <choices>
+        <name>Choice_State_TX</name>
+        <choiceText>Texas</choiceText>
+        <dataType>String</dataType>
+        <value>
+            <stringValue>TX</stringValue>
+        </value>
+    </choices>
+    <choices>
+        <name>Choice_State_UT</name>
+        <choiceText>Utah</choiceText>
+        <dataType>String</dataType>
+        <value>
+            <stringValue>UT</stringValue>
+        </value>
+    </choices>
+    <choices>
+        <name>Choice_State_VT</name>
+        <choiceText>Vermont</choiceText>
+        <dataType>String</dataType>
+        <value>
+            <stringValue>VT</stringValue>
+        </value>
+    </choices>
+    <choices>
+        <name>Choice_State_VA</name>
+        <choiceText>Virginia</choiceText>
+        <dataType>String</dataType>
+        <value>
+            <stringValue>VA</stringValue>
+        </value>
+    </choices>
+    <choices>
+        <name>Choice_State_WA</name>
+        <choiceText>Washington</choiceText>
+        <dataType>String</dataType>
+        <value>
+            <stringValue>WA</stringValue>
+        </value>
+    </choices>
+    <choices>
+        <name>Choice_State_WV</name>
+        <choiceText>West Virginia</choiceText>
+        <dataType>String</dataType>
+        <value>
+            <stringValue>WV</stringValue>
+        </value>
+    </choices>
+    <choices>
+        <name>Choice_State_WI</name>
+        <choiceText>Wisconsin</choiceText>
+        <dataType>String</dataType>
+        <value>
+            <stringValue>WI</stringValue>
+        </value>
+    </choices>
+    <choices>
+        <name>Choice_State_WY</name>
+        <choiceText>Wyoming</choiceText>
+        <dataType>String</dataType>
+        <value>
+            <stringValue>WY</stringValue>
+        </value>
+    </choices>
+    <decisions>
+        <name>Decision_Duplicate_Email</name>
+        <label>Duplicate Email?</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <defaultConnector>
+            <targetReference>Decision_Path</targetReference>
+        </defaultConnector>
+        <defaultConnectorLabel>No Duplicate Found</defaultConnectorLabel>
+        <description>Checks whether a Contact already exists with the entered email address (any Contact, any record type, per user decision). If found, shows the duplicate-email error; otherwise proceeds to branch on the chosen path.</description>
+        <rules>
+            <name>Contact_Found</name>
+            <conditionLogic>and</conditionLogic>
+            <conditions>
+                <leftValueReference>rec_ExistingContact</leftValueReference>
+                <operator>IsNull</operator>
+                <rightValue>
+                    <booleanValue>false</booleanValue>
+                </rightValue>
+            </conditions>
+            <connector>
+                <targetReference>Screen_Error_Duplicate_Email</targetReference>
+            </connector>
+            <label>Contact Already Exists</label>
+        </rules>
+    </decisions>
+    <decisions>
+        <name>Decision_Path</name>
+        <label>Which Path?</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <defaultConnector>
+            <targetReference>Create_Contact_Investor_Only</targetReference>
+        </defaultConnector>
+        <defaultConnectorLabel>Investor Only</defaultConnectorLabel>
+        <description>Routes based on the Radio_Path selection: New Investing Entity, Existing Investing Entity, or (default) Investor Only.</description>
+        <rules>
+            <name>Path_New_Entity</name>
+            <conditionLogic>and</conditionLogic>
+            <conditions>
+                <leftValueReference>Radio_Path</leftValueReference>
+                <operator>EqualTo</operator>
+                <rightValue>
+                    <stringValue>NewEntity</stringValue>
+                </rightValue>
+            </conditions>
+            <connector>
+                <targetReference>Decision_State_Requires_Country</targetReference>
+            </connector>
+            <label>New Investing Entity</label>
+        </rules>
+        <rules>
+            <name>Path_Existing_Entity</name>
+            <conditionLogic>and</conditionLogic>
+            <conditions>
+                <leftValueReference>Radio_Path</leftValueReference>
+                <operator>EqualTo</operator>
+                <rightValue>
+                    <stringValue>ExistingEntity</stringValue>
+                </rightValue>
+            </conditions>
+            <connector>
+                <targetReference>Decision_Entity_Selected</targetReference>
+            </connector>
+            <label>Existing Investing Entity</label>
+        </rules>
+    </decisions>
+    <decisions>
+        <name>Decision_State_Requires_Country</name>
+        <label>State Without Country?</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <defaultConnector>
+            <targetReference>Get_Existing_Entity_By_Name</targetReference>
+        </defaultConnector>
+        <defaultConnectorLabel>Tax Address OK</defaultConnectorLabel>
+        <description>Guards the New Investing Entity path against a Tax Address that has a State/Province selected but no Country - Tax_Address__StateCode__s cannot be saved without Tax_Address__CountryCode__s (FIELD_INTEGRITY_EXCEPTION). This lives here, as a Decision after the screen, rather than as a per-field validationRule on Picklist_Tax_State, because round 13 proved DropdownBox screen fields do not support validation rules at all. Runs before Get_Existing_Entity_By_Name so nothing is queried or created on a doomed input.</description>
+        <rules>
+            <name>State_Without_Country</name>
+            <conditionLogic>and</conditionLogic>
+            <conditions>
+                <leftValueReference>Picklist_Tax_State</leftValueReference>
+                <operator>IsNull</operator>
+                <rightValue>
+                    <booleanValue>false</booleanValue>
+                </rightValue>
+            </conditions>
+            <conditions>
+                <leftValueReference>Picklist_Tax_Country</leftValueReference>
+                <operator>IsNull</operator>
+                <rightValue>
+                    <booleanValue>true</booleanValue>
+                </rightValue>
+            </conditions>
+            <connector>
+                <targetReference>Screen_Error_State_No_Country</targetReference>
+            </connector>
+            <label>State Selected Without Country</label>
+        </rules>
+    </decisions>
+    <decisions>
+        <name>Decision_Duplicate_Account</name>
+        <label>Duplicate Entity Name?</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <defaultConnector>
+            <targetReference>Create_Account_Entity</targetReference>
+        </defaultConnector>
+        <defaultConnectorLabel>No Duplicate Found</defaultConnectorLabel>
+        <description>Checks whether an Investing Entity Account already exists with the entered name. No Tax ID duplicate check is performed (Tax_ID__c is Encrypted Text and cannot be filtered - user decision).</description>
+        <rules>
+            <name>Account_Found</name>
+            <conditionLogic>and</conditionLogic>
+            <conditions>
+                <leftValueReference>rec_ExistingAccount</leftValueReference>
+                <operator>IsNull</operator>
+                <rightValue>
+                    <booleanValue>false</booleanValue>
+                </rightValue>
+            </conditions>
+            <connector>
+                <targetReference>Screen_Error_Duplicate_Account</targetReference>
+            </connector>
+            <label>Account Already Exists</label>
+        </rules>
+    </decisions>
+    <decisions>
+        <name>Decision_Entity_Selected</name>
+        <label>Entity Selected?</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <defaultConnector>
+            <targetReference>Get_Selected_Entity</targetReference>
+        </defaultConnector>
+        <defaultConnectorLabel>Entity Selected</defaultConnectorLabel>
+        <description>Checks whether the user actually picked an Investing Entity in the Lookup field before continuing.</description>
+        <rules>
+            <name>No_Entity_Selected</name>
+            <conditionLogic>and</conditionLogic>
+            <conditions>
+                <leftValueReference>Lookup_Investing_Entity.recordId</leftValueReference>
+                <operator>IsNull</operator>
+                <rightValue>
+                    <booleanValue>true</booleanValue>
+                </rightValue>
+            </conditions>
+            <connector>
+                <targetReference>Screen_Error_No_Entity</targetReference>
+            </connector>
+            <label>No Entity Selected</label>
+        </rules>
+    </decisions>
+    <decisions>
+        <name>Decision_Valid_Entity</name>
+        <label>Valid Investing Entity?</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <defaultConnector>
+            <targetReference>Decision_Required_Signer</targetReference>
+        </defaultConnector>
+        <defaultConnectorLabel>Valid Entity</defaultConnectorLabel>
+        <description>Confirms the Account picked via the (unfiltered) Lookup component is actually an Investing Entity record type - required because this flow's Lookup, unlike a filtered Choice Lookup, can technically return any Account.</description>
+        <rules>
+            <name>Invalid_Entity</name>
+            <conditionLogic>1 OR 2</conditionLogic>
+            <conditions>
+                <leftValueReference>rec_SelectedEntity</leftValueReference>
+                <operator>IsNull</operator>
+                <rightValue>
+                    <booleanValue>true</booleanValue>
+                </rightValue>
+            </conditions>
+            <conditions>
+                <leftValueReference>rec_SelectedEntity.RecordTypeId</leftValueReference>
+                <operator>NotEqualTo</operator>
+                <rightValue>
+                    <elementReference>rec_RT_InvestingEntity.Id</elementReference>
+                </rightValue>
+            </conditions>
+            <connector>
+                <targetReference>Screen_Error_Invalid_Entity</targetReference>
+            </connector>
+            <label>Not a Valid Investing Entity</label>
+        </rules>
+    </decisions>
+    <decisions>
+        <name>Decision_Required_Signer</name>
+        <label>Required Signer?</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <defaultConnector>
+            <targetReference>Create_Contact_Existing_Entity</targetReference>
+        </defaultConnector>
+        <defaultConnectorLabel>Not a Required Signer</defaultConnectorLabel>
+        <description>If the user checked Required Signer, checks for a Signing Order conflict before creating the Contact; otherwise proceeds straight to Contact creation.</description>
+        <rules>
+            <name>Is_Required_Signer</name>
+            <conditionLogic>and</conditionLogic>
+            <conditions>
+                <leftValueReference>Checkbox_Is_Required_Signer</leftValueReference>
+                <operator>EqualTo</operator>
+                <rightValue>
+                    <booleanValue>true</booleanValue>
+                </rightValue>
+            </conditions>
+            <connector>
+                <targetReference>Get_ACR_Signing_Order</targetReference>
+            </connector>
+            <label>Required Signer</label>
+        </rules>
+    </decisions>
+    <decisions>
+        <name>Decision_Signing_Order_In_Use</name>
+        <label>Signing Order In Use?</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <defaultConnector>
+            <targetReference>Create_Contact_Existing_Entity</targetReference>
+        </defaultConnector>
+        <defaultConnectorLabel>Available</defaultConnectorLabel>
+        <description>Checks whether another AccountContactRelation on this Investing Entity already uses the entered Signing Order.</description>
+        <rules>
+            <name>Order_In_Use</name>
+            <conditionLogic>and</conditionLogic>
+            <conditions>
+                <leftValueReference>rec_ExistingSignerACR</leftValueReference>
+                <operator>IsNull</operator>
+                <rightValue>
+                    <booleanValue>false</booleanValue>
+                </rightValue>
+            </conditions>
+            <connector>
+                <targetReference>Screen_Error_Signing_Order</targetReference>
+            </connector>
+            <label>Signing Order Already In Use</label>
+        </rules>
+    </decisions>
+    <description>Guided creation of an investor Contact (record type Investor), optionally connected to a new or existing Investing Entity Account, with the relationship details (Primary Contact, Required Signer, Signing Order) stamped onto the auto-created AccountContactRelation. Launched from a Contact list view button.</description>
+    <dynamicChoiceSets>
+        <name>Picklist_Entity_Type_Choices</name>
+        <dataType>Picklist</dataType>
+        <picklistField>Entity_Type__c</picklistField>
+        <picklistObject>Account</picklistObject>
+    </dynamicChoiceSets>
+    <environments>Default</environments>
+    <interviewLabel>Add Investor &amp; Investing Entity {!$Flow.CurrentDateTime}</interviewLabel>
+    <label>Add Investor &amp; Investing Entity</label>
+    <processMetadataValues>
+        <name>BuilderType</name>
+        <value>
+            <stringValue>LightningFlowBuilder</stringValue>
+        </value>
+    </processMetadataValues>
+    <processMetadataValues>
+        <name>CanvasMode</name>
+        <value>
+            <stringValue>AUTO_LAYOUT_CANVAS</stringValue>
+        </value>
+    </processMetadataValues>
+    <processMetadataValues>
+        <name>OriginBuilderType</name>
+        <value>
+            <stringValue>LightningFlowBuilder</stringValue>
+        </value>
+    </processMetadataValues>
+    <processType>Flow</processType>
+    <recordCreates>
+        <name>Create_Contact_Investor_Only</name>
+        <label>Create Contact (Investor Only)</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <connector>
+            <targetReference>Screen_Success</targetReference>
+        </connector>
+        <faultConnector>
+            <targetReference>Screen_Error_General</targetReference>
+        </faultConnector>
+        <inputAssignments>
+            <field>Email</field>
+            <value>
+                <elementReference>Input_Email</elementReference>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <field>FirstName</field>
+            <value>
+                <elementReference>Input_First_Name</elementReference>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <field>Is_Accredited__c</field>
+            <value>
+                <elementReference>Checkbox_Is_Accredited</elementReference>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <field>LastName</field>
+            <value>
+                <elementReference>Input_Last_Name</elementReference>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <field>Phone</field>
+            <value>
+                <elementReference>Input_Phone</elementReference>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <field>RecordTypeId</field>
+            <value>
+                <elementReference>rec_RT_Investor.Id</elementReference>
+            </value>
+        </inputAssignments>
+        <object>Contact</object>
+        <storeOutputAutomatically>true</storeOutputAutomatically>
+    </recordCreates>
+    <recordCreates>
+        <name>Create_Account_Entity</name>
+        <label>Create Account (New Entity)</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <connector>
+            <targetReference>Create_Contact_New_Entity</targetReference>
+        </connector>
+        <faultConnector>
+            <targetReference>Screen_Error_General</targetReference>
+        </faultConnector>
+        <inputAssignments>
+            <field>Entity_Type__c</field>
+            <value>
+                <elementReference>Picklist_Entity_Type</elementReference>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <field>Name</field>
+            <value>
+                <elementReference>Input_Account_Name</elementReference>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <field>RecordTypeId</field>
+            <value>
+                <elementReference>rec_RT_InvestingEntity.Id</elementReference>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <field>Tax_Address__City__s</field>
+            <value>
+                <elementReference>Input_Tax_City</elementReference>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <field>Tax_Address__CountryCode__s</field>
+            <value>
+                <elementReference>Picklist_Tax_Country</elementReference>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <field>Tax_Address__PostalCode__s</field>
+            <value>
+                <elementReference>Input_Tax_Postal_Code</elementReference>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <field>Tax_Address__StateCode__s</field>
+            <value>
+                <elementReference>Picklist_Tax_State</elementReference>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <field>Tax_Address__Street__s</field>
+            <value>
+                <elementReference>Input_Tax_Street</elementReference>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <field>Tax_ID__c</field>
+            <value>
+                <elementReference>Input_Tax_ID</elementReference>
+            </value>
+        </inputAssignments>
+        <object>Account</object>
+        <storeOutputAutomatically>true</storeOutputAutomatically>
+    </recordCreates>
+    <recordCreates>
+        <name>Create_Contact_New_Entity</name>
+        <label>Create Contact (New Entity)</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <connector>
+            <targetReference>Get_ACR_New_Entity</targetReference>
+        </connector>
+        <faultConnector>
+            <targetReference>Roll_Back_Records</targetReference>
+        </faultConnector>
+        <inputAssignments>
+            <field>AccountId</field>
+            <value>
+                <elementReference>Create_Account_Entity</elementReference>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <field>Email</field>
+            <value>
+                <elementReference>Input_Email</elementReference>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <field>FirstName</field>
+            <value>
+                <elementReference>Input_First_Name</elementReference>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <field>Is_Accredited__c</field>
+            <value>
+                <elementReference>Checkbox_Is_Accredited</elementReference>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <field>LastName</field>
+            <value>
+                <elementReference>Input_Last_Name</elementReference>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <field>Phone</field>
+            <value>
+                <elementReference>Input_Phone</elementReference>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <field>RecordTypeId</field>
+            <value>
+                <elementReference>rec_RT_Investor.Id</elementReference>
+            </value>
+        </inputAssignments>
+        <object>Contact</object>
+        <storeOutputAutomatically>true</storeOutputAutomatically>
+    </recordCreates>
+    <recordCreates>
+        <name>Create_Contact_Existing_Entity</name>
+        <label>Create Contact (Existing Entity)</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <connector>
+            <targetReference>Get_ACR_Existing_Entity</targetReference>
+        </connector>
+        <faultConnector>
+            <targetReference>Screen_Error_General</targetReference>
+        </faultConnector>
+        <inputAssignments>
+            <field>AccountId</field>
+            <value>
+                <elementReference>Lookup_Investing_Entity.recordId</elementReference>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <field>Email</field>
+            <value>
+                <elementReference>Input_Email</elementReference>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <field>FirstName</field>
+            <value>
+                <elementReference>Input_First_Name</elementReference>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <field>Is_Accredited__c</field>
+            <value>
+                <elementReference>Checkbox_Is_Accredited</elementReference>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <field>LastName</field>
+            <value>
+                <elementReference>Input_Last_Name</elementReference>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <field>Phone</field>
+            <value>
+                <elementReference>Input_Phone</elementReference>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <field>RecordTypeId</field>
+            <value>
+                <elementReference>rec_RT_Investor.Id</elementReference>
+            </value>
+        </inputAssignments>
+        <object>Contact</object>
+        <storeOutputAutomatically>true</storeOutputAutomatically>
+    </recordCreates>
+    <recordLookups>
+        <name>Get_RT_Investor</name>
+        <label>Get RT Investor</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <assignNullValuesIfNoRecordsFound>true</assignNullValuesIfNoRecordsFound>
+        <connector>
+            <targetReference>Get_RT_Investing_Entity</targetReference>
+        </connector>
+        <description>Retrieves the Id of the Contact.Investor record type, needed to stamp every Contact this flow creates.</description>
+        <faultConnector>
+            <targetReference>Screen_Error_General</targetReference>
+        </faultConnector>
+        <filterLogic>and</filterLogic>
+        <filters>
+            <field>SobjectType</field>
+            <operator>EqualTo</operator>
+            <value>
+                <stringValue>Contact</stringValue>
+            </value>
+        </filters>
+        <filters>
+            <field>DeveloperName</field>
+            <operator>EqualTo</operator>
+            <value>
+                <stringValue>Investor</stringValue>
+            </value>
+        </filters>
+        <getFirstRecordOnly>true</getFirstRecordOnly>
+        <object>RecordType</object>
+        <outputReference>rec_RT_Investor</outputReference>
+        <queriedFields>Id</queriedFields>
+    </recordLookups>
+    <recordLookups>
+        <name>Get_RT_Investing_Entity</name>
+        <label>Get RT Investing Entity</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <assignNullValuesIfNoRecordsFound>true</assignNullValuesIfNoRecordsFound>
+        <connector>
+            <targetReference>Screen_Add_Investor</targetReference>
+        </connector>
+        <description>Retrieves the Id of the Account.Investing_Entity record type, needed to stamp the new Account (Case 2) and to validate the picked Account (Case 3).</description>
+        <faultConnector>
+            <targetReference>Screen_Error_General</targetReference>
+        </faultConnector>
+        <filterLogic>and</filterLogic>
+        <filters>
+            <field>SobjectType</field>
+            <operator>EqualTo</operator>
+            <value>
+                <stringValue>Account</stringValue>
+            </value>
+        </filters>
+        <filters>
+            <field>DeveloperName</field>
+            <operator>EqualTo</operator>
+            <value>
+                <stringValue>Investing_Entity</stringValue>
+            </value>
+        </filters>
+        <getFirstRecordOnly>true</getFirstRecordOnly>
+        <object>RecordType</object>
+        <outputReference>rec_RT_InvestingEntity</outputReference>
+        <queriedFields>Id</queriedFields>
+    </recordLookups>
+    <recordLookups>
+        <name>Get_Existing_Contact_By_Email</name>
+        <label>Get Existing Contact By Email</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <assignNullValuesIfNoRecordsFound>true</assignNullValuesIfNoRecordsFound>
+        <connector>
+            <targetReference>Decision_Duplicate_Email</targetReference>
+        </connector>
+        <description>Looks up any Contact (any record type, per user decision) that already has the entered email address.</description>
+        <faultConnector>
+            <targetReference>Screen_Error_General</targetReference>
+        </faultConnector>
+        <filterLogic>and</filterLogic>
+        <filters>
+            <field>Email</field>
+            <operator>EqualTo</operator>
+            <value>
+                <elementReference>Input_Email</elementReference>
+            </value>
+        </filters>
+        <getFirstRecordOnly>true</getFirstRecordOnly>
+        <object>Contact</object>
+        <outputReference>rec_ExistingContact</outputReference>
+        <queriedFields>Id</queriedFields>
+        <queriedFields>Name</queriedFields>
+        <queriedFields>Email</queriedFields>
+    </recordLookups>
+    <recordLookups>
+        <name>Get_Existing_Entity_By_Name</name>
+        <label>Get Existing Entity By Name</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <assignNullValuesIfNoRecordsFound>true</assignNullValuesIfNoRecordsFound>
+        <connector>
+            <targetReference>Decision_Duplicate_Account</targetReference>
+        </connector>
+        <description>Checks for an existing Investing Entity Account with the entered name, scoped to the Investing_Entity record type only.</description>
+        <faultConnector>
+            <targetReference>Screen_Error_General</targetReference>
+        </faultConnector>
+        <filterLogic>and</filterLogic>
+        <filters>
+            <field>Name</field>
+            <operator>EqualTo</operator>
+            <value>
+                <elementReference>Input_Account_Name</elementReference>
+            </value>
+        </filters>
+        <filters>
+            <field>RecordTypeId</field>
+            <operator>EqualTo</operator>
+            <value>
+                <elementReference>rec_RT_InvestingEntity.Id</elementReference>
+            </value>
+        </filters>
+        <getFirstRecordOnly>true</getFirstRecordOnly>
+        <object>Account</object>
+        <outputReference>rec_ExistingAccount</outputReference>
+        <queriedFields>Id</queriedFields>
+    </recordLookups>
+    <recordLookups>
+        <name>Get_Selected_Entity</name>
+        <label>Get Selected Entity</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <assignNullValuesIfNoRecordsFound>true</assignNullValuesIfNoRecordsFound>
+        <connector>
+            <targetReference>Decision_Valid_Entity</targetReference>
+        </connector>
+        <description>Re-fetches the Account picked via the Lookup component to confirm it is actually an Investing Entity record type (the Lookup itself is not filtered - see the CHOICE LOOKUP note at the top of this file).</description>
+        <faultConnector>
+            <targetReference>Screen_Error_General</targetReference>
+        </faultConnector>
+        <filterLogic>and</filterLogic>
+        <filters>
+            <field>Id</field>
+            <operator>EqualTo</operator>
+            <value>
+                <elementReference>Lookup_Investing_Entity.recordId</elementReference>
+            </value>
+        </filters>
+        <getFirstRecordOnly>true</getFirstRecordOnly>
+        <object>Account</object>
+        <outputReference>rec_SelectedEntity</outputReference>
+        <queriedFields>Id</queriedFields>
+        <queriedFields>RecordTypeId</queriedFields>
+    </recordLookups>
+    <recordLookups>
+        <name>Get_ACR_Signing_Order</name>
+        <label>Get ACR Signing Order</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <assignNullValuesIfNoRecordsFound>true</assignNullValuesIfNoRecordsFound>
+        <connector>
+            <targetReference>Decision_Signing_Order_In_Use</targetReference>
+        </connector>
+        <description>Checks whether another AccountContactRelation on the selected Investing Entity already uses the entered Signing Order.</description>
+        <faultConnector>
+            <targetReference>Screen_Error_General</targetReference>
+        </faultConnector>
+        <filterLogic>and</filterLogic>
+        <filters>
+            <field>AccountId</field>
+            <operator>EqualTo</operator>
+            <value>
+                <elementReference>Lookup_Investing_Entity.recordId</elementReference>
+            </value>
+        </filters>
+        <filters>
+            <field>Signing_Order__c</field>
+            <operator>EqualTo</operator>
+            <value>
+                <elementReference>Input_Signing_Order</elementReference>
+            </value>
+        </filters>
+        <getFirstRecordOnly>true</getFirstRecordOnly>
+        <object>AccountContactRelation</object>
+        <outputReference>rec_ExistingSignerACR</outputReference>
+        <queriedFields>Id</queriedFields>
+    </recordLookups>
+    <recordLookups>
+        <name>Get_ACR_New_Entity</name>
+        <label>Get ACR (New Entity)</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <assignNullValuesIfNoRecordsFound>true</assignNullValuesIfNoRecordsFound>
+        <connector>
+            <targetReference>Update_ACR_New_Entity</targetReference>
+        </connector>
+        <description>Retrieves the AccountContactRelation Salesforce auto-created when Create_Contact_New_Entity inserted a Contact with AccountId set. This flow never creates an ACR directly.</description>
+        <faultConnector>
+            <targetReference>Roll_Back_Records</targetReference>
+        </faultConnector>
+        <filterLogic>and</filterLogic>
+        <filters>
+            <field>AccountId</field>
+            <operator>EqualTo</operator>
+            <value>
+                <elementReference>Create_Account_Entity</elementReference>
+            </value>
+        </filters>
+        <filters>
+            <field>ContactId</field>
+            <operator>EqualTo</operator>
+            <value>
+                <elementReference>Create_Contact_New_Entity</elementReference>
+            </value>
+        </filters>
+        <getFirstRecordOnly>true</getFirstRecordOnly>
+        <object>AccountContactRelation</object>
+        <outputReference>rec_ACR</outputReference>
+        <queriedFields>Id</queriedFields>
+    </recordLookups>
+    <recordLookups>
+        <name>Get_ACR_Existing_Entity</name>
+        <label>Get ACR (Existing Entity)</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <assignNullValuesIfNoRecordsFound>true</assignNullValuesIfNoRecordsFound>
+        <connector>
+            <targetReference>Update_ACR_Existing_Entity</targetReference>
+        </connector>
+        <description>Retrieves the AccountContactRelation Salesforce auto-created when Create_Contact_Existing_Entity inserted a Contact with AccountId set. This flow never creates an ACR directly.</description>
+        <faultConnector>
+            <targetReference>Roll_Back_Records</targetReference>
+        </faultConnector>
+        <filterLogic>and</filterLogic>
+        <filters>
+            <field>AccountId</field>
+            <operator>EqualTo</operator>
+            <value>
+                <elementReference>Lookup_Investing_Entity.recordId</elementReference>
+            </value>
+        </filters>
+        <filters>
+            <field>ContactId</field>
+            <operator>EqualTo</operator>
+            <value>
+                <elementReference>Create_Contact_Existing_Entity</elementReference>
+            </value>
+        </filters>
+        <getFirstRecordOnly>true</getFirstRecordOnly>
+        <object>AccountContactRelation</object>
+        <outputReference>rec_ACR</outputReference>
+        <queriedFields>Id</queriedFields>
+    </recordLookups>
+    <recordRollbacks>
+        <name>Roll_Back_Records</name>
+        <label>Roll Back Records</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <connector>
+            <targetReference>Screen_Error_General</targetReference>
+        </connector>
+        <description>Rolls back all pending DML in this transaction. Reached only from fault connectors on elements that run AFTER the first successful Create in Case 2 or Case 3, so a later failure (e.g. the Contact create, or the ACR get/update) does not leave an orphaned Account or Contact behind.</description>
+    </recordRollbacks>
+    <recordUpdates>
+        <name>Update_ACR_New_Entity</name>
+        <label>Update ACR (New Entity)</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <connector>
+            <targetReference>Screen_Success</targetReference>
+        </connector>
+        <faultConnector>
+            <targetReference>Roll_Back_Records</targetReference>
+        </faultConnector>
+        <filterLogic>and</filterLogic>
+        <filters>
+            <field>Id</field>
+            <operator>EqualTo</operator>
+            <value>
+                <elementReference>rec_ACR.Id</elementReference>
+            </value>
+        </filters>
+        <inputAssignments>
+            <field>Is_Primary_Contact__c</field>
+            <value>
+                <booleanValue>true</booleanValue>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <field>Is_Required_Signer__c</field>
+            <value>
+                <booleanValue>true</booleanValue>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <field>Signing_Order__c</field>
+            <value>
+                <numberValue>1.0</numberValue>
+            </value>
+        </inputAssignments>
+        <object>AccountContactRelation</object>
+    </recordUpdates>
+    <recordUpdates>
+        <name>Update_ACR_Existing_Entity</name>
+        <label>Update ACR (Existing Entity)</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <connector>
+            <targetReference>Screen_Success</targetReference>
+        </connector>
+        <faultConnector>
+            <targetReference>Roll_Back_Records</targetReference>
+        </faultConnector>
+        <filterLogic>and</filterLogic>
+        <filters>
+            <field>Id</field>
+            <operator>EqualTo</operator>
+            <value>
+                <elementReference>rec_ACR.Id</elementReference>
+            </value>
+        </filters>
+        <inputAssignments>
+            <field>Is_Primary_Contact__c</field>
+            <value>
+                <booleanValue>false</booleanValue>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <field>Is_Required_Signer__c</field>
+            <value>
+                <elementReference>Checkbox_Is_Required_Signer</elementReference>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <field>Signing_Order__c</field>
+            <value>
+                <elementReference>Input_Signing_Order</elementReference>
+            </value>
+        </inputAssignments>
+        <object>AccountContactRelation</object>
+    </recordUpdates>
+    <screens>
+        <name>Screen_Add_Investor</name>
+        <label>Add Investor &amp; Investing Entity</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <allowBack>false</allowBack>
+        <allowFinish>true</allowFinish>
+        <allowPause>false</allowPause>
+        <connector>
+            <targetReference>Get_Existing_Contact_By_Email</targetReference>
+        </connector>
+        <description>Single main screen collecting the investor's details, the desired path (investor only / new entity / existing entity), and the fields specific to whichever path is chosen.</description>
+        <fields>
+            <name>Section_Investor_Information</name>
+            <fieldText>Investor Information</fieldText>
+            <fieldType>RegionContainer</fieldType>
+            <fields>
+                <name>Section_Investor_Information_Column1</name>
+                <fieldType>Region</fieldType>
+                <inputParameters>
+                    <name>width</name>
+                    <value>
+                        <stringValue>12</stringValue>
+                    </value>
+                </inputParameters>
+                <isRequired>false</isRequired>
+                <fields>
+                    <name>Input_First_Name</name>
+                    <dataType>String</dataType>
+                    <fieldText>First Name</fieldText>
+                    <fieldType>InputField</fieldType>
+                    <isRequired>true</isRequired>
+                </fields>
+                <fields>
+                    <name>Input_Last_Name</name>
+                    <dataType>String</dataType>
+                    <fieldText>Last Name</fieldText>
+                    <fieldType>InputField</fieldType>
+                    <isRequired>true</isRequired>
+                </fields>
+                <fields>
+                    <name>Input_Email</name>
+                    <dataType>String</dataType>
+                    <fieldText>Email</fieldText>
+                    <fieldType>InputField</fieldType>
+                    <isRequired>true</isRequired>
+                </fields>
+                <fields>
+                    <name>Input_Phone</name>
+                    <dataType>String</dataType>
+                    <fieldText>Phone</fieldText>
+                    <fieldType>InputField</fieldType>
+                    <isRequired>true</isRequired>
+                </fields>
+                <fields>
+                    <name>Checkbox_Is_Accredited</name>
+                    <dataType>Boolean</dataType>
+                    <fieldText>Is Accredited</fieldText>
+                    <fieldType>InputField</fieldType>
+                    <validationRule>
+                        <formulaExpression>{!Checkbox_Is_Accredited} = true</formulaExpression>
+                        <errorMessage>You must confirm the investor is accredited before proceeding.</errorMessage>
+                    </validationRule>
+                </fields>
+            </fields>
+            <isRequired>false</isRequired>
+            <isVisible>true</isVisible>
+            <regionContainerType>SectionWithHeader</regionContainerType>
+        </fields>
+        <fields>
+            <name>Radio_Path</name>
+            <choiceReferences>Choice_Investor_Only</choiceReferences>
+            <choiceReferences>Choice_New_Entity</choiceReferences>
+            <choiceReferences>Choice_Existing_Entity</choiceReferences>
+            <dataType>String</dataType>
+            <defaultSelectedChoiceReference>Choice_Investor_Only</defaultSelectedChoiceReference>
+            <fieldText>How would you like to proceed?</fieldText>
+            <fieldType>RadioButtons</fieldType>
+            <isRequired>true</isRequired>
+        </fields>
+        <fields>
+            <name>Section_New_Entity_Details</name>
+            <fieldText>New Investing Entity Details</fieldText>
+            <fieldType>RegionContainer</fieldType>
+            <fields>
+                <name>Section_New_Entity_Details_Column1</name>
+                <fieldType>Region</fieldType>
+                <inputParameters>
+                    <name>width</name>
+                    <value>
+                        <stringValue>12</stringValue>
+                    </value>
+                </inputParameters>
+                <isRequired>false</isRequired>
+                <fields>
+                    <name>Input_Account_Name</name>
+                    <dataType>String</dataType>
+                    <fieldText>Investing Entity Name</fieldText>
+                    <fieldType>InputField</fieldType>
+                    <isRequired>true</isRequired>
+                </fields>
+                <fields>
+                    <name>Picklist_Entity_Type</name>
+                    <choiceReferences>Picklist_Entity_Type_Choices</choiceReferences>
+                    <dataType>String</dataType>
+                    <fieldText>Entity Type</fieldText>
+                    <fieldType>DropdownBox</fieldType>
+                    <isRequired>true</isRequired>
+                </fields>
+                <fields>
+                    <name>Input_Tax_ID</name>
+                    <dataType>String</dataType>
+                    <fieldText>Tax ID</fieldText>
+                    <fieldType>InputField</fieldType>
+                    <isRequired>false</isRequired>
+                    <validationRule>
+                        <formulaExpression>OR(ISBLANK({!Input_Tax_ID}), LEN({!Input_Tax_ID}) &lt;= 175)</formulaExpression>
+                        <errorMessage>Tax ID cannot exceed 175 characters.</errorMessage>
+                    </validationRule>
+                </fields>
+                <fields>
+                    <name>DisplayText_Tax_Address_Heading</name>
+                    <fieldType>DisplayText</fieldType>
+                    <fieldText>&lt;p&gt;&lt;b&gt;Tax Address&lt;/b&gt;&lt;/p&gt;</fieldText>
+                </fields>
+                <fields>
+                    <name>Input_Tax_Street</name>
+                    <dataType>String</dataType>
+                    <fieldText>Street</fieldText>
+                    <fieldType>InputField</fieldType>
+                    <isRequired>false</isRequired>
+                </fields>
+                <fields>
+                    <name>Input_Tax_City</name>
+                    <dataType>String</dataType>
+                    <fieldText>City</fieldText>
+                    <fieldType>InputField</fieldType>
+                    <isRequired>false</isRequired>
+                </fields>
+                <fields>
+                    <name>Picklist_Tax_State</name>
+                    <choiceReferences>Choice_State_AL</choiceReferences>
+                    <choiceReferences>Choice_State_AK</choiceReferences>
+                    <choiceReferences>Choice_State_AZ</choiceReferences>
+                    <choiceReferences>Choice_State_AR</choiceReferences>
+                    <choiceReferences>Choice_State_CA</choiceReferences>
+                    <choiceReferences>Choice_State_CO</choiceReferences>
+                    <choiceReferences>Choice_State_CT</choiceReferences>
+                    <choiceReferences>Choice_State_DE</choiceReferences>
+                    <choiceReferences>Choice_State_DC</choiceReferences>
+                    <choiceReferences>Choice_State_FL</choiceReferences>
+                    <choiceReferences>Choice_State_GA</choiceReferences>
+                    <choiceReferences>Choice_State_HI</choiceReferences>
+                    <choiceReferences>Choice_State_ID</choiceReferences>
+                    <choiceReferences>Choice_State_IL</choiceReferences>
+                    <choiceReferences>Choice_State_IN</choiceReferences>
+                    <choiceReferences>Choice_State_IA</choiceReferences>
+                    <choiceReferences>Choice_State_KS</choiceReferences>
+                    <choiceReferences>Choice_State_KY</choiceReferences>
+                    <choiceReferences>Choice_State_LA</choiceReferences>
+                    <choiceReferences>Choice_State_ME</choiceReferences>
+                    <choiceReferences>Choice_State_MD</choiceReferences>
+                    <choiceReferences>Choice_State_MA</choiceReferences>
+                    <choiceReferences>Choice_State_MI</choiceReferences>
+                    <choiceReferences>Choice_State_MN</choiceReferences>
+                    <choiceReferences>Choice_State_MS</choiceReferences>
+                    <choiceReferences>Choice_State_MO</choiceReferences>
+                    <choiceReferences>Choice_State_MT</choiceReferences>
+                    <choiceReferences>Choice_State_NE</choiceReferences>
+                    <choiceReferences>Choice_State_NV</choiceReferences>
+                    <choiceReferences>Choice_State_NH</choiceReferences>
+                    <choiceReferences>Choice_State_NJ</choiceReferences>
+                    <choiceReferences>Choice_State_NM</choiceReferences>
+                    <choiceReferences>Choice_State_NY</choiceReferences>
+                    <choiceReferences>Choice_State_NC</choiceReferences>
+                    <choiceReferences>Choice_State_ND</choiceReferences>
+                    <choiceReferences>Choice_State_OH</choiceReferences>
+                    <choiceReferences>Choice_State_OK</choiceReferences>
+                    <choiceReferences>Choice_State_OR</choiceReferences>
+                    <choiceReferences>Choice_State_PA</choiceReferences>
+                    <choiceReferences>Choice_State_RI</choiceReferences>
+                    <choiceReferences>Choice_State_SC</choiceReferences>
+                    <choiceReferences>Choice_State_SD</choiceReferences>
+                    <choiceReferences>Choice_State_TN</choiceReferences>
+                    <choiceReferences>Choice_State_TX</choiceReferences>
+                    <choiceReferences>Choice_State_UT</choiceReferences>
+                    <choiceReferences>Choice_State_VT</choiceReferences>
+                    <choiceReferences>Choice_State_VA</choiceReferences>
+                    <choiceReferences>Choice_State_WA</choiceReferences>
+                    <choiceReferences>Choice_State_WV</choiceReferences>
+                    <choiceReferences>Choice_State_WI</choiceReferences>
+                    <choiceReferences>Choice_State_WY</choiceReferences>
+                    <dataType>String</dataType>
+                    <fieldText>State/Province</fieldText>
+                    <fieldType>DropdownBox</fieldType>
+                    <isRequired>false</isRequired>
+                </fields>
+                <fields>
+                    <name>Input_Tax_Postal_Code</name>
+                    <dataType>String</dataType>
+                    <fieldText>ZIP/Postal Code</fieldText>
+                    <fieldType>InputField</fieldType>
+                    <isRequired>false</isRequired>
+                </fields>
+                <fields>
+                    <name>Picklist_Tax_Country</name>
+                    <choiceReferences>Choice_Country_US</choiceReferences>
+                    <dataType>String</dataType>
+                    <defaultSelectedChoiceReference>Choice_Country_US</defaultSelectedChoiceReference>
+                    <fieldText>Country</fieldText>
+                    <fieldType>DropdownBox</fieldType>
+                    <isRequired>false</isRequired>
+                </fields>
+                <fields>
+                    <name>DisplayText_New_Entity_Defaults</name>
+                    <fieldType>DisplayText</fieldType>
+                    <fieldText>&lt;p&gt;This Contact will automatically be set as the &lt;b&gt;Primary Contact&lt;/b&gt; and a &lt;b&gt;Required Signer&lt;/b&gt; for the new Investing Entity, with &lt;b&gt;Signing Order 1&lt;/b&gt;.&lt;/p&gt;</fieldText>
+                </fields>
+            </fields>
+            <isRequired>false</isRequired>
+            <isVisible>true</isVisible>
+            <regionContainerType>SectionWithHeader</regionContainerType>
+            <visibilityRule>
+                <conditionLogic>and</conditionLogic>
+                <conditions>
+                    <leftValueReference>Radio_Path</leftValueReference>
+                    <operator>EqualTo</operator>
+                    <rightValue>
+                        <stringValue>NewEntity</stringValue>
+                    </rightValue>
+                </conditions>
+            </visibilityRule>
+        </fields>
+        <fields>
+            <name>Section_Existing_Entity_Selection</name>
+            <fieldText>Investing Entity Selection</fieldText>
+            <fieldType>RegionContainer</fieldType>
+            <fields>
+                <name>Section_Existing_Entity_Selection_Column1</name>
+                <fieldType>Region</fieldType>
+                <inputParameters>
+                    <name>width</name>
+                    <value>
+                        <stringValue>12</stringValue>
+                    </value>
+                </inputParameters>
+                <isRequired>false</isRequired>
+                <fields>
+                    <name>Lookup_Investing_Entity</name>
+                    <dataType>String</dataType>
+                    <extensionName>flowruntime:lookup</extensionName>
+                    <fieldType>ComponentInstance</fieldType>
+                    <inputParameters>
+                        <name>objectApiName</name>
+                        <value>
+                            <stringValue>Contact</stringValue>
+                        </value>
+                    </inputParameters>
+                    <inputParameters>
+                        <name>fieldApiName</name>
+                        <value>
+                            <stringValue>AccountId</stringValue>
+                        </value>
+                    </inputParameters>
+                    <inputParameters>
+                        <name>label</name>
+                        <value>
+                            <stringValue>Investing Entity</stringValue>
+                        </value>
+                    </inputParameters>
+                    <inputParameters>
+                        <name>required</name>
+                        <value>
+                            <booleanValue>true</booleanValue>
+                        </value>
+                    </inputParameters>
+                    <isRequired>true</isRequired>
+                    <storeOutputAutomatically>true</storeOutputAutomatically>
+                </fields>
+                <fields>
+                    <name>Checkbox_Is_Required_Signer</name>
+                    <dataType>Boolean</dataType>
+                    <fieldText>Required Signer</fieldText>
+                    <fieldType>InputField</fieldType>
+                </fields>
+                <fields>
+                    <name>Input_Signing_Order</name>
+                    <dataType>Number</dataType>
+                    <fieldText>Signing Order</fieldText>
+                    <fieldType>InputField</fieldType>
+                    <isRequired>false</isRequired>
+                    <scale>0</scale>
+                    <validationRule>
+                        <formulaExpression>OR(NOT({!Checkbox_Is_Required_Signer}), NOT(ISBLANK({!Input_Signing_Order})))</formulaExpression>
+                        <errorMessage>Signing Order is required when this contact is a required signer.</errorMessage>
+                    </validationRule>
+                    <visibilityRule>
+                        <conditionLogic>and</conditionLogic>
+                        <conditions>
+                            <leftValueReference>Checkbox_Is_Required_Signer</leftValueReference>
+                            <operator>EqualTo</operator>
+                            <rightValue>
+                                <booleanValue>true</booleanValue>
+                            </rightValue>
+                        </conditions>
+                    </visibilityRule>
+                </fields>
+            </fields>
+            <isRequired>false</isRequired>
+            <isVisible>true</isVisible>
+            <regionContainerType>SectionWithHeader</regionContainerType>
+            <visibilityRule>
+                <conditionLogic>and</conditionLogic>
+                <conditions>
+                    <leftValueReference>Radio_Path</leftValueReference>
+                    <operator>EqualTo</operator>
+                    <rightValue>
+                        <stringValue>ExistingEntity</stringValue>
+                    </rightValue>
+                </conditions>
+            </visibilityRule>
+        </fields>
+        <showFooter>true</showFooter>
+        <showHeader>true</showHeader>
+    </screens>
+    <screens>
+        <name>Screen_Success</name>
+        <label>Add Investor &amp; Investing Entity</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <allowBack>false</allowBack>
+        <allowFinish>true</allowFinish>
+        <allowPause>false</allowPause>
+        <description>Confirms the investor Contact (and, where applicable, the Investing Entity and its relationship details) were created successfully.</description>
+        <fields>
+            <name>Success_Message</name>
+            <fieldType>DisplayText</fieldType>
+            <fieldText>&lt;p style=&quot;text-align: center;&quot;&gt;&lt;br&gt;&lt;/p&gt;&lt;p style=&quot;text-align: center;&quot;&gt;&lt;img src=&quot;/resource/Assets/success.png&quot; alt=&quot;Success&quot; width=&quot;96&quot; height=&quot;96&quot;&gt;&lt;/p&gt;&lt;p style=&quot;text-align: center;&quot;&gt;&lt;span style=&quot;font-size: 16px;&quot;&gt;Investor has created successfully.&lt;/span&gt;&lt;/p&gt;</fieldText>
+        </fields>
+        <nextOrFinishButtonLabel>Finish</nextOrFinishButtonLabel>
+        <showFooter>true</showFooter>
+        <showHeader>true</showHeader>
+    </screens>
+    <screens>
+        <name>Screen_Error_Duplicate_Email</name>
+        <label>Add Investor &amp; Investing Entity</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <allowBack>true</allowBack>
+        <allowFinish>true</allowFinish>
+        <allowPause>false</allowPause>
+        <description>Displays an error when a Contact already exists with the entered email address, showing its name and email so the user can decide what to do.</description>
+        <fields>
+            <name>Error_Duplicate_Email_Message</name>
+            <fieldType>DisplayText</fieldType>
+            <fieldText>&lt;p style=&quot;text-align: center;&quot;&gt;&lt;br&gt;&lt;/p&gt;&lt;p style=&quot;text-align: center;&quot;&gt;&lt;img src=&quot;/resource/Assets/error.png&quot; alt=&quot;Error&quot; width=&quot;96&quot; height=&quot;96&quot;&gt;&lt;/p&gt;&lt;p style=&quot;text-align: center;&quot;&gt;&lt;span style=&quot;font-size: 16px;&quot;&gt;Investor With Same Email Already Exist&lt;br&gt;Existing Contact Name: {!rec_ExistingContact.Name}&lt;br&gt;Existing Contact Email: {!rec_ExistingContact.Email}&lt;/span&gt;&lt;/p&gt;</fieldText>
+        </fields>
+        <nextOrFinishButtonLabel>Finish</nextOrFinishButtonLabel>
+        <showFooter>true</showFooter>
+        <showHeader>true</showHeader>
+    </screens>
+    <screens>
+        <name>Screen_Error_Duplicate_Account</name>
+        <label>Add Investor &amp; Investing Entity</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <allowBack>true</allowBack>
+        <allowFinish>true</allowFinish>
+        <allowPause>false</allowPause>
+        <description>Displays an error when an Investing Entity Account already exists with the entered name.</description>
+        <fields>
+            <name>Error_Duplicate_Account_Message</name>
+            <fieldType>DisplayText</fieldType>
+            <fieldText>&lt;p style=&quot;text-align: center;&quot;&gt;&lt;br&gt;&lt;/p&gt;&lt;p style=&quot;text-align: center;&quot;&gt;&lt;img src=&quot;/resource/Assets/error.png&quot; alt=&quot;Error&quot; width=&quot;96&quot; height=&quot;96&quot;&gt;&lt;/p&gt;&lt;p style=&quot;text-align: center;&quot;&gt;&lt;span style=&quot;font-size: 16px;&quot;&gt;An Investing Entity named &amp;quot;{!Input_Account_Name}&amp;quot; already exists. Please choose a different name, or select the existing entity instead.&lt;/span&gt;&lt;/p&gt;</fieldText>
+        </fields>
+        <nextOrFinishButtonLabel>Finish</nextOrFinishButtonLabel>
+        <showFooter>true</showFooter>
+        <showHeader>true</showHeader>
+    </screens>
+    <screens>
+        <name>Screen_Error_State_No_Country</name>
+        <label>Add Investor &amp; Investing Entity</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <allowBack>true</allowBack>
+        <allowFinish>true</allowFinish>
+        <allowPause>false</allowPause>
+        <description>Displays an error when the Tax Address has a State/Province selected but no Country. Reached from Decision_State_Requires_Country, which replaced the DropdownBox validationRule rejected in round 13.</description>
+        <fields>
+            <name>Error_State_No_Country_Message</name>
+            <fieldType>DisplayText</fieldType>
+            <fieldText>&lt;p style=&quot;text-align: center;&quot;&gt;&lt;br&gt;&lt;/p&gt;&lt;p style=&quot;text-align: center;&quot;&gt;&lt;img src=&quot;/resource/Assets/error.png&quot; alt=&quot;Error&quot; width=&quot;96&quot; height=&quot;96&quot;&gt;&lt;/p&gt;&lt;p style=&quot;text-align: center;&quot;&gt;&lt;span style=&quot;font-size: 16px;&quot;&gt;Please select a Country for the Tax Address, or clear the State selection.&lt;/span&gt;&lt;/p&gt;</fieldText>
+        </fields>
+        <nextOrFinishButtonLabel>Finish</nextOrFinishButtonLabel>
+        <showFooter>true</showFooter>
+        <showHeader>true</showHeader>
+    </screens>
+    <screens>
+        <name>Screen_Error_No_Entity</name>
+        <label>Add Investor &amp; Investing Entity</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <allowBack>true</allowBack>
+        <allowFinish>true</allowFinish>
+        <allowPause>false</allowPause>
+        <description>Displays an error when the user chose the Existing Investing Entity path but did not pick one.</description>
+        <fields>
+            <name>Error_No_Entity_Message</name>
+            <fieldType>DisplayText</fieldType>
+            <fieldText>&lt;p style=&quot;text-align: center;&quot;&gt;&lt;br&gt;&lt;/p&gt;&lt;p style=&quot;text-align: center;&quot;&gt;&lt;img src=&quot;/resource/Assets/error.png&quot; alt=&quot;Error&quot; width=&quot;96&quot; height=&quot;96&quot;&gt;&lt;/p&gt;&lt;p style=&quot;text-align: center;&quot;&gt;&lt;span style=&quot;font-size: 16px;&quot;&gt;Please select an Investing Entity to continue, or choose a different option.&lt;/span&gt;&lt;/p&gt;</fieldText>
+        </fields>
+        <nextOrFinishButtonLabel>Finish</nextOrFinishButtonLabel>
+        <showFooter>true</showFooter>
+        <showHeader>true</showHeader>
+    </screens>
+    <screens>
+        <name>Screen_Error_Invalid_Entity</name>
+        <label>Add Investor &amp; Investing Entity</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <allowBack>true</allowBack>
+        <allowFinish>true</allowFinish>
+        <allowPause>false</allowPause>
+        <description>Displays an error when the Account picked via the Lookup component is not an Investing Entity record type.</description>
+        <fields>
+            <name>Error_Invalid_Entity_Message</name>
+            <fieldType>DisplayText</fieldType>
+            <fieldText>&lt;p style=&quot;text-align: center;&quot;&gt;&lt;br&gt;&lt;/p&gt;&lt;p style=&quot;text-align: center;&quot;&gt;&lt;img src=&quot;/resource/Assets/error.png&quot; alt=&quot;Error&quot; width=&quot;96&quot; height=&quot;96&quot;&gt;&lt;/p&gt;&lt;p style=&quot;text-align: center;&quot;&gt;&lt;span style=&quot;font-size: 16px;&quot;&gt;The selected record is not a valid Investing Entity. Please search again.&lt;/span&gt;&lt;/p&gt;</fieldText>
+        </fields>
+        <nextOrFinishButtonLabel>Finish</nextOrFinishButtonLabel>
+        <showFooter>true</showFooter>
+        <showHeader>true</showHeader>
+    </screens>
+    <screens>
+        <name>Screen_Error_Signing_Order</name>
+        <label>Add Investor &amp; Investing Entity</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <allowBack>true</allowBack>
+        <allowFinish>true</allowFinish>
+        <allowPause>false</allowPause>
+        <description>Displays an error when the entered Signing Order is already used by another signer on this Investing Entity.</description>
+        <fields>
+            <name>Error_Signing_Order_Message</name>
+            <fieldType>DisplayText</fieldType>
+            <fieldText>&lt;p style=&quot;text-align: center;&quot;&gt;&lt;br&gt;&lt;/p&gt;&lt;p style=&quot;text-align: center;&quot;&gt;&lt;img src=&quot;/resource/Assets/error.png&quot; alt=&quot;Error&quot; width=&quot;96&quot; height=&quot;96&quot;&gt;&lt;/p&gt;&lt;p style=&quot;text-align: center;&quot;&gt;&lt;span style=&quot;font-size: 16px;&quot;&gt;This Signing Order is already in use for this Investing Entity. Please choose a different number.&lt;/span&gt;&lt;/p&gt;</fieldText>
+        </fields>
+        <nextOrFinishButtonLabel>Finish</nextOrFinishButtonLabel>
+        <showFooter>true</showFooter>
+        <showHeader>true</showHeader>
+    </screens>
+    <screens>
+        <name>Screen_Error_General</name>
+        <label>Add Investor &amp; Investing Entity</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <allowBack>false</allowBack>
+        <allowFinish>true</allowFinish>
+        <allowPause>false</allowPause>
+        <description>Displays an unexpected fault message from any lookup, create, or update in this flow.</description>
+        <fields>
+            <name>Error_General_Message</name>
+            <fieldType>DisplayText</fieldType>
+            <fieldText>&lt;p style=&quot;text-align: center;&quot;&gt;&lt;br&gt;&lt;/p&gt;&lt;p style=&quot;text-align: center;&quot;&gt;&lt;img src=&quot;/resource/Assets/error.png&quot; alt=&quot;Error&quot; width=&quot;96&quot; height=&quot;96&quot;&gt;&lt;/p&gt;&lt;p style=&quot;text-align: center;&quot;&gt;&lt;span style=&quot;font-size: 16px;&quot;&gt;Error: An unexpected error occurred.&lt;br&gt;{!$Flow.FaultMessage}&lt;/span&gt;&lt;/p&gt;</fieldText>
+        </fields>
+        <nextOrFinishButtonLabel>Finish</nextOrFinishButtonLabel>
+        <showFooter>true</showFooter>
+        <showHeader>true</showHeader>
+    </screens>
+    <start>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <connector>
+            <targetReference>Get_RT_Investor</targetReference>
+        </connector>
+    </start>
+    <status>Active</status>
+    <variables>
+        <name>rec_RT_Investor</name>
+        <dataType>SObject</dataType>
+        <isCollection>false</isCollection>
+        <isInput>false</isInput>
+        <isOutput>false</isOutput>
+        <objectType>RecordType</objectType>
+    </variables>
+    <variables>
+        <name>rec_RT_InvestingEntity</name>
+        <dataType>SObject</dataType>
+        <isCollection>false</isCollection>
+        <isInput>false</isInput>
+        <isOutput>false</isOutput>
+        <objectType>RecordType</objectType>
+    </variables>
+    <variables>
+        <name>rec_ExistingContact</name>
+        <dataType>SObject</dataType>
+        <isCollection>false</isCollection>
+        <isInput>false</isInput>
+        <isOutput>false</isOutput>
+        <objectType>Contact</objectType>
+    </variables>
+    <variables>
+        <name>rec_ExistingAccount</name>
+        <dataType>SObject</dataType>
+        <isCollection>false</isCollection>
+        <isInput>false</isInput>
+        <isOutput>false</isOutput>
+        <objectType>Account</objectType>
+    </variables>
+    <variables>
+        <name>rec_SelectedEntity</name>
+        <dataType>SObject</dataType>
+        <isCollection>false</isCollection>
+        <isInput>false</isInput>
+        <isOutput>false</isOutput>
+        <objectType>Account</objectType>
+    </variables>
+    <variables>
+        <name>rec_ACR</name>
+        <dataType>SObject</dataType>
+        <isCollection>false</isCollection>
+        <isInput>false</isInput>
+        <isOutput>false</isOutput>
+        <objectType>AccountContactRelation</objectType>
+    </variables>
+    <variables>
+        <name>rec_ExistingSignerACR</name>
+        <dataType>SObject</dataType>
+        <isCollection>false</isCollection>
+        <isInput>false</isInput>
+        <isOutput>false</isOutput>
+        <objectType>AccountContactRelation</objectType>
+    </variables>
+</Flow>

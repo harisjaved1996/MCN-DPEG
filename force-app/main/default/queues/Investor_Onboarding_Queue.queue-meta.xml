@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Queue xmlns="http://soap.sforce.com/2006/04/metadata">
+    <description>Receives Investor Onboarding Leads at Status New, routed here by the DPEG Lead Assignment Rule. Queue members take ownership of these Leads from the queue list view.</description>
+    <doesSendEmailToMembers>false</doesSendEmailToMembers>
+    <name>Investor Onboarding Queue</name>
+    <queueSobject>
+        <sobjectType>Lead</sobjectType>
+    </queueSobject>
+</Queue>

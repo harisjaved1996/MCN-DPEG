@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Target_Cash_on_Cash__c</fullName>
+    <description>Targeted annual cash-on-cash return projected for investors in this Offering.</description>
+    <inlineHelpText>Enter the target cash-on-cash return as a percentage, e.g. 7.50 for 7.5%.</inlineHelpText>
+    <label>Target Cash on Cash</label>
+    <precision>16</precision>
+    <required>false</required>
+    <scale>2</scale>
+    <trackHistory>false</trackHistory>
+    <trackTrending>false</trackTrending>
+    <type>Percent</type>
+</CustomField>

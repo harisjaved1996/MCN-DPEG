@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Communication_Name_Prefix__c</fullName>
+    <label>Communication Name Prefix</label>
+    <type>Text</type>
+    <length>100</length>
+    <required>false</required>
+    <unique>false</unique>
+    <inlineHelpText>Prefix for the Communication record name, e.g. 'New Launch -' produces 'New Launch - Spring 2026 Growth Fund'. A separating space is added automatically, so no trailing space is needed (custom metadata strips it anyway).</inlineHelpText>
+</CustomField>

@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Flow xmlns="http://soap.sforce.com/2006/04/metadata">
+    <!--
+        HAND-AUTHORED, NOT GENERATED VIA THE execute_metadata_action MCP PIPELINE.
+        Same gap as flows/IR_Offering_PreLaunch.flow-meta.xml: the generating-flow/sf-flow skill's
+        3-step execute_metadata_action MCP pipeline is not exposed in this session's toolset. Per
+        this repo's established fallback (.claude/agent-memory-local/salesforce-admin/cli-tips.md),
+        this file was hand-authored by cloning the exact structure of the already-deployed
+        flows/IR_Offering_PreLaunch.flow-meta.xml (single Text `recordId` input variable -> one
+        recordUpdates element filtered on Id = recordId -> a terminal success Screen), swapping the
+        field/value being written for OwnerId = $User.Id.
+
+        DELIBERATE, PER EXPLICIT DESIGN INSTRUCTION: this flow has NO fault path, matching the
+        IR_Offering_PreLaunch precedent exactly - faultConnector is omitted from recordUpdates
+        rather than routed to an error screen. This is a documented-supported pattern (sf-flow
+        skill's references/xml-gotchas.md, "Option 3: Omit fault connector (flow will terminate on
+        error)"), not an oversight.
+
+        DELIBERATE, PER EXPLICIT USER DECISION: no queue-membership restriction is applied here.
+        Any user who can see a queue-owned Offering may claim it via this flow - there is no check
+        that the running user is a member of the owning queue (unlike a stricter pattern that could
+        be built for Lead). Simpler than the Lead precedent by explicit choice, not an omission.
+
+        Is_Owner_Queue__c is NOT written by this flow - it is a formula field on Offering__c and
+        recalculates automatically from the new OwnerId once this recordUpdates commits.
+
+        ⚠ RENAMED 2026-08-25 (code review, minor warning) - API name renamed from
+        IR_Offering_Assign_to_me to IR_Offering_Assign_to_Me (capital M) to match this flow's own
+        <label> (IR-Offering-Assign-to-Me) and the quick action that launches it
+        (Offering__c.Assign_to_Me). Done before this flow is deployed/referenced anywhere live, so
+        no other rename cost anywhere. References updated in the same pass: the quick action's
+        <flowDefinition> (quickActions/Offering__c.Assign_to_Me.quickAction-meta.xml) and the
+        <flow> value inside DPEG_IR_Default_Access.permissionset-meta.xml's flowAccesses entry. The
+        old-named file (IR_Offering_Assign_to_me.flow-meta.xml) was deleted so there is no orphan
+        duplicate.
+    -->
+    <apiVersion>67.0</apiVersion>
+    <description>Assigns the Offering identified by the recordId input to the current running user (OwnerId = $User.Id), then shows a success confirmation screen. Launched by the Offering__c.Assign_to_Me quick action, visible only when the Offering is currently queue-owned (Is_Owner_Queue__c = true). No fault path and no queue-membership check by design - see header comment.</description>
+    <environments>Default</environments>
+    <interviewLabel>IR-Offering-Assign-to-Me {!$Flow.CurrentDateTime}</interviewLabel>
+    <label>IR-Offering-Assign-to-Me</label>
+    <processMetadataValues>
+        <name>BuilderType</name>
+        <value>
+            <stringValue>LightningFlowBuilder</stringValue>
+        </value>
+    </processMetadataValues>
+    <processMetadataValues>
+        <name>CanvasMode</name>
+        <value>
+            <stringValue>AUTO_LAYOUT_CANVAS</stringValue>
+        </value>
+    </processMetadataValues>
+    <processMetadataValues>
+        <name>OriginBuilderType</name>
+        <value>
+            <stringValue>LightningFlowBuilder</stringValue>
+        </value>
+    </processMetadataValues>
+    <processType>Flow</processType>
+    <recordUpdates>
+        <name>Assign_Offering_to_Me</name>
+        <label>Assign Offering to Me</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <connector>
+            <targetReference>Screen_Success</targetReference>
+        </connector>
+        <description>Updates OwnerId on the Offering identified by recordId to the running user's Id. No faultConnector by design - see flow header comment. No queue-membership check by design - see flow header comment.</description>
+        <filterLogic>and</filterLogic>
+        <filters>
+            <field>Id</field>
+            <operator>EqualTo</operator>
+            <value>
+                <elementReference>recordId</elementReference>
+            </value>
+        </filters>
+        <inputAssignments>
+            <field>OwnerId</field>
+            <value>
+                <elementReference>$User.Id</elementReference>
+            </value>
+        </inputAssignments>
+        <object>Offering__c</object>
+    </recordUpdates>
+    <screens>
+        <name>Screen_Success</name>
+        <label>Assign to Me</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <allowBack>false</allowBack>
+        <allowFinish>true</allowFinish>
+        <allowPause>false</allowPause>
+        <description>Terminal success screen. No Previous button (allowBack false) and no outgoing connector, so Finish is the only action.</description>
+        <fields>
+            <name>Success_Message</name>
+            <fieldType>DisplayText</fieldType>
+            <fieldText>&lt;p style=&quot;text-align: center;&quot;&gt;&lt;br&gt;&lt;/p&gt;&lt;p style=&quot;text-align: center;&quot;&gt;&lt;span style=&quot;color: rgb(46, 132, 74); font-size: 48px;&quot;&gt;✓&lt;/span&gt;&lt;/p&gt;&lt;p style=&quot;text-align: center;&quot;&gt;&lt;span style=&quot;font-size: 16px;&quot;&gt;&lt;b&gt;Success!&lt;/b&gt; This Offering is now assigned to you.&lt;/span&gt;&lt;/p&gt;</fieldText>
+        </fields>
+        <nextOrFinishButtonLabel>Finish</nextOrFinishButtonLabel>
+        <showFooter>true</showFooter>
+        <showHeader>true</showHeader>
+    </screens>
+    <start>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <connector>
+            <targetReference>Assign_Offering_to_Me</targetReference>
+        </connector>
+    </start>
+    <status>Active</status>
+    <variables>
+        <name>recordId</name>
+        <dataType>String</dataType>
+        <isCollection>false</isCollection>
+        <isInput>true</isInput>
+        <isOutput>false</isOutput>
+    </variables>
+</Flow>

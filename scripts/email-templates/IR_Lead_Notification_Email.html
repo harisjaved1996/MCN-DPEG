@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>New Investor Onboarding Lead</title>
+</head>
+<body style="margin:0; padding:0; background-color:#f4f5f7; font-family:Arial, Helvetica, sans-serif;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4f5f7; padding:32px 0;">
+        <tr>
+            <td align="center">
+                <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="background-color:#ffffff; border-radius:8px; overflow:hidden; box-shadow:0 1px 3px rgba(0,0,0,0.12);">
+                    <tr>
+                        <td style="background-color:#B85D0D; padding:24px 32px;">
+                            <span style="color:#ffffff; font-size:20px; font-weight:bold; letter-spacing:0.3px;">DPEG Investor Relations</span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding:32px;">
+                            <p style="margin-top:0; font-size:16px; color:#1a1a1a;">Hi {{{Recipient.FirstName}}},</p>
+
+                            <p style="font-size:15px; line-height:1.6; color:#333333;">
+                                A new <strong>Investor Onboarding lead</strong> has arrived in the
+                                <strong>Investor Onboarding Queue</strong> and is waiting to be picked up.
+                            </p>
+
+                            <!--
+                                DELIBERATE - NO LEAD MERGE FIELDS APPEAR IN THIS BODY. DO NOT ADD THEM.
+                                Measured against this org: this template is sent via the Flow "Send Email"
+                                core action (emailSimple) with recipientId set to a queue-member User. That
+                                action's WhatId (relatedRecordId) is NOT AVAILABLE when recipientId is a
+                                User - Salesforce returns HTTP 400 "WhatId is not available for sending
+                                emails to UserIds" if relatedRecordId is also supplied. Every other tested
+                                combination either fails to save the template, renders the sender's own data
+                                instead of the lead's, or sends the notification TO the Lead instead of the
+                                queue member. RelatedEntityType is set to Lead on this template's metadata
+                                per requirement, but the send path deliberately never supplies a
+                                relatedRecordId, so a merge token naming a Lead field (Lead dot Name, Lead
+                                dot Email, etc, written with the same triple-brace handlebars style used for
+                                the Recipient token above) would render blank at best and break the send at
+                                worst - it may also fail to save at all, since the platform validates merge
+                                tokens against the template's configured merge context. If lead detail is
+                                ever needed in this email, it requires a different delivery mechanism (for
+                                example an assignment-rule-driven classic template, which resolves the Lead
+                                as the merge context directly), not a change to this template. See
+                                IR_Lead_Notification_Flow's description for the full set of measurements.
+                            -->
+                            <p style="font-size:15px; line-height:1.6; color:#333333;">
+                                Please take a moment to open the queue, review the lead, and claim it so we can
+                                keep the onboarding experience moving quickly for our investor.
+                            </p>
+
+                            <table role="presentation" cellpadding="0" cellspacing="0" style="margin:28px 0;">
+                                <tr>
+                                    <td style="background-color:#FDF1E7; border:1px solid #B85D0D; border-radius:6px; padding:16px 20px;">
+                                        <span style="font-size:15px; font-weight:bold; color:#B85D0D;">Action needed:</span>
+                                        <span style="font-size:15px; color:#333333;"> Open the <strong>Investor Onboarding Queue</strong> list view in Salesforce to review and claim this lead.</span>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <p style="font-size:15px; line-height:1.6; color:#333333;">
+                                Thank you for helping us give every investor a great first experience.
+                            </p>
+
+                            <p style="font-size:15px; color:#333333; margin-bottom:0;">
+                                Best regards,<br>
+                                Investor Relations Team
+                            </p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="background-color:#f4f5f7; padding:16px 32px; text-align:center;">
+                            <span style="font-size:12px; color:#8a8a8a;">DPEG &middot; Investor Relations</span>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>

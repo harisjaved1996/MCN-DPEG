@@ -23,9 +23,8 @@
     <externalSharingModel>ControlledByParent</externalSharingModel>
     <label>Communication</label>
     <nameField>
-        <displayFormat>COMM-{00000}</displayFormat>
-        <label>Communication Number</label>
-        <type>AutoNumber</type>
+        <label>Name</label>
+        <type>Text</type>
     </nameField>
     <pluralLabel>Communications</pluralLabel>
     <searchLayouts></searchLayouts>

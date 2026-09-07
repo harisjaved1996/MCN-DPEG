@@ -1,0 +1,255 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<RecordType xmlns="http://soap.sforce.com/2006/04/metadata">
+    <!--
+        THIS NOTE LIVES IN A COMMENT, NOT IN <description>. RecordType.Description is capped
+        at 255 characters. A comment is repo-only and never reaches the Metadata API. It must
+        sit INSIDE the root element - a comment above <RecordType> breaks `sf` deploy at
+        source conversion with a misleading "unable to find matching parent xml file".
+
+        THE ACQUISITIONS BROKER LEAD. Every Lead that existed before 2026-08-10 is this type,
+        and every Lead the inbound email pipeline, the Broker Portal, or a manual acquisitions
+        entry creates is this type.
+
+        THIS RECORD TYPE IS LOAD-BEARING FOR SECURITY, NOT PRESENTATION. Once Lead OWD is
+        Private (plan Task 12), the criteria-based sharing rule Lead_Acquisition_Broker is the
+        ONLY thing granting DPEG_Acquisitions_Team access to these rows. A Lead left without a
+        record type matches NO sharing rule and becomes invisible to everyone except its owner.
+        That is why the backfill (Task 3) is gated on a zero-row query and why the Apex stamps
+        (Tasks 4 and 5) ship BEFORE the backfill runs.
+
+        ⚠ FIX 2026-08-10 (code review, CRITICAL) - EVERY PICKLIST ON THE OBJECT IS ENUMERATED
+        BELOW - Salutation, GeocodeAccuracy, LeadSource, Status, Industry, Rating,
+        Asset_Type__c, Broker_Priority__c, Deal_Type__c, Disqualification_Reason__c,
+        Parse_Confidence__c and Sale_Process__c - because a record type file that omits a
+        picklist silently drops ALL of that picklist's values from that type. This is the same
+        rule already enforced under NDA__c, Contract_Review__c, Disposition__c and LOI__c; the
+        original brief that produced this file omitted it, which was a plan defect, not a
+        deliberate narrowing. The full value set was pulled from a LIVE ORG DESCRIBE
+        (`sf sobject describe, sobject=Lead`), never from this repo's field files, because
+        `sf project retrieve` unions local and remote picklist values and a repo field file can
+        list values the org no longer has. AT THE TIME THIS WAS WRITTEN, both Lead record types
+        (this one and the one then named IR_Investor) carried the IDENTICAL, COMPLETE value set
+        with the SAME single default (Status = New) - narrowing either record type's values was
+        described as a separate, deliberate change for later, and this fix was deliberately
+        behaviour-neutral for every existing Lead.
+
+        ⚠ CORRECTED 2026-08-25 (code review C3) - that "IDENTICAL" claim is now stale. The record
+        type once named IR_Investor here is Lead/recordTypes/Investor_Onboarding.recordType-meta.xml
+        today, and its Status picklist no longer matches this one: it ADDS "Create Profile" and
+        OMITS both "Qualified" and "Disqualified" (see that file directly rather than trusting
+        this comment). The narrowing described above as "a separate, deliberate change for later"
+        has since happened for that record type; this record type (Acquisition_Broker) still
+        carries the original five-value Status set unchanged.
+
+        ⚠ FIX ROUND 2 (2026-08-10, check-only dry-run against usman-dpeg, deploy id
+        0Afiw000000HR8fCAG) - added <businessProcess>Lead_Process</businessProcess>. Lead,
+        Opportunity, Case and Solution record types each REQUIRE a BusinessProcess - a platform
+        rule, confirmed by "Required field is missing: businessProcess" on this record type in
+        the dry-run output. See objects/Lead/businessProcesses/Lead_Process.businessProcess-meta.xml
+        for the full rationale, including why Status remains enumerated in BOTH places (this
+        RecordType's own <picklistValues> AND the referenced BusinessProcess), and why one shared
+        process serves both Lead record types rather than one each.
+
+        ⚠ FIX ROUND 3 (2026-08-10, iterative check-only dry-runs against usman-dpeg, root-caused
+        by bisection on Contact/recordTypes/Broker.recordType-meta.xml) - Salutation AND
+        GeocodeAccuracy REMOVED. Both failed with a GENERIC "An unexpected error occurred...
+        ErrorId..." rather than a clean field-level message. Root cause, confirmed by bisection
+        on the Contact sibling case (identical shape, cheaper to isolate there): both are
+        COMPOUND-FIELD SUB-COMPONENTS - `compoundFieldName` in the live describe reads `Name`
+        for Salutation and `Address` for GeocodeAccuracy - and every field that failed had this
+        set while every field that passed did not. RecordType.picklistValues cannot restrict a
+        compound field's sub-picklist; the platform does not report this as a clean validation
+        error, it throws generically instead. THE RULE FOR ALL FUTURE TASKS IN THIS PLAN: a
+        picklist that is a compound-field sub-component must NEVER be enumerated in a
+        RecordType's picklistValues - check `compoundFieldName` in the describe, not just
+        `type`, before adding any field to this file. The remaining TEN picklists below
+        (LeadSource, Status, Industry, Rating, Asset_Type__c, Broker_Priority__c, Deal_Type__c,
+        Disqualification_Reason__c, Parse_Confidence__c, Sale_Process__c) were each dry-run-
+        validated and remain enumerated identically on both Lead record types.
+    -->
+    <fullName>Acquisition_Broker</fullName>
+    <active>true</active>
+    <businessProcess>Lead_Process</businessProcess>
+    <description>Acquisitions broker lead. Governs sharing once Lead OWD is Private - see the XML comment in this file.</description>
+    <label>Acquisition Broker</label>
+    <picklistValues>
+        <picklist>Industry</picklist>
+        <values>
+            <fullName>Agriculture</fullName>
+            <default>false</default>
+        </values>
+        <values>
+            <fullName>Apparel</fullName>
+            <default>false</default>
+        </values>
+        <values>
+            <fullName>Banking</fullName>
+            <default>false</default>
+        </values>
+        <values>
+            <fullName>Biotechnology</fullName>
+            <default>false</default>
+        </values>
+        <values>
+            <fullName>Chemicals</fullName>
+            <default>false</default>
+        </values>
+        <values>
+            <fullName>Communications</fullName>
+            <default>false</default>
+        </values>
+        <values>
+            <fullName>Construction</fullName>
+            <default>false</default>
+        </values>
+        <values>
+            <fullName>Consulting</fullName>
+            <default>false</default>
+        </values>
+        <values>
+            <fullName>Education</fullName>
+            <default>false</default>
+        </values>
+        <values>
+            <fullName>Electronics</fullName>
+            <default>false</default>
+        </values>
+        <values>
+            <fullName>Energy</fullName>
+            <default>false</default>
+        </values>
+        <values>
+            <fullName>Engineering</fullName>
+            <default>false</default>
+        </values>
+        <values>
+            <fullName>Entertainment</fullName>
+            <default>false</default>
+        </values>
+        <values>
+            <fullName>Environmental</fullName>
+            <default>false</default>
+        </values>
+        <values>
+            <fullName>Government</fullName>
+            <default>false</default>
+        </values>
+        <values>
+            <fullName>Hospitality</fullName>
+            <default>false</default>
+        </values>
+        <values>
+            <fullName>Insurance</fullName>
+            <default>false</default>
+        </values>
+        <values>
+            <fullName>Machinery</fullName>
+            <default>false</default>
+        </values>
+        <values>
+            <fullName>Manufacturing</fullName>
+            <default>false</default>
+        </values>
+        <values>
+            <fullName>Media</fullName>
+            <default>false</default>
+        </values>
+        <values>
+            <fullName>Not For Profit</fullName>
+            <default>false</default>
+        </values>
+        <values>
+            <fullName>Recreation</fullName>
+            <default>false</default>
+        </values>
+        <values>
+            <fullName>Retail</fullName>
+            <default>false</default>
+        </values>
+        <values>
+            <fullName>Shipping</fullName>
+            <default>false</default>
+        </values>
+        <values>
+            <fullName>Technology</fullName>
+            <default>false</default>
+        </values>
+        <values>
+            <fullName>Telecommunications</fullName>
+            <default>false</default>
+        </values>
+        <values>
+            <fullName>Transportation</fullName>
+            <default>false</default>
+        </values>
+        <values>
+            <fullName>Utilities</fullName>
+            <default>false</default>
+        </values>
+        <values>
+            <fullName>Other</fullName>
+            <default>false</default>
+        </values>
+    </picklistValues>
+    <picklistValues>
+        <picklist>LeadSource</picklist>
+        <values>
+            <fullName>Email-to-Lead</fullName>
+            <default>false</default>
+        </values>
+        <values>
+            <fullName>Broker Portal</fullName>
+            <default>false</default>
+        </values>
+        <values>
+            <fullName>Manual Entry</fullName>
+            <default>false</default>
+        </values>
+        <values>
+            <fullName>Web</fullName>
+            <default>false</default>
+        </values>
+        <values>
+            <fullName>Phone Inquiry</fullName>
+            <default>false</default>
+        </values>
+        <values>
+            <fullName>Other</fullName>
+            <default>false</default>
+        </values>
+    </picklistValues>
+    <picklistValues>
+        <picklist>Rating</picklist>
+        <values>
+            <fullName>Hot</fullName>
+            <default>false</default>
+        </values>
+        <values>
+            <fullName>Warm</fullName>
+            <default>false</default>
+        </values>
+    </picklistValues>
+    <picklistValues>
+        <picklist>Status</picklist>
+        <values>
+            <fullName>New</fullName>
+            <default>true</default>
+        </values>
+        <values>
+            <fullName>Under Review</fullName>
+            <default>false</default>
+        </values>
+        <values>
+            <fullName>Qualified</fullName>
+            <default>false</default>
+        </values>
+        <values>
+            <fullName>Converted</fullName>
+            <default>false</default>
+        </values>
+        <values>
+            <fullName>Disqualified</fullName>
+            <default>false</default>
+        </values>
+    </picklistValues>
+</RecordType>

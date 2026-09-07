@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <!-- THIS NOTE LIVES IN A COMMENT INSIDE THE ROOT ELEMENT. A comment placed ABOVE
+         <CustomField> breaks `sf` deploy at source conversion with a misleading "unable to find
+         matching parent xml file" error.
+
+         DERIVED, NEVER WRITTEN. This is a FORMULA field, not a stored checkbox — nothing sets
+         it directly and it cannot drift out of sync with OwnerId or RecordTypeId the way a
+         stamped/stored checkbox maintained by two separate flow writers could.
+
+         BOTH CONDITIONS ARE REQUIRED — DO NOT DROP EITHER ONE.
+           1. Owner-is-a-queue: LEFT(CASESAFEID(OwnerId), 3) = "00G" — "00G" is the key prefix
+              for a Group/Queue Id, "005" for a User Id. This exact idiom (with "005" for the
+              User-owned test) already has in-repo precedent:
+              flows/Lead_Intake_Stamp.flow-meta.xml's `fOwnerIsUser` formula resource.
+           2. Record type is Investor Onboarding: RecordType.DeveloperName = "Investor_Onboarding".
+              🔴 Condition 1 ALONE is NOT sufficient — Acquisition Broker Leads are ALSO
+              queue-owned (BrokerPortalService assigns them to a queue), so a formula testing
+              only "is the owner a queue" would also read true for Acquisition Broker Leads.
+              Both halves together are what scope this to the Investor Onboarding record type's
+              own queue-routing workflow.
+
+         RecordType.DeveloperName has in-repo precedent that has passed this org's check-only
+         validation (objects/NDA__c/fields/Is_Decline_Allowed__c.field-meta.xml), and Salesforce's
+         own "Tips for Referencing Record Types in Formulas" prefers it over the $RecordType
+         global everywhere except default-value formulas.
+
+         NOT ON ANY LAYOUT, DELIBERATELY. This field exists to drive Dynamic Actions
+         visibility rules (owned by a parallel FlexiPage change), not to be read by a human on
+         the record page — a Metadata-API-deployed field is not auto-added to any layout, so
+         simply omitting it here is sufficient. It must stay off every Acquisition Broker layout
+         too, since it has no meaning for that record type (RecordType.DeveloperName condition
+         above is always false there).
+
+         FLS IS LOAD-BEARING. A field deployed through the Metadata API arrives with NO field
+         permissions for ANY profile, System Administrator included — the read grant ships in
+         the same change (DPEG_IR_Default_Access), and formula fields are read-only by
+         construction, so no `editable` grant is meaningful here. -->
+    <fullName>Is_Owner_Investor_Onboarding_Queue__c</fullName>
+    <label>Is Owner Investor Onboarding Queue?</label>
+    <description>Derived, never written directly. True only when the record type is Investor Onboarding AND the current owner is a queue rather than a user — both halves are required, because Acquisition Broker Leads are also queue-owned and would otherwise be misread as belonging to this workflow. Drives Dynamic Actions visibility on the Investor Onboarding Lead record page (queue-owned "assign to me" vs. user-owned next-step actions). Not placed on any layout.</description>
+    <inlineHelpText>System field. True when this Lead is Investor Onboarding record type and is still owned by the Investor Onboarding queue (not yet claimed by a user).</inlineHelpText>
+    <type>Checkbox</type>
+    <formula><![CDATA[AND(
+  RecordType.DeveloperName = "Investor_Onboarding",
+  LEFT(CASESAFEID(OwnerId), 3) = "00G"
+)]]></formula>
+    <formulaTreatBlanksAs>BlankAsZero</formulaTreatBlanksAs>
+</CustomField>

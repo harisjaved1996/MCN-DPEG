@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Flow xmlns="http://soap.sforce.com/2006/04/metadata">
+    <!--
+        HAND-AUTHORED, NOT GENERATED VIA THE execute_metadata_action MCP PIPELINE.
+        The generating-flow/sf-flow skill mandates the 3-step fetchGroundedObjectMetadata ->
+        flowElementSelection -> flowElementGeneration pipeline via the `execute_metadata_action`
+        MCP tool. That tool is not exposed in this session's toolset (confirmed - not present
+        among the available tools), so per this repo's established fallback precedent (see
+        .claude/agent-memory-local/salesforce-admin/cli-tips.md, "sf template generate flexipage
+        is broken on this machine - hand-author instead") this file was hand-authored by cloning
+        the exact, already-deployed structure of flows/IR_Lead_Under_Review_Flow.flow-meta.xml
+        (same shape: single Text `recordId` input variable -> one recordUpdates element filtered
+        on Id = recordId -> a terminal success Screen), swapping the object/field/value for
+        Offering__c/Status__c/"Pre Launch".
+
+        DELIBERATE, PER EXPLICIT DESIGN INSTRUCTION: this flow has NO fault path. The reference
+        flow (IR_Lead_Under_Review_Flow) routes recordUpdates' faultConnector to an error screen;
+        this flow omits faultConnector entirely, which is a documented-supported pattern (see
+        sf-flow skill's references/xml-gotchas.md, "Option 3: Omit fault connector (flow will
+        terminate on error)") rather than an oversight. No other screens, decisions, or DML exist
+        in this flow.
+
+        Status__c is a RESTRICTED picklist on Offering__c with the literal value "Pre Launch"
+        (two words, space separated - confirmed against objects/Offering__c/fields/Status__c.
+        field-meta.xml). Any other spelling (Pre-Launch/PreLaunch/Prelaunch) fails at runtime
+        with a restricted-picklist validation error.
+    -->
+    <apiVersion>67.0</apiVersion>
+    <description>Updates the Status field on the Offering identified by the recordId input to Pre Launch, then shows a success confirmation screen. Launched by the Offering__c.Pre_Launch quick action. No fault path by design - see header comment.</description>
+    <environments>Default</environments>
+    <interviewLabel>IR-Offering-PreLaunch {!$Flow.CurrentDateTime}</interviewLabel>
+    <label>IR-Offering-PreLaunch</label>
+    <processMetadataValues>
+        <name>BuilderType</name>
+        <value>
+            <stringValue>LightningFlowBuilder</stringValue>
+        </value>
+    </processMetadataValues>
+    <processMetadataValues>
+        <name>CanvasMode</name>
+        <value>
+            <stringValue>AUTO_LAYOUT_CANVAS</stringValue>
+        </value>
+    </processMetadataValues>
+    <processMetadataValues>
+        <name>OriginBuilderType</name>
+        <value>
+            <stringValue>LightningFlowBuilder</stringValue>
+        </value>
+    </processMetadataValues>
+    <processType>Flow</processType>
+    <recordUpdates>
+        <name>Update_Offering_Status</name>
+        <label>Update Offering Status</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <connector>
+            <targetReference>Screen_Success</targetReference>
+        </connector>
+        <description>Updates Status__c on the Offering identified by recordId to the literal restricted-picklist value "Pre Launch". No faultConnector by design - see flow header comment.</description>
+        <filterLogic>and</filterLogic>
+        <filters>
+            <field>Id</field>
+            <operator>EqualTo</operator>
+            <value>
+                <elementReference>recordId</elementReference>
+            </value>
+        </filters>
+        <inputAssignments>
+            <field>Status__c</field>
+            <value>
+                <stringValue>Pre Launch</stringValue>
+            </value>
+        </inputAssignments>
+        <object>Offering__c</object>
+    </recordUpdates>
+    <screens>
+        <name>Screen_Success</name>
+        <label>Pre Launch</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <allowBack>false</allowBack>
+        <allowFinish>true</allowFinish>
+        <allowPause>false</allowPause>
+        <description>Terminal success screen. No Previous button (allowBack false) and no outgoing connector, so Finish is the only action.</description>
+        <fields>
+            <name>Success_Message</name>
+            <fieldType>DisplayText</fieldType>
+            <fieldText>&lt;p style=&quot;text-align: center;&quot;&gt;&lt;br&gt;&lt;/p&gt;&lt;p style=&quot;text-align: center;&quot;&gt;&lt;span style=&quot;color: rgb(46, 132, 74); font-size: 48px;&quot;&gt;✓&lt;/span&gt;&lt;/p&gt;&lt;p style=&quot;text-align: center;&quot;&gt;&lt;span style=&quot;font-size: 16px;&quot;&gt;&lt;b&gt;Success!&lt;/b&gt; The Offering has been moved to Pre Launch.&lt;/span&gt;&lt;/p&gt;</fieldText>
+        </fields>
+        <nextOrFinishButtonLabel>Finish</nextOrFinishButtonLabel>
+        <showFooter>true</showFooter>
+        <showHeader>true</showHeader>
+    </screens>
+    <start>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <connector>
+            <targetReference>Update_Offering_Status</targetReference>
+        </connector>
+    </start>
+    <status>Active</status>
+    <variables>
+        <name>recordId</name>
+        <dataType>String</dataType>
+        <isCollection>false</isCollection>
+        <isInput>true</isInput>
+        <isOutput>false</isOutput>
+    </variables>
+</Flow>

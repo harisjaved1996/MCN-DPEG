@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Flow_API_Version__c</fullName>
+    <label>Flow API Version</label>
+    <type>Text</type>
+    <length>10</length>
+    <required>false</required>
+    <unique>false</unique>
+    <inlineHelpText>REST API version used to invoke the flow, e.g. v62.0.</inlineHelpText>
+</CustomField>

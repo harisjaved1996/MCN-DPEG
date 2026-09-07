@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>Tax_Address__c</fullName>
-    <description>The mailing address of record used for this investing entity&apos;s tax filings (e.g. K-1 mailing address), which may differ from the Account&apos;s standard Billing or Shipping Address.</description>
+    <description>The mailing address of record used for this investing entity's tax filings (e.g. K-1 mailing address), which may differ from the Account's standard Billing or Shipping Address.</description>
     <inlineHelpText>Enter the address tax documents (e.g. K-1) should be mailed to.</inlineHelpText>
     <label>Tax Address</label>
-    <type>Address</type>
     <trackFeedHistory>false</trackFeedHistory>
+    <type>Address</type>
 </CustomField>

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Content_Type__c</fullName>
+    <label>Content Type</label>
+    <type>Text</type>
+    <length>100</length>
+    <required>false</required>
+    <unique>false</unique>
+    <inlineHelpText>CMS content type. Defaults to sfdc_cms__email.</inlineHelpText>
+</CustomField>

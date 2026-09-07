@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Investment_Time_Horizon__c</fullName>
+    <description>Expected holding period for this Offering, as communicated to investors.</description>
+    <externalId>false</externalId>
+    <inlineHelpText>Enter the expected investment time horizon, e.g. "5-7 years".</inlineHelpText>
+    <label>Investment Time Horizon</label>
+    <length>255</length>
+    <required>false</required>
+    <trackHistory>false</trackHistory>
+    <trackTrending>false</trackTrending>
+    <type>Text</type>
+    <unique>false</unique>
+</CustomField>

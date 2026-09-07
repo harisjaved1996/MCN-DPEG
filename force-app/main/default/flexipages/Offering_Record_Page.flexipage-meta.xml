@@ -1,10 +1,113 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <FlexiPage xmlns="http://soap.sforce.com/2006/04/metadata">
+    <!--
+        NEW RECORD PAGE for Offering__c - none existed before this file. Needed because
+        conditional quick-action visibility (Dynamic Actions) and Path display only work on a
+        FlexiPage, not on a page layout's quickActionList.
+
+        `sf template generate flexipage` is broken on this machine (see
+        .claude/agent-memory-local/salesforce-admin/cli-tips.md), so this file was hand-authored
+        by copying the proven, already-deployed header/subheader shape of
+        flexipages/LOI_Record_Page.flexipage-meta.xml (force:highlightsPanel with Dynamic Actions
+        + runtime_sales_pathassistant:pathAssistant), on the same
+        flexipage:recordHomeWithSubheaderTemplateDesktop template.
+
+        MAIN REGION DELIBERATELY MINIMAL, PER EXPLICIT INSTRUCTION: every other page in this repo
+        on this same template routes Record Detail through a "detailContent" Facet + "tabs" Facet
+        (Property_Asset_Record_Page, Broker_Assignment_Record_Page) or places it directly in the
+        "sidebar" Region (Work_Order_Record_Page) - never directly in "main". This page places
+        force:detailPanel directly in "main" instead, with no sidebar/tabs/related-list regions at
+        all, because the requirement is header (highlights + Dynamic Action) + subheader (Path) +
+        Record Detail only, nothing else. Direct component placement in a named region (no Facet
+        wrapper) is itself a proven pattern in this exact template - Work_Order_Record_Page does
+        it for "sidebar" - so this is a safe substitute for the tabbed pattern, just targeting
+        "main" instead per this page's own minimal scope.
+
+        UPDATED 2026-08-25 - Offering Assign to Me + Owner-Queue Gating build. The single-criterion
+        Offering__c.Pre_Launch rule above was extended to TWO criteria, and a second quick action
+        (Offering__c.Assign_to_Me) was added, both gated on the new Offering__c.Is_Owner_Queue__c
+        formula field (see objects/Offering__c/fields/Is_Owner_Queue__c.field-meta.xml):
+          - Offering__c.Pre_Launch: {!Record.Status__c} EQUAL Draft AND
+            {!Record.Is_Owner_Queue__c} EQUAL false (i.e. Draft AND user-owned).
+          - Offering__c.Assign_to_Me: {!Record.Status__c} EQUAL Draft AND
+            {!Record.Is_Owner_Queue__c} EQUAL true (i.e. Draft AND queue-owned).
+        Both are two-criterion rules, so <booleanFilter>1 AND 2</booleanFilter> is now required -
+        shape confirmed against the deployed flexipages/Investor_Onboarding_Lead_Record_Page.
+        flexipage-meta.xml (Lead.Assign_to_Me / Lead.Under_Review valueListItems), which is the
+        structurally identical, already-deployed precedent for this exact "assign to me vs. next-
+        step action, gated on an Is_Owner_*_Queue__c formula" pattern. Deliberately NOT written as
+        a single OR'd rule: a parenthesised booleanFilter deploys but is not honoured by the
+        renderer (measured on this project; see the Contract_Review_Record_Page header comment).
+        Is_Owner_Queue__c will evaluate false on every real Offering__c record today (no queue
+        currently supports Offering__c as an ownable object) - Offering__c.Assign_to_Me is
+        therefore dormant until a queue exists, by design; Offering__c.Pre_Launch's added second
+        criterion is satisfied by every real (user-owned) record today, so its visibility is
+        unchanged in practice. Edit and Delete remain ungated, in place, untouched.
+    -->
     <flexiPageRegions>
         <itemInstances>
             <componentInstance>
+                <componentInstanceProperties>
+                    <name>actionNames</name>
+                    <valueList>
+                        <valueListItems>
+                            <value>Edit</value>
+                        </valueListItems>
+                        <valueListItems>
+                            <value>Delete</value>
+                        </valueListItems>
+                        <valueListItems>
+                            <value>Offering__c.Pre_Launch</value>
+                            <visibilityRule>
+                                <booleanFilter>1 AND 2</booleanFilter>
+                                <criteria>
+                                    <leftValue>{!Record.Status__c}</leftValue>
+                                    <operator>EQUAL</operator>
+                                    <rightValue>Draft</rightValue>
+                                </criteria>
+                                <criteria>
+                                    <leftValue>{!Record.Is_Owner_Queue__c}</leftValue>
+                                    <operator>EQUAL</operator>
+                                    <rightValue>false</rightValue>
+                                </criteria>
+                            </visibilityRule>
+                        </valueListItems>
+                        <valueListItems>
+                            <value>Offering__c.Assign_to_Me</value>
+                            <visibilityRule>
+                                <booleanFilter>1 AND 2</booleanFilter>
+                                <criteria>
+                                    <leftValue>{!Record.Status__c}</leftValue>
+                                    <operator>EQUAL</operator>
+                                    <rightValue>Draft</rightValue>
+                                </criteria>
+                                <criteria>
+                                    <leftValue>{!Record.Is_Owner_Queue__c}</leftValue>
+                                    <operator>EQUAL</operator>
+                                    <rightValue>true</rightValue>
+                                </criteria>
+                            </visibilityRule>
+                        </valueListItems>
+                    </valueList>
+                </componentInstanceProperties>
+                <componentInstanceProperties>
+                    <name>collapsed</name>
+                    <value>false</value>
+                </componentInstanceProperties>
+                <componentInstanceProperties>
+                    <name>enableActionsConfiguration</name>
+                    <value>true</value>
+                </componentInstanceProperties>
+                <componentInstanceProperties>
+                    <name>hideChatterActions</name>
+                    <value>true</value>
+                </componentInstanceProperties>
+                <componentInstanceProperties>
+                    <name>hideSlackAction</name>
+                    <value>true</value>
+                </componentInstanceProperties>
                 <componentName>force:highlightsPanel</componentName>
-                <identifier>force_highlightsPanel</identifier>
+                <identifier>highlightsPanel</identifier>
             </componentInstance>
         </itemInstances>
         <name>header</name>
@@ -13,80 +116,22 @@
     <flexiPageRegions>
         <itemInstances>
             <componentInstance>
+                <componentInstanceProperties>
+                    <name>hideUpdateButton</name>
+                    <value>true</value>
+                </componentInstanceProperties>
+                <componentName>runtime_sales_pathassistant:pathAssistant</componentName>
+                <identifier>offeringPath</identifier>
+            </componentInstance>
+        </itemInstances>
+        <name>subheader</name>
+        <type>Region</type>
+    </flexiPageRegions>
+    <flexiPageRegions>
+        <itemInstances>
+            <componentInstance>
                 <componentName>force:detailPanel</componentName>
-                <identifier>force_detailPanel</identifier>
-            </componentInstance>
-        </itemInstances>
-        <name>detailTabContent</name>
-        <type>Facet</type>
-    </flexiPageRegions>
-    <flexiPageRegions>
-        <itemInstances>
-            <componentInstance>
-                <componentInstanceProperties>
-                    <name>relatedListComponentOverride</name>
-                    <value>NONE</value>
-                </componentInstanceProperties>
-                <componentInstanceProperties>
-                    <name>rowsToDisplay</name>
-                    <value>30</value>
-                </componentInstanceProperties>
-                <componentInstanceProperties>
-                    <name>showActionBar</name>
-                    <value>true</value>
-                </componentInstanceProperties>
-                <componentName>force:relatedListContainer</componentName>
-                <identifier>force_relatedListContainer</identifier>
-            </componentInstance>
-        </itemInstances>
-        <name>communicationsTabContent</name>
-        <type>Facet</type>
-    </flexiPageRegions>
-    <flexiPageRegions>
-        <itemInstances>
-            <componentInstance>
-                <componentInstanceProperties>
-                    <name>active</name>
-                    <value>true</value>
-                </componentInstanceProperties>
-                <componentInstanceProperties>
-                    <name>body</name>
-                    <value>detailTabContent</value>
-                </componentInstanceProperties>
-                <componentInstanceProperties>
-                    <name>title</name>
-                    <value>Standard.Tab.detail</value>
-                </componentInstanceProperties>
-                <componentName>flexipage:tab</componentName>
-                <identifier>detailTab</identifier>
-            </componentInstance>
-        </itemInstances>
-        <itemInstances>
-            <componentInstance>
-                <componentInstanceProperties>
-                    <name>body</name>
-                    <value>communicationsTabContent</value>
-                </componentInstanceProperties>
-                <componentInstanceProperties>
-                    <name>title</name>
-                    <value>Communications</value>
-                </componentInstanceProperties>
-                <componentName>flexipage:tab</componentName>
-                <identifier>communicationsTab</identifier>
-            </componentInstance>
-        </itemInstances>
-        <name>maintabs</name>
-        <type>Facet</type>
-    </flexiPageRegions>
-    <flexiPageRegions>
-        <itemInstances>
-            <componentInstance>
-                <componentInstanceProperties>
-                    <name>tabs</name>
-                    <value>maintabs</value>
-                </componentInstanceProperties>
-                <componentName>flexipage:tabset</componentName>
-                <identifier>flexipage_tabset</identifier>
+                <identifier>recordDetail</identifier>
             </componentInstance>
         </itemInstances>
         <name>main</name>
@@ -95,7 +140,7 @@
     <masterLabel>Offering Record Page</masterLabel>
     <sobjectType>Offering__c</sobjectType>
     <template>
-        <name>flexipage:recordHomeTemplateDesktop</name>
+        <name>flexipage:recordHomeWithSubheaderTemplateDesktop</name>
     </template>
     <type>RecordPage</type>
 </FlexiPage>

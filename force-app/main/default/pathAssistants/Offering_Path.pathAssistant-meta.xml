@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<PathAssistant xmlns="http://soap.sforce.com/2006/04/metadata">
+    <active>true</active>
+    <entityName>Offering__c</entityName>
+    <fieldName>Status__c</fieldName>
+    <masterLabel>Offering Path</masterLabel>
+    <pathAssistantSteps>
+        <info>Offering is open and actively raising capital from investors.</info>
+        <picklistValueName>Active Fundraising</picklistValueName>
+    </pathAssistantSteps>
+    <pathAssistantSteps>
+        <info>Offering is closed. No further action needed.</info>
+        <picklistValueName>Closed</picklistValueName>
+    </pathAssistantSteps>
+    <pathAssistantSteps>
+        <info>Complete the offering details before moving to Pre Launch.</info>
+        <picklistValueName>Draft</picklistValueName>
+    </pathAssistantSteps>
+    <pathAssistantSteps>
+        <info>Offering has reached its funding target and is no longer accepting new commitments.</info>
+        <picklistValueName>Fully Subscribed</picklistValueName>
+    </pathAssistantSteps>
+    <pathAssistantSteps>
+        <info>Offering is being prepared and reviewed ahead of fundraising launch.</info>
+        <picklistValueName>Pre Launch</picklistValueName>
+    </pathAssistantSteps>
+    <pathAssistantSteps>
+        <info>All approvals are in place and the offering is ready to be activated.</info>
+        <picklistValueName>Ready to Activate</picklistValueName>
+    </pathAssistantSteps>
+    <pathAssistantSteps>
+        <info>Awaiting investor and/or counterparty signatures before the offering can proceed.</info>
+        <picklistValueName>Signatures Pending</picklistValueName>
+    </pathAssistantSteps>
+    <recordTypeName>__MASTER__</recordTypeName>
+</PathAssistant>

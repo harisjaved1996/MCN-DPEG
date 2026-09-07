@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomApplication xmlns="http://soap.sforce.com/2006/04/metadata">
+    <brand>
+        <headerColor>#0B5394</headerColor>
+        <logo>DPEG_Logo_Clear</logo>
+        <logoVersion>1</logoVersion>
+        <shouldOverrideOrgTheme>true</shouldOverrideOrgTheme>
+    </brand>
+    <description>DPEG Investor Relation - IR-record-type Lead/Contact/Account population, segregated from Acquisitions. Assigns the Investor Onboarding Lead record page for both the DPEG-IR-SF-Minimum Access profile and the System Administrator (Admin) profile.</description>
+    <formFactors>Large</formFactors>
+    <isNavAutoTempTabsDisabled>false</isNavAutoTempTabsDisabled>
+    <isNavPersonalizationDisabled>false</isNavPersonalizationDisabled>
+    <isNavTabPersistenceDisabled>false</isNavTabPersistenceDisabled>
+    <isOmniPinnedViewEnabled>false</isOmniPinnedViewEnabled>
+    <label>Investor Relation</label>
+    <navType>Standard</navType>
+    <profileActionOverrides>
+        <actionName>View</actionName>
+        <content>Investor_Onboarding_Lead_Record_Page</content>
+        <formFactor>Large</formFactor>
+        <pageOrSobjectType>Lead</pageOrSobjectType>
+        <recordType>Lead.Investor_Onboarding</recordType>
+        <type>Flexipage</type>
+        <profile>DPEG-IR-SF-Minimum Access</profile>
+    </profileActionOverrides>
+    <profileActionOverrides>
+        <actionName>View</actionName>
+        <content>Investor_Onboarding_Lead_Record_Page</content>
+        <formFactor>Large</formFactor>
+        <pageOrSobjectType>Lead</pageOrSobjectType>
+        <recordType>Lead.Investor_Onboarding</recordType>
+        <type>Flexipage</type>
+        <profile>Admin</profile>
+    </profileActionOverrides>
+    <profileActionOverrides>
+        <actionName>View</actionName>
+        <content>Investor_Record_Page</content>
+        <formFactor>Large</formFactor>
+        <pageOrSobjectType>Contact</pageOrSobjectType>
+        <recordType>Contact.Investor</recordType>
+        <type>Flexipage</type>
+        <profile>DPEG-IR-SF-Minimum Access</profile>
+    </profileActionOverrides>
+    <profileActionOverrides>
+        <actionName>View</actionName>
+        <content>Investing_Entity_Record_Page</content>
+        <formFactor>Large</formFactor>
+        <pageOrSobjectType>Account</pageOrSobjectType>
+        <recordType>Account.Investing_Entity</recordType>
+        <type>Flexipage</type>
+        <profile>DPEG-IR-SF-Minimum Access</profile>
+    </profileActionOverrides>
+    <!--
+        ⚠ ADDED 2026-08-25 - Offering PreLaunch declarative build. Offering__c has NO record
+        types (confirmed against objects/Offering__c/Offering__c.object-meta.xml - no recordTypes
+        directory exists), so unlike the four entries above these two omit <recordType> entirely
+        rather than guessing a value. This mirrors how every OTHER app in this repo's own
+        <actionOverrides> (not <profileActionOverrides>) omit recordType for objects with no
+        record types (e.g. Disposition.app-meta.xml's Disposition__c/NDA__c/Property_Asset__c
+        entries) - same absence, same reason, just via the profile-scoped element this app uses.
+    -->
+    <profileActionOverrides>
+        <actionName>View</actionName>
+        <content>Offering_Record_Page</content>
+        <formFactor>Large</formFactor>
+        <pageOrSobjectType>Offering__c</pageOrSobjectType>
+        <type>Flexipage</type>
+        <profile>DPEG-IR-SF-Minimum Access</profile>
+    </profileActionOverrides>
+    <profileActionOverrides>
+        <actionName>View</actionName>
+        <content>Offering_Record_Page</content>
+        <formFactor>Large</formFactor>
+        <pageOrSobjectType>Offering__c</pageOrSobjectType>
+        <type>Flexipage</type>
+        <profile>Admin</profile>
+    </profileActionOverrides>
+    <!--
+        ⚠ REMOVED 2026-08-20 (was here, now deleted) - a profileActionOverride binding
+        Investor_Investing_Entity_Record_Page to AccountContactRelation.Investor_Investing_Entity.
+        Deployment validation measured that AccountContactRelation cannot have a custom Lightning
+        Record Page on this org ("The object type you specified AccountContactRelation is
+        invalid") - a restriction independent of the record-type rejection - so the FlexiPage
+        itself was deleted and this override removed with it. AccountContactRelation records are
+        still reachable via the reworked Page Layout (see layouts/AccountContactRelation-Investor-
+        Investing Entity Layout.layout-meta.xml) through the standard (non-Lightning-App-Builder)
+        record view, just not through a custom FlexiPage inside this app.
+    -->
+    <tabs>standard-Lead</tabs>
+    <tabs>standard-Contact</tabs>
+    <tabs>standard-Account</tabs>
+    <!-- ⚠ ADDED 2026-08-25 - Offering PreLaunch declarative build. Offering had no nav presence
+         in this app before this change; tabs/Offering__c.tab-meta.xml already existed but was
+         never added to any app's tab list. -->
+    <tabs>Offering__c</tabs>
+    <tabs>Property__c</tabs>
+    <tabs>Bank_Account__c</tabs>
+    <tabs>standard-report</tabs>
+    <uiType>Lightning</uiType>
+</CustomApplication>
