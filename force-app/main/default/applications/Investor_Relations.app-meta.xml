@@ -21,34 +21,7 @@
         <pageOrSobjectType>Lead</pageOrSobjectType>
         <recordType>Lead.Investor_Onboarding</recordType>
         <type>Flexipage</type>
-        <profile>DPEG-IR-SF-Minimum Access</profile>
-    </profileActionOverrides>
-    <profileActionOverrides>
-        <actionName>View</actionName>
-        <content>Investor_Onboarding_Lead_Record_Page</content>
-        <formFactor>Large</formFactor>
-        <pageOrSobjectType>Lead</pageOrSobjectType>
-        <recordType>Lead.Investor_Onboarding</recordType>
-        <type>Flexipage</type>
         <profile>Admin</profile>
-    </profileActionOverrides>
-    <profileActionOverrides>
-        <actionName>View</actionName>
-        <content>Investor_Record_Page</content>
-        <formFactor>Large</formFactor>
-        <pageOrSobjectType>Contact</pageOrSobjectType>
-        <recordType>Contact.Investor</recordType>
-        <type>Flexipage</type>
-        <profile>DPEG-IR-SF-Minimum Access</profile>
-    </profileActionOverrides>
-    <profileActionOverrides>
-        <actionName>View</actionName>
-        <content>Investing_Entity_Record_Page</content>
-        <formFactor>Large</formFactor>
-        <pageOrSobjectType>Account</pageOrSobjectType>
-        <recordType>Account.Investing_Entity</recordType>
-        <type>Flexipage</type>
-        <profile>DPEG-IR-SF-Minimum Access</profile>
     </profileActionOverrides>
     <!--
         ⚠ ADDED 2026-08-25 - Offering PreLaunch declarative build. Offering__c has NO record
@@ -59,14 +32,6 @@
         record types (e.g. Disposition.app-meta.xml's Disposition__c/NDA__c/Property_Asset__c
         entries) - same absence, same reason, just via the profile-scoped element this app uses.
     -->
-    <profileActionOverrides>
-        <actionName>View</actionName>
-        <content>Offering_Record_Page</content>
-        <formFactor>Large</formFactor>
-        <pageOrSobjectType>Offering__c</pageOrSobjectType>
-        <type>Flexipage</type>
-        <profile>DPEG-IR-SF-Minimum Access</profile>
-    </profileActionOverrides>
     <profileActionOverrides>
         <actionName>View</actionName>
         <content>Offering_Record_Page</content>

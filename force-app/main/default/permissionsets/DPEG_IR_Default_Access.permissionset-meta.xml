@@ -1,0 +1,590 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<PermissionSet xmlns="http://soap.sforce.com/2006/04/metadata">
+    <classAccesses>
+        <apexClass>InvestorLeadConvertSelector</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
+    <classAccesses>
+        <apexClass>InvestorLeadConvertService</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
+    <!--
+        ⚠ DESCRIPTION TRIMMED 2026-08-20 - was 442 chars, over the 255-char cap (deployment
+        validation error). Meaning preserved, wording shortened.
+    -->
+    <description>IR layer-3 module data. Lead CRUD minus Delete w/ onboarding FLS; Contact/Account/ACR CRUD(+Acct delete); Task/Event CRUD; EditTask+EmailSingle+ConvertLeads+EmailTemplateMgmt; 7 IR flows; Investor_Onboarding+Investor RTs; conversion + junction FLS.</description>
+    <!--
+        ⚠ ADDED (Account/Contact junction change, 2026-08-20) - the four new "Investing Entity"
+        fields on Account (Entity_Type__c, Tax_ID__c, Tax_Address__c, Appfolio_ID__c). None of
+        these are required fields, so all four are eligible for FLS per the sf-permission-set
+        skill's "no required fields in fieldPermissions" rule.
+    -->
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Account.Appfolio_ID__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Account.Entity_Type__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Account.Phone</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
+        <field>Account.Tax_Address__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Account.Tax_ID__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <!--
+        ⚠ ADDED (Account/Contact junction change, 2026-08-20) - the three new fields on
+        AccountContactRelation (Signing_Order__c, Is_Primary_Contact__c, Is_Required_Signer__c).
+        Object CRUD (mirroring the Contact objectPermissions block below - Create/Read/Edit true,
+        Delete/modifyAll/viewAll false) was added in a follow-up change; see that block further
+        down in this file. NO recordTypeVisibilities entry exists for AccountContactRelation - a
+        record type was originally added and then DELETED: deployment validation measured that
+        AccountContactRelation cannot have a custom Record Type on this org at all
+        (`RecordType.SObjectType = AccountContactRelation` is rejected as a restricted picklist
+        value). These fields are now reached via the object's reworked, record-type-free default
+        Page Layout instead - see layouts/AccountContactRelation-Investor-Investing Entity
+        Layout.layout-meta.xml and profiles/DPEG-IR-SF-Minimum Access.profile-meta.xml.
+    -->
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>AccountContactRelation.Is_Primary_Contact__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>AccountContactRelation.Is_Required_Signer__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>AccountContactRelation.Signing_Order__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <!--
+        Contact.AccountId is LOAD-BEARING FOR THE IR CONVERSION, not a display grant. Step 4 of
+        InvestorLeadConvertService (detachContacts) writes AccountId = null to release the investor
+        Contact from the temporary Account before that Account is deleted. Until 2026-08-16 this
+        grant was absent from EVERY parent held by the IR persona. Measured: a FieldPermissions
+        query for Contact.AccountId returned rows for roughly 99 other permission sets but none for
+        DPEG_IR_Default_Access, DPEG_App_IR, or the DPEG-IR-SF-Minimum Access profile, while an
+        administrator (who has it via xDO_Base_Access / SDO_Admin_Base_Access) could run the same
+        conversion cleanly. That asymmetry matches the reported symptom exactly: the investor
+        Contact kept its temporary Account, the Account was therefore deliberately not deleted, and
+        yet the step 7 fields (RecordTypeId, Is_Accredited__c) DID save. Only the statement
+        touching THIS field failed.
+        The requirement is that every holder of this permission set gets the identical result, so
+        the field the feature writes is granted here explicitly rather than relying on the persona
+        inheriting it from somewhere else.
+    -->
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Contact.AccountId</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Contact.Email</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Contact.Is_Accredited__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Contact.Phone</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Contact.Referred_By__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <!--
+        ⚠ ADDED (Account/Contact junction change, 2026-08-20) - the ten new investor-tracking
+        fields on Contact (4 activation/status checkboxes, 5 lifetime/position metrics, and the
+        AppFolio external ID). None are required fields, so all ten are eligible for FLS.
+    -->
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Contact.Active_Investor__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Contact.Active_Positions__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Contact.Appfolio_ID__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Contact.Lifetime_Invested__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Contact.Mobile_Activated__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Contact.Portal_Activated__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <!--
+        ⚠ ADDED 2026-09-01 - restore of Contact.Record_Type_Name__c (deleted earlier this session
+        as part of a feature rollback, now partially reversed). Read-only - editable=false, since
+        formula fields cannot be editable. Interleaved to preserve this block's alphabetical
+        ordering (between Portal_Activated__c and Repeat_Investor__c).
+    -->
+    <fieldPermissions>
+        <editable>false</editable>
+        <field>Contact.Record_Type_Name__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Contact.Repeat_Investor__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Contact.Total_Commitments__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Contact.Total_Distributed__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Contact.Total_Investing_Entities__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Lead.Description</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Lead.Email</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Lead.Is_Accredited__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
+        <field>Lead.Is_Owner_Investor_Onboarding_Queue__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Lead.LeadSource</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Lead.Phone</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Lead.Referred_By__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <!--
+        ⚠ ADDED 2026-08-25 - Offering/Bank Account/Property declarative build. Full CRUD FLS on
+        Bank_Account__c (new object), Offering__c (3 existing + 12 new fields) and Property__c
+        (35 existing + 1 new field), added additively - every pre-existing entry in this file is
+        left untouched. See ARCHITECTURE.md's PermissionSet REPLACE-not-merge warning.
+    -->
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Bank_Account__c.Account_Nickname__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Bank_Account__c.Account_Number__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Bank_Account__c.Entity_Name__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Bank_Account__c.Routing_Number__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Offering__c.Distribution_Schedule__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Offering__c.Funding_Deadline__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Offering__c.GP_Bank_Account__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Offering__c.GP_Entity__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Offering__c.Investment_Time_Horizon__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <!--
+        ⚠ ADDED 2026-08-25 (PM follow-up) - Offering Assign to Me + Owner-Queue Gating build. FLS
+        for the new Is_Owner_Queue__c formula field - readable only, since formula fields cannot be
+        editable. Interleaved here to preserve this block's alphabetical ordering (between
+        Investment_Time_Horizon__c and Minimum_Investment__c). Added additively.
+    -->
+    <fieldPermissions>
+        <editable>false</editable>
+        <field>Offering__c.Is_Owner_Queue__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Offering__c.Minimum_Investment__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Offering__c.Offering_Name__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Offering__c.Opportunity__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Offering__c.Price_Per_Share__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Offering__c.Status__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Offering__c.Target_Cash_on_Cash__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Offering__c.Target_Investor_AAR__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Offering__c.Target_Raise__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Offering__c.Type__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <!--
+        ⚠ ADDED 2026-08-25 (PM follow-up) - Acquisition/Valuation/Loan fields build. Full CRUD FLS
+        on 4 new Property__c fields: Acquisition_Date__c, Valuation__c, Loan_to_Value__c,
+        Loan_Balance__c. Interleaved at their correct alphabetical positions within the existing
+        Property__c run below (this comment marks the first of the four; the others are Loan_
+        Balance__c/Loan_to_Value__c between Days_On_Market_Avg__c and Lot_Size_Acres__c, and
+        Valuation__c between Unit_Count__c and Visitor_Demographics__c). Added additively.
+    -->
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Property__c.Acquisition_Date__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Property__c.Loan_Balance__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Property__c.Loan_to_Value__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Property__c.Offering__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Property__c.Valuation__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <!-- ⚠ ADDED 2026-08-21 - "Add" sorts before "Lead" alphabetically, hence first. -->
+    <flowAccesses>
+        <enabled>true</enabled>
+        <flow>IR_Add_Investor_Investing_Entity</flow>
+    </flowAccesses>
+    <flowAccesses>
+        <enabled>true</enabled>
+        <flow>IR_Lead_Assignment_to_User</flow>
+    </flowAccesses>
+    <flowAccesses>
+        <enabled>true</enabled>
+        <flow>IR_Lead_Create_Profile_Flow</flow>
+    </flowAccesses>
+    <flowAccesses>
+        <enabled>true</enabled>
+        <flow>IR_Lead_Under_Review_Flow</flow>
+    </flowAccesses>
+    <flowAccesses>
+        <enabled>true</enabled>
+        <flow>IR_Manage_Investing_Entity</flow>
+    </flowAccesses>
+    <!-- ⚠ ADDED 2026-08-25 (PM follow-up) - Offering Assign to Me + Owner-Queue Gating build.
+         Grants access to the new IR_Offering_Assign_to_Me screen flow, launched from the
+         Offering__c.Assign_to_Me quick action. Placed here (before IR_Offering_PreLaunch) to
+         preserve this section's alphabetical ordering ("IR_Offering_Assign..." sorts before
+         "IR_Offering_PreLaunch" - 'A' < 'P'). API name corrected to capital M 2026-08-25 (code
+         review, minor warning) to match this flow's own label and the quick action that
+         references it - see flows/IR_Offering_Assign_to_Me.flow-meta.xml header comment. -->
+    <flowAccesses>
+        <enabled>true</enabled>
+        <flow>IR_Offering_Assign_to_Me</flow>
+    </flowAccesses>
+    <!-- ⚠ ADDED 2026-08-25 - Offering PreLaunch declarative build. Grants access to the new
+         IR_Offering_PreLaunch screen flow, launched from the Offering__c.Pre_Launch quick action.
+         Placed last to preserve this section's alphabetical ordering ("IR_Offering..." sorts
+         after "IR_Manage..."). Offering__c object CRUD and Status__c FLS already exist elsewhere
+         in this file (see the 2026-08-25 Offering/Bank Account/Property block above) - no
+         quick-action-specific grant exists in PermissionSet metadata, so flow access is the only
+         new grant this feature needs. -->
+    <flowAccesses>
+        <enabled>true</enabled>
+        <flow>IR_Offering_PreLaunch</flow>
+    </flowAccesses>
+    <hasActivationRequired>false</hasActivationRequired>
+    <label>DPEG IR Default Access</label>
+    <objectPermissions>
+        <allowCreate>true</allowCreate>
+        <allowDelete>false</allowDelete>
+        <allowEdit>true</allowEdit>
+        <allowRead>true</allowRead>
+        <modifyAllRecords>false</modifyAllRecords>
+        <object>Lead</object>
+        <viewAllRecords>false</viewAllRecords>
+    </objectPermissions>
+    <!--
+        ⚠ ADDED (Account/Contact junction change, follow-up 2026-08-20) - AccountContactRelation
+        object CRUD, mirroring this same permission set's Contact block immediately below
+        (Create/Read/Edit true, Delete false) since that was the closest comparable pattern and
+        nothing broader was requested.
+    -->
+    <objectPermissions>
+        <allowCreate>true</allowCreate>
+        <allowDelete>false</allowDelete>
+        <allowEdit>true</allowEdit>
+        <allowRead>true</allowRead>
+        <modifyAllRecords>false</modifyAllRecords>
+        <object>AccountContactRelation</object>
+        <viewAllRecords>false</viewAllRecords>
+    </objectPermissions>
+    <objectPermissions>
+        <allowCreate>true</allowCreate>
+        <allowDelete>false</allowDelete>
+        <allowEdit>true</allowEdit>
+        <allowRead>true</allowRead>
+        <modifyAllRecords>false</modifyAllRecords>
+        <object>Contact</object>
+        <viewAllRecords>false</viewAllRecords>
+    </objectPermissions>
+    <objectPermissions>
+        <allowCreate>true</allowCreate>
+        <allowDelete>true</allowDelete>
+        <allowEdit>true</allowEdit>
+        <allowRead>true</allowRead>
+        <modifyAllRecords>false</modifyAllRecords>
+        <object>Account</object>
+        <viewAllRecords>false</viewAllRecords>
+    </objectPermissions>
+    <objectPermissions>
+        <allowCreate>true</allowCreate>
+        <allowDelete>true</allowDelete>
+        <allowEdit>true</allowEdit>
+        <allowRead>true</allowRead>
+        <modifyAllRecords>false</modifyAllRecords>
+        <object>Task</object>
+        <viewAllRecords>false</viewAllRecords>
+    </objectPermissions>
+    <objectPermissions>
+        <allowCreate>true</allowCreate>
+        <allowDelete>true</allowDelete>
+        <allowEdit>true</allowEdit>
+        <allowRead>true</allowRead>
+        <modifyAllRecords>false</modifyAllRecords>
+        <object>Event</object>
+        <viewAllRecords>false</viewAllRecords>
+    </objectPermissions>
+    <!--
+        ⚠ ADDED 2026-08-25 - Offering/Bank Account/Property declarative build. Full CRUD
+        (Create/Read/Edit/Delete, no viewAll/modifyAll) on the two existing objects and the new
+        Bank_Account__c object.
+    -->
+    <objectPermissions>
+        <allowCreate>true</allowCreate>
+        <allowDelete>true</allowDelete>
+        <allowEdit>true</allowEdit>
+        <allowRead>true</allowRead>
+        <modifyAllRecords>false</modifyAllRecords>
+        <object>Bank_Account__c</object>
+        <viewAllRecords>false</viewAllRecords>
+    </objectPermissions>
+    <objectPermissions>
+        <allowCreate>true</allowCreate>
+        <allowDelete>true</allowDelete>
+        <allowEdit>true</allowEdit>
+        <allowRead>true</allowRead>
+        <modifyAllRecords>false</modifyAllRecords>
+        <object>Offering__c</object>
+        <viewAllRecords>false</viewAllRecords>
+    </objectPermissions>
+    <objectPermissions>
+        <allowCreate>true</allowCreate>
+        <allowDelete>true</allowDelete>
+        <allowEdit>true</allowEdit>
+        <allowRead>true</allowRead>
+        <modifyAllRecords>false</modifyAllRecords>
+        <object>Property__c</object>
+        <viewAllRecords>false</viewAllRecords>
+    </objectPermissions>
+    <recordTypeVisibilities>
+        <recordType>Account.Investing_Entity</recordType>
+        <visible>true</visible>
+    </recordTypeVisibilities>
+    <recordTypeVisibilities>
+        <recordType>Contact.Investor</recordType>
+        <visible>true</visible>
+    </recordTypeVisibilities>
+    <recordTypeVisibilities>
+        <recordType>Lead.Investor_Onboarding</recordType>
+        <visible>true</visible>
+    </recordTypeVisibilities>
+    <!--
+        AccessContentBuilder ("Access drag-and-drop content builder") + CreateLtngTempInPub
+        ("Manage Public Lightning Email Templates") are the pair needed to build AND edit a
+        Lightning (SFX) email template in Content Builder. AccessContentBuilder alone opens the
+        Builder; without CreateLtngTempInPub the Save button fails once the template lives in a
+        SHARED folder (IR_Email_Templates_Lightning), because a shared-folder template counts as
+        "public" for this permission's purposes. AccessContentBuilder was already granted in the
+        org (reconciled 2026-08-15) and is added here so a future deploy of this file does not
+        silently wipe it; see ARCHITECTURE.md's PermissionSet REPLACE-not-merge warning.
+        CreateLtngTempInPub was net-new in both the org and this file before this change.
+
+        EmailTemplateManagement ("Manage Email Templates", added 2026-08-15) is the narrow,
+        purpose-built permission (confirmed via live PermissionSet describe) for viewing,
+        creating, editing and deleting email templates and folders in Setup, WITHOUT needing the
+        much broader CustomizeApplication permission already on this set. It is added because it
+        is the CORRECT scoped grant for this feature going forward — CustomizeApplication is left
+        untouched per instruction, but this set should not depend on it for email-template access
+        specifically. CreateLtngTempFolder ("Create Folders for Lightning Email Templates") was
+        considered and deliberately NOT added: the requirement is to create/edit TEMPLATES inside
+        the existing shared IR_Email_Templates_Lightning folder, not to create new folders.
+        EmailTemplate `objectPermissions` (allowRead/allowCreate/allowEdit) was verified via a
+        real check-only dry-run deploy to be a structurally valid PermissionSet element at API
+        67.0 (it deployed with zero errors) — but a live org-wide query found ZERO existing
+        ObjectPermissions rows for EmailTemplate across every permission set and profile in this
+        org, and the documented access model for this object is the special userPermissions above
+        rather than object CRUD, so it was deliberately NOT added here to avoid an unverified,
+        unprecedented grant with no evidence it does anything.
+    -->
+    <userPermissions>
+        <enabled>true</enabled>
+        <name>AccessContentBuilder</name>
+    </userPermissions>
+    <userPermissions>
+        <enabled>true</enabled>
+        <name>ConvertLeads</name>
+    </userPermissions>
+    <userPermissions>
+        <enabled>true</enabled>
+        <name>CreateLtngTempInPub</name>
+    </userPermissions>
+    <userPermissions>
+        <enabled>true</enabled>
+        <name>CustomizeApplication</name>
+    </userPermissions>
+    <userPermissions>
+        <enabled>true</enabled>
+        <name>EditTask</name>
+    </userPermissions>
+    <userPermissions>
+        <enabled>true</enabled>
+        <name>EmailSingle</name>
+    </userPermissions>
+    <userPermissions>
+        <enabled>true</enabled>
+        <name>EmailTemplateManagement</name>
+    </userPermissions>
+    <userPermissions>
+        <enabled>true</enabled>
+        <name>ManageCustomPermissions</name>
+    </userPermissions>
+    <userPermissions>
+        <enabled>true</enabled>
+        <name>ManageTerritories</name>
+    </userPermissions>
+    <userPermissions>
+        <enabled>true</enabled>
+        <name>ManageTranslation</name>
+    </userPermissions>
+    <!--
+        ⚠ ADDED 2026-08-20 - ViewEncryptedData, needed for this persona to see Account.Tax_ID__c
+        (now Text (Encrypted)) in clear text rather than masked to its last four characters.
+    -->
+    <userPermissions>
+        <enabled>true</enabled>
+        <name>ViewEncryptedData</name>
+    </userPermissions>
+    <userPermissions>
+        <enabled>true</enabled>
+        <name>ViewRoles</name>
+    </userPermissions>
+    <userPermissions>
+        <enabled>true</enabled>
+        <name>ViewSetup</name>
+    </userPermissions>
+</PermissionSet>

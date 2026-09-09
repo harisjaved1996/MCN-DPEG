@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<PermissionSet xmlns="http://soap.sforce.com/2006/04/metadata">
+    <!--
+        IR Milestone 3 (2026-08-12). Layer-2 "app visibility" permission set per
+        ARCHITECTURE.md's seven-layer permission set model - app and tab visibility ONLY.
+        This set deliberately carries no <objectPermissions> and no <fieldPermissions>;
+        every grant of that kind lives in DPEG_IR_Default_Access (layer 3, module data),
+        which is assigned alongside this set. Mirrors DPEG_App_Acquisition, the layer-2 set
+        for the Acquisition app, in shape and in the app/data separation it enforces.
+
+        applicationVisibilities references the app's API name, Investor_Relations - not its
+        display label, Investor Relation, which changed in this same milestone.
+    -->
+    <applicationVisibilities>
+        <application>Investor_Relations</application>
+        <visible>true</visible>
+    </applicationVisibilities>
+    <description>App and tab visibility for the Investor Relation app only. Assigned alongside DPEG_IR_Default_Access, which grants the Lead/Contact/Account object and field access. Grants no object or field permissions on its own.</description>
+    <hasActivationRequired>false</hasActivationRequired>
+    <label>DPEG App IR</label>
+    <tabSettings>
+        <tab>standard-Lead</tab>
+        <visibility>Visible</visibility>
+    </tabSettings>
+    <tabSettings>
+        <tab>standard-Account</tab>
+        <visibility>Visible</visibility>
+    </tabSettings>
+    <tabSettings>
+        <tab>standard-Contact</tab>
+        <visibility>Visible</visibility>
+    </tabSettings>
+    <tabSettings>
+        <tab>standard-report</tab>
+        <visibility>Visible</visibility>
+    </tabSettings>
+    <!--
+        ⚠ ADDED 2026-08-25 - Offering/Bank Account/Property declarative build. Tab visibility ONLY,
+        consistent with this set's layer-2 app/tab-visibility purpose - no objectPermissions or
+        fieldPermissions added here; those live in DPEG_IR_Default_Access / DPEG_IR_Principle_Read.
+    -->
+    <tabSettings>
+        <tab>Bank_Account__c</tab>
+        <visibility>Visible</visibility>
+    </tabSettings>
+    <tabSettings>
+        <tab>Offering__c</tab>
+        <visibility>Visible</visibility>
+    </tabSettings>
+    <tabSettings>
+        <tab>Property__c</tab>
+        <visibility>Visible</visibility>
+    </tabSettings>
+</PermissionSet>
