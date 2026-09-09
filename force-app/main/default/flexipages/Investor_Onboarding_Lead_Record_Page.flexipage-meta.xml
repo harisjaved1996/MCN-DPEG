@@ -305,7 +305,7 @@
         <name>flexipage:recordHomeWithSubheaderTemplateDesktop</name>
         <properties>
             <name>saveOptions</name>
-            <value>[{&quot;name&quot;:&quot;UseDefaultAssignmentRule&quot;,&quot;value&quot;:&quot;SHOW_CHECKBOX_WITH_DEFAULT_OFF&quot;}]</value>
+            <value>[{&quot;name&quot;:&quot;UseDefaultAssignmentRule&quot;,&quot;value&quot;:&quot;SHOW_CHECKBOX_WITH_DEFAULT_ON&quot;}]</value>
         </properties>
     </template>
     <type>RecordPage</type>

@@ -544,10 +544,6 @@
     </flowAccesses>
     <flowAccesses>
         <enabled>true</enabled>
-        <flow>IR_Lead_Assignment_Flow</flow>
-    </flowAccesses>
-    <flowAccesses>
-        <enabled>true</enabled>
         <flow>IR_Lead_Assignment_to_User</flow>
     </flowAccesses>
     <flowAccesses>
@@ -592,6 +588,10 @@
     </layoutAssignments>
     <layoutAssignments>
         <layout>AccountContactRelation-Investor-Investing Entity Layout</layout>
+    </layoutAssignments>
+    <layoutAssignments>
+        <layout>Lead-Investor Onboarding Layout</layout>
+        <recordType>Lead.Investor_Onboarding</recordType>
     </layoutAssignments>
     <objectPermissions>
         <allowCreate>true</allowCreate>
