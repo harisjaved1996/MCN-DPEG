@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Flow xmlns="http://soap.sforce.com/2006/04/metadata">
+    <actionCalls>
+        <description>Records an Opt-In email consent for the new Investor Contact against the IR communication subscription, using the Contact&apos;s Email as the contact point value.</description>
+        <name>Create_Investor_Email_Consent_Opt_In</name>
+        <label>Create Investor Email Consent (Opt-In)</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <actionName>createConsent</actionName>
+        <actionType>createConsent</actionType>
+        <flowTransactionModel>CurrentTransaction</flowTransactionModel>
+        <inputParameters>
+            <name>consentRequest</name>
+            <value>
+                <apexValue>{&quot;recordList&quot;:[{&quot;engagementChannelTypeId&quot;:&quot;0eFHn0000004fhYMAQ&quot;,&quot;commSubscriptionId&quot;:&quot;0XlHn0000008VVzKAM&quot;,&quot;commSubscriptionChannelTypeId&quot;:&quot;0eBHn0000008VejMAE&quot;,&quot;contactPointValue&quot;:&quot;{!$Input.Email}&quot;,&quot;consentStatus&quot;:&quot;OptIn&quot;,&quot;senderCode&quot;:&quot;&quot;,&quot;flowName&quot;:&quot;IR_Contact_Consent_Opt_In&quot;,&quot;assetName&quot;:&quot;Automation&quot;,&quot;flowTriggerType&quot;:&quot;IndivRelatedRecord&quot;,&quot;flowDataSpaceApiName&quot;:&quot;default&quot;}]}</apexValue>
+            </value>
+        </inputParameters>
+        <nameSegment>createConsent</nameSegment>
+        <offset>0</offset>
+    </actionCalls>
+    <apiVersion>67.0</apiVersion>
+    <areMetricsLoggedToDataCloud>true</areMetricsLoggedToDataCloud>
+    <dataSpace>default</dataSpace>
+    <description>Sets email communication consent to Opt-In for newly created Investor Contacts. Runs on Contact create only, and the entry criteria restrict it to the Investor record type so Broker and other Contact types are never opted in. Replaces the earlier Contact_Consent automation, which opted in every new Contact regardless of record type.</description>
+    <environments>Default</environments>
+    <interviewLabel>IR Contact Consent Opt-In {!$Flow.CurrentDateTime}</interviewLabel>
+    <label>IR Contact Consent Opt-In</label>
+    <processMetadataValues>
+        <name>BuilderType</name>
+        <value>
+            <stringValue>LightningFlowBuilder</stringValue>
+        </value>
+    </processMetadataValues>
+    <processMetadataValues>
+        <name>CanvasMode</name>
+        <value>
+            <stringValue>AUTO_LAYOUT_CANVAS</stringValue>
+        </value>
+    </processMetadataValues>
+    <processMetadataValues>
+        <name>OriginBuilderType</name>
+        <value>
+            <stringValue>LightningFlowBuilder</stringValue>
+        </value>
+    </processMetadataValues>
+    <processType>AutoLaunchedFlow</processType>
+    <start>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <connector>
+            <targetReference>Create_Investor_Email_Consent_Opt_In</targetReference>
+        </connector>
+        <filterLogic>and</filterLogic>
+        <filters>
+            <field>Record_Type_Name__c</field>
+            <operator>EqualTo</operator>
+            <value>
+                <stringValue>Investor</stringValue>
+            </value>
+        </filters>
+        <object>Contact</object>
+        <recordTriggerType>Create</recordTriggerType>
+        <triggerType>IndivRelatedRecord</triggerType>
+    </start>
+    <status>Active</status>
+</Flow>

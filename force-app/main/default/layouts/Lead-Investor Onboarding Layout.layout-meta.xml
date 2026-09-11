@@ -50,6 +50,10 @@
                 <behavior>Required</behavior>
                 <field>Status</field>
             </layoutItems>
+            <layoutItems>
+                <behavior>Required</behavior>
+                <field>Company</field>
+            </layoutItems>
         </layoutColumns>
         <layoutColumns>
             <layoutItems>

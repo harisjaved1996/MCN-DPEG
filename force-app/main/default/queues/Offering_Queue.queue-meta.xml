@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Queue xmlns="http://soap.sforce.com/2006/04/metadata">
+    <description>Holds newly created Offerings until an IR team member takes ownership. Offerings are routed here on create by IR_Offering_Assign_to_Queue. Queue members pick up records from the queue list view, and the Assign to Me action moves ownership to the individual user.</description>
+    <doesSendEmailToMembers>false</doesSendEmailToMembers>
+    <name>Offering Queue</name>
+    <queueSobject>
+        <sobjectType>Offering__c</sobjectType>
+    </queueSobject>
+</Queue>

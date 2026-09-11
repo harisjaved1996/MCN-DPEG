@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Flow xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>67.0</apiVersion>
+    <assignments>
+        <name>Assign_Owner_to_Offering_Queue</name>
+        <label>Assign Owner to Offering Queue</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <assignmentItems>
+            <assignToReference>$Record.OwnerId</assignToReference>
+            <operator>Assign</operator>
+            <value>
+                <elementReference>Get_Offering_Queue.Id</elementReference>
+            </value>
+        </assignmentItems>
+    </assignments>
+    <decisions>
+        <name>Is_Queue_Found</name>
+        <label>Is Queue Found?</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <defaultConnectorLabel>Queue Not Found</defaultConnectorLabel>
+        <rules>
+            <name>Queue_Found</name>
+            <conditionLogic>and</conditionLogic>
+            <conditions>
+                <leftValueReference>Get_Offering_Queue</leftValueReference>
+                <operator>IsNull</operator>
+                <rightValue>
+                    <booleanValue>false</booleanValue>
+                </rightValue>
+            </conditions>
+            <connector>
+                <targetReference>Assign_Owner_to_Offering_Queue</targetReference>
+            </connector>
+            <label>Queue Found</label>
+        </rules>
+    </decisions>
+    <description>Routes every newly created Offering to the Offering Queue by setting OwnerId in a BEFORE-save flow, so the assignment commits as part of the original insert with no second DML. Runs on Create only and on every entry path - UI, API, Apex and Data Loader - because custom objects do not support Lead/Case style assignment rules and therefore have no user-facing checkbox to forget. The queue is resolved at run time by Group.DeveloperName (Offering_Queue) AND Group.Type (Queue) - both are required, because Group.DeveloperName is unique per Type rather than globally, so name alone can also match a public group. Never a hardcoded Id, so this deploys unchanged to any org. Fails closed: if the queue cannot be resolved the flow ends without touching OwnerId, leaving the creating user as owner rather than blanking ownership.</description>
+    <environments>Default</environments>
+    <interviewLabel>IR Offering Assign to Queue {!$Flow.CurrentDateTime}</interviewLabel>
+    <label>IR Offering Assign to Queue</label>
+    <processMetadataValues>
+        <name>BuilderType</name>
+        <value>
+            <stringValue>LightningFlowBuilder</stringValue>
+        </value>
+    </processMetadataValues>
+    <processMetadataValues>
+        <name>CanvasMode</name>
+        <value>
+            <stringValue>AUTO_LAYOUT_CANVAS</stringValue>
+        </value>
+    </processMetadataValues>
+    <processMetadataValues>
+        <name>OriginBuilderType</name>
+        <value>
+            <stringValue>LightningFlowBuilder</stringValue>
+        </value>
+    </processMetadataValues>
+    <processType>AutoLaunchedFlow</processType>
+    <recordLookups>
+        <name>Get_Offering_Queue</name>
+        <label>Get Offering Queue</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <assignNullValuesIfNoRecordsFound>false</assignNullValuesIfNoRecordsFound>
+        <connector>
+            <targetReference>Is_Queue_Found</targetReference>
+        </connector>
+        <filterLogic>and</filterLogic>
+        <filters>
+            <field>DeveloperName</field>
+            <operator>EqualTo</operator>
+            <value>
+                <stringValue>Offering_Queue</stringValue>
+            </value>
+        </filters>
+        <filters>
+            <field>Type</field>
+            <operator>EqualTo</operator>
+            <value>
+                <stringValue>Queue</stringValue>
+            </value>
+        </filters>
+        <getFirstRecordOnly>true</getFirstRecordOnly>
+        <object>Group</object>
+        <queriedFields>Id</queriedFields>
+        <storeOutputAutomatically>true</storeOutputAutomatically>
+    </recordLookups>
+    <start>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <connector>
+            <targetReference>Get_Offering_Queue</targetReference>
+        </connector>
+        <object>Offering__c</object>
+        <recordTriggerType>Create</recordTriggerType>
+        <triggerType>RecordBeforeSave</triggerType>
+    </start>
+    <status>Active</status>
+</Flow>
