@@ -43,6 +43,13 @@
         therefore dormant until a queue exists, by design; Offering__c.Pre_Launch's added second
         criterion is satisfied by every real (user-owned) record today, so its visibility is
         unchanged in practice. Edit and Delete remain ungated, in place, untouched.
+
+        UPDATED 2026-09-13 - Activity panel. The "no sidebar" scope above is superseded: a
+        "sidebar" Region now holds the standard runtime_sales_activities:activityPanel, copied
+        verbatim from the deployed flexipages/Investor_Onboarding_Lead_Record_Page.flexipage-meta.xml.
+        Its composer tabs (Email / Log a Call / New Task / New Event) come from the page LAYOUT's
+        platformActionList (SendEmail, LogACall, NewTask, NewEvent in layouts/Offering__c-Offering Layout),
+        not from this file. Header buttons are unaffected because this page uses Dynamic Actions.
     -->
     <flexiPageRegions>
         <itemInstances>
@@ -135,6 +142,20 @@
             </componentInstance>
         </itemInstances>
         <name>main</name>
+        <type>Region</type>
+    </flexiPageRegions>
+    <flexiPageRegions>
+        <itemInstances>
+            <componentInstance>
+                <componentInstanceProperties>
+                    <name>showLegacyActivityComposer</name>
+                    <value>false</value>
+                </componentInstanceProperties>
+                <componentName>runtime_sales_activities:activityPanel</componentName>
+                <identifier>activities</identifier>
+            </componentInstance>
+        </itemInstances>
+        <name>sidebar</name>
         <type>Region</type>
     </flexiPageRegions>
     <masterLabel>Offering Record Page</masterLabel>
