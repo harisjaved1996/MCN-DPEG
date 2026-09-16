@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Flow xmlns="http://soap.sforce.com/2006/04/metadata">
+    <!--
+        NEW 2026-09-13. HAND-AUTHORED, NOT GENERATED VIA THE execute_metadata_action MCP PIPELINE
+        - that tool was not exposed in this session's toolset (salesforce-dx MCP CONNECT_TIMEOUT),
+        so per this repo's established fallback this file was hand-authored by cloning the exact
+        structure of the newly-updated flows/IR_Offering_PreLaunch.flow-meta.xml (single Text
+        `recordId` input -> one recordUpdates element filtered on Id = recordId, with a fault
+        connector -> two terminal screens), swapping the field/value being written for
+        Status__c = 'Active Fundraising'.
+
+        Backs the Offering__c.Send_New_Offering_Launch quick action. NAME NOTE: the requester asked
+        for a "Send New Offering Launch" action that moves an Offering into active fundraising; the
+        only matching value in Offering__c.Status__c's restricted picklist is the literal
+        'Active Fundraising' (confirmed against objects/Offering__c/fields/Status__c.field-meta.xml
+        - the full value set is Draft, Pre Launch, Active Fundraising, Fully Subscribed, Signatures
+        Pending, Ready to Activate, Closed). DESPITE THE "SEND" IN THE ACTION NAME, THIS FLOW ONLY
+        UPDATES STATUS - no email is sent by this flow or its quick action, per explicit
+        instruction. A launch-notice email, if wanted later, is a separate additive change and out
+        of scope here.
+
+        Status__c is a RESTRICTED picklist - the literal 'Active Fundraising' must match exactly or
+        the update fails with a restricted-picklist validation error.
+
+        Screen markup matches every other IR Offering screen flow: /resource/Assets/success.png and
+        /resource/Assets/error.png at 96x96, centered, 16px text (see flows/IR_Offering_PreLaunch.
+        flow-meta.xml and flows/IR_Offering_Assign_to_Me.flow-meta.xml for the same shape).
+    -->
+    <apiVersion>67.0</apiVersion>
+    <description>Updates the Status field on the Offering identified by the recordId input to Active Fundraising, then shows a success confirmation screen. Launched by the Offering__c.Send_New_Offering_Launch quick action, visible only when the Offering's Status is currently Pre Launch. Faults on the update route to an error screen. Updates status only - does not send any email despite the action's name (see header comment).</description>
+    <environments>Default</environments>
+    <interviewLabel>IR New Offering Launch {!$Flow.CurrentDateTime}</interviewLabel>
+    <label>IR New Offering Launch</label>
+    <processMetadataValues>
+        <name>BuilderType</name>
+        <value>
+            <stringValue>LightningFlowBuilder</stringValue>
+        </value>
+    </processMetadataValues>
+    <processMetadataValues>
+        <name>CanvasMode</name>
+        <value>
+            <stringValue>AUTO_LAYOUT_CANVAS</stringValue>
+        </value>
+    </processMetadataValues>
+    <processMetadataValues>
+        <name>OriginBuilderType</name>
+        <value>
+            <stringValue>LightningFlowBuilder</stringValue>
+        </value>
+    </processMetadataValues>
+    <processType>Flow</processType>
+    <recordUpdates>
+        <name>Update_Offering_Status</name>
+        <label>Update Offering Status</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <connector>
+            <targetReference>Screen_Success</targetReference>
+        </connector>
+        <description>Updates Status__c on the Offering identified by recordId to the literal restricted-picklist value "Active Fundraising". Faults route to Screen_Error.</description>
+        <faultConnector>
+            <targetReference>Screen_Error</targetReference>
+        </faultConnector>
+        <filterLogic>and</filterLogic>
+        <filters>
+            <field>Id</field>
+            <operator>EqualTo</operator>
+            <value>
+                <elementReference>recordId</elementReference>
+            </value>
+        </filters>
+        <inputAssignments>
+            <field>Status__c</field>
+            <value>
+                <stringValue>Active Fundraising</stringValue>
+            </value>
+        </inputAssignments>
+        <object>Offering__c</object>
+    </recordUpdates>
+    <screens>
+        <name>Screen_Success</name>
+        <label>Send New Offering Launch</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <allowBack>false</allowBack>
+        <allowFinish>true</allowFinish>
+        <allowPause>false</allowPause>
+        <description>Terminal success screen. No Previous button (allowBack false) and no outgoing connector, so Finish is the only action.</description>
+        <fields>
+            <name>Success_Message</name>
+            <fieldType>DisplayText</fieldType>
+            <fieldText>&lt;p style=&quot;text-align: center;&quot;&gt;&lt;br&gt;&lt;/p&gt;&lt;p style=&quot;text-align: center;&quot;&gt;&lt;img src=&quot;/resource/Assets/success.png&quot; alt=&quot;Success&quot; width=&quot;96&quot; height=&quot;96&quot;&gt;&lt;/p&gt;&lt;p style=&quot;text-align: center;&quot;&gt;&lt;span style=&quot;font-size: 16px;&quot;&gt;Success! This Offering is now in Active Fundraising.&lt;/span&gt;&lt;/p&gt;</fieldText>
+        </fields>
+        <nextOrFinishButtonLabel>Finish</nextOrFinishButtonLabel>
+        <showFooter>true</showFooter>
+        <showHeader>true</showHeader>
+    </screens>
+    <screens>
+        <name>Screen_Error</name>
+        <label>Send New Offering Launch</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <allowBack>false</allowBack>
+        <allowFinish>true</allowFinish>
+        <allowPause>false</allowPause>
+        <description>Displays the fault message if the Offering status update fails unexpectedly.</description>
+        <fields>
+            <name>Error_Message</name>
+            <fieldType>DisplayText</fieldType>
+            <fieldText>&lt;p style=&quot;text-align: center;&quot;&gt;&lt;br&gt;&lt;/p&gt;&lt;p style=&quot;text-align: center;&quot;&gt;&lt;img src=&quot;/resource/Assets/error.png&quot; alt=&quot;Error&quot; width=&quot;96&quot; height=&quot;96&quot;&gt;&lt;/p&gt;&lt;p style=&quot;text-align: center;&quot;&gt;&lt;span style=&quot;font-size: 16px;&quot;&gt;Error: {!$Flow.FaultMessage}&lt;/span&gt;&lt;/p&gt;</fieldText>
+        </fields>
+        <nextOrFinishButtonLabel>Finish</nextOrFinishButtonLabel>
+        <showFooter>true</showFooter>
+        <showHeader>true</showHeader>
+    </screens>
+    <start>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <connector>
+            <targetReference>Update_Offering_Status</targetReference>
+        </connector>
+    </start>
+    <status>Active</status>
+    <variables>
+        <name>recordId</name>
+        <dataType>String</dataType>
+        <isCollection>false</isCollection>
+        <isInput>true</isInput>
+        <isOutput>false</isOutput>
+    </variables>
+</Flow>

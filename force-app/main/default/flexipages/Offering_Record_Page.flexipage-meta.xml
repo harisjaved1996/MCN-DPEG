@@ -38,18 +38,22 @@
         step action, gated on an Is_Owner_*_Queue__c formula" pattern. Deliberately NOT written as
         a single OR'd rule: a parenthesised booleanFilter deploys but is not honoured by the
         renderer (measured on this project; see the Contract_Review_Record_Page header comment).
-        Is_Owner_Queue__c will evaluate false on every real Offering__c record today (no queue
-        currently supports Offering__c as an ownable object) - Offering__c.Assign_to_Me is
-        therefore dormant until a queue exists, by design; Offering__c.Pre_Launch's added second
-        criterion is satisfied by every real (user-owned) record today, so its visibility is
-        unchanged in practice. Edit and Delete remain ungated, in place, untouched.
 
-        UPDATED 2026-09-13 - Activity panel. The "no sidebar" scope above is superseded: a
-        "sidebar" Region now holds the standard runtime_sales_activities:activityPanel, copied
-        verbatim from the deployed flexipages/Investor_Onboarding_Lead_Record_Page.flexipage-meta.xml.
-        Its composer tabs (Email / Log a Call / New Task / New Event) come from the page LAYOUT's
-        platformActionList (SendEmail, LogACall, NewTask, NewEvent in layouts/Offering__c-Offering Layout),
-        not from this file. Header buttons are unaffected because this page uses Dynamic Actions.
+        CORRECTED 2026-09-13: queues/Offering_Queue.queue-meta.xml now exists (added in the
+        Offering Queue build, commit ca1058ec) and flows/IR_Offering_Assign_to_Queue.flow-meta.xml
+        routes every newly created Offering to it on insert, so Is_Owner_Queue__c evaluates true
+        for queue-owned Offerings in the normal course of business - Offering__c.Assign_to_Me is
+        LIVE, not dormant; the earlier note here claiming it was dormant until a queue exists was
+        stale and has been removed. Offering__c.Pre_Launch's added second criterion continues to be
+        satisfied by every user-owned record, so its visibility is unchanged in practice. Edit and
+        Delete remain ungated, in place, untouched.
+
+        ADDED 2026-09-13 - a THIRD quick action, Offering__c.Send_New_Offering_Launch (updates
+        Status__c to Active Fundraising via flows/IR_New_Offering_Launch.flow-meta.xml), gated on a
+        single criterion: {!Record.Status__c} EQUAL 'Pre Launch'. No <booleanFilter> needed - a
+        single-criteria rule uses implicit AND. Not tied to Is_Owner_Queue__c at all: any user who
+        can see a Pre-Launch Offering and holds the Offering__c edit + Status__c access described in
+        DPEG_IR_Default_Access can launch it, regardless of individual vs. queue ownership.
     -->
     <flexiPageRegions>
         <itemInstances>
@@ -92,6 +96,16 @@
                                     <leftValue>{!Record.Is_Owner_Queue__c}</leftValue>
                                     <operator>EQUAL</operator>
                                     <rightValue>true</rightValue>
+                                </criteria>
+                            </visibilityRule>
+                        </valueListItems>
+                        <valueListItems>
+                            <value>Offering__c.Send_New_Offering_Launch</value>
+                            <visibilityRule>
+                                <criteria>
+                                    <leftValue>{!Record.Status__c}</leftValue>
+                                    <operator>EQUAL</operator>
+                                    <rightValue>Pre Launch</rightValue>
                                 </criteria>
                             </visibilityRule>
                         </valueListItems>

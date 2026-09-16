@@ -1,7 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Superseded 2026-09-16 - this action previously invoked the LWC newOfferingLaunchWizard
+    directly (<lightningWebComponent>newOfferingLaunchWizard</lightningWebComponent>, type
+    LightningWebComponent). It now launches the IR_New_Offering_Launch screen flow instead.
+-->
 <QuickAction xmlns="http://soap.sforce.com/2006/04/metadata">
+    <actionSubtype>ScreenAction</actionSubtype>
+    <flowDefinition>IR_New_Offering_Launch</flowDefinition>
     <label>Send New Offering Launch</label>
-    <lightningWebComponent>newOfferingLaunchWizard</lightningWebComponent>
     <optionsCreateFeedItem>false</optionsCreateFeedItem>
-    <type>LightningWebComponent</type>
+    <type>Flow</type>
 </QuickAction>

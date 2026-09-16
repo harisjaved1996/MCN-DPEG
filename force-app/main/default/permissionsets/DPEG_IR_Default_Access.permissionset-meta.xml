@@ -8,30 +8,33 @@
         <apexClass>InvestorLeadConvertService</apexClass>
         <enabled>true</enabled>
     </classAccesses>
+    <description>IR layer-3 module data. Lead CRUD minus Delete; Contact/Account/ACR CRUD(+Acct delete); Task/Event CRUD; EditTask+EmailSingle+ConvertLeads+EmailTemplateMgmt+ViewEncryptedData; 7 IR flows; Investor_Onboarding+Investor+Investing_Entity RTs; junction FLS.</description>
     <!--
-        ⚠ DESCRIPTION TRIMMED 2026-08-20 - was 442 chars, over the 255-char cap (deployment
-        validation error). Meaning preserved, wording shortened.
+        ⚠ ADDED (Account/Contact junction change, 2026-08-20) - the four new Investing
+        Entity fields on Account (Entity_Type__c, Tax_ID__c, Tax Address, Appfolio_ID__c). Tax
+        Address is FIVE entries rather than one: it was committed upstream as a single compound
+        <type>Address</type> field. A 2026-09-06 edit split it into five discrete
+        Tax_Address_Street__c / _City__c / _State__c / _Postal_Code__c / _Country__c grants; that
+        was reverted 2026-09-16 because no such fields exist in this repo or the org - the
+        compound Tax_Address__c is the real field. It is granted read-only: a compound Address
+        field is not editable via fieldPermissions.
+        None of these are required fields, so all are eligible for FLS per the
+        sf-permission-set skill's no-required-fields-in-fieldPermissions rule. Entity_Type__c
+        was already granted here; the other three are new. Tax_ID__c is Text (Encrypted) and
+        stays masked to its last four characters without the ViewEncryptedData grant below.
     -->
-    <description>IR layer-3 module data. Lead CRUD minus Delete w/ onboarding FLS; Contact/Account/ACR CRUD(+Acct delete); Task/Event CRUD; EditTask+EmailSingle+ConvertLeads+EmailTemplateMgmt; 7 IR flows; Investor_Onboarding+Investor RTs; conversion + junction FLS.</description>
     <!--
-        ⚠ ADDED (Account/Contact junction change, 2026-08-20) - the four new "Investing Entity"
-        fields on Account (Entity_Type__c, Tax_ID__c, Tax_Address__c, Appfolio_ID__c). None of
-        these are required fields, so all four are eligible for FLS per the sf-permission-set
-        skill's "no required fields in fieldPermissions" rule.
+        ⚠ REMOVED 2026-09-16 - FLS grants for Account.Account_Type__c,
+        Contact.Accreditation_Status__c, Contact.KYC_Complete__c, Contact.Role__c,
+        Offering__c.Property__c, Property__c.Address__c, Property__c.Square_Footage__c and
+        Property__c.Year_Built__c were dropped. All eight were ported from the design repo but
+        exist in neither this repo nor the target org, and a fieldPermissions entry naming a
+        non existent field is a hard deploy failure (same rule as the omitted tabSettings below).
+        Restore them once the underlying CustomFields are actually created.
     -->
     <fieldPermissions>
         <editable>true</editable>
         <field>Account.Appfolio_ID__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <field>Account.Entity_Type__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <field>Account.Phone</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
@@ -44,17 +47,26 @@
         <field>Account.Tax_ID__c</field>
         <readable>true</readable>
     </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Account.Entity_Type__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Account.Phone</field>
+        <readable>true</readable>
+    </fieldPermissions>
     <!--
         ⚠ ADDED (Account/Contact junction change, 2026-08-20) - the three new fields on
         AccountContactRelation (Signing_Order__c, Is_Primary_Contact__c, Is_Required_Signer__c).
-        Object CRUD (mirroring the Contact objectPermissions block below - Create/Read/Edit true,
-        Delete/modifyAll/viewAll false) was added in a follow-up change; see that block further
-        down in this file. NO recordTypeVisibilities entry exists for AccountContactRelation - a
-        record type was originally added and then DELETED: deployment validation measured that
+        Object CRUD for this object is granted further down in this file. NO
+        recordTypeVisibilities entry exists for AccountContactRelation: a record type was
+        originally added and then DELETED, because deployment validation measured that
         AccountContactRelation cannot have a custom Record Type on this org at all
-        (`RecordType.SObjectType = AccountContactRelation` is rejected as a restricted picklist
-        value). These fields are now reached via the object's reworked, record-type-free default
-        Page Layout instead - see layouts/AccountContactRelation-Investor-Investing Entity
+        (RecordType.SObjectType = AccountContactRelation is rejected as a restricted picklist
+        value). These fields are reached instead via the object's reworked, record-type-free
+        default Page Layout: see layouts/AccountContactRelation-Investor-Investing Entity
         Layout.layout-meta.xml and profiles/DPEG-IR-SF-Minimum Access.profile-meta.xml.
     -->
     <fieldPermissions>
@@ -93,30 +105,12 @@
         <field>Contact.AccountId</field>
         <readable>true</readable>
     </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <field>Contact.Email</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <field>Contact.Is_Accredited__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <field>Contact.Phone</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <field>Contact.Referred_By__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
     <!--
-        ⚠ ADDED (Account/Contact junction change, 2026-08-20) - the ten new investor-tracking
-        fields on Contact (4 activation/status checkboxes, 5 lifetime/position metrics, and the
-        AppFolio external ID). None are required fields, so all ten are eligible for FLS.
+        ⚠ ADDED (Account/Contact junction change, 2026-08-20) - the 10 new investor metric
+        fields on Contact. All 10 are read/write here, matching the Edit behavior they carry on
+        layouts/Contact-Investor Layout. Appfolio_ID__c is Readonly on that layout as an
+        integration-populated external ID, but keeps the write grant here so the integration
+        path can set it. None are required fields, so all are FLS eligible.
     -->
     <fieldPermissions>
         <editable>true</editable>
@@ -149,10 +143,10 @@
         <readable>true</readable>
     </fieldPermissions>
     <!--
-        ⚠ ADDED 2026-09-01 - restore of Contact.Record_Type_Name__c (deleted earlier this session
-        as part of a feature rollback, now partially reversed). Read-only - editable=false, since
-        formula fields cannot be editable. Interleaved to preserve this block's alphabetical
-        ordering (between Portal_Activated__c and Repeat_Investor__c).
+        ⚠ ADDED 2026-09-07 - Contact.Record_Type_Name__c, ported from design repo commit
+        9f678870. FORMULA field (Text, RecordType.DeveloperName), so editable is false and must
+        stay false. It exists so Data Cloud can filter the Contact data stream on record type,
+        which a DLO cannot do by traversing RecordType.DeveloperName through a relationship.
     -->
     <fieldPermissions>
         <editable>false</editable>
@@ -177,6 +171,26 @@
     <fieldPermissions>
         <editable>true</editable>
         <field>Contact.Total_Investing_Entities__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Contact.Email</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Contact.Is_Accredited__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Contact.Phone</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Contact.Referred_By__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
@@ -215,10 +229,37 @@
         <readable>true</readable>
     </fieldPermissions>
     <!--
-        ⚠ ADDED 2026-08-25 - Offering/Bank Account/Property declarative build. Full CRUD FLS on
-        Bank_Account__c (new object), Offering__c (3 existing + 12 new fields) and Property__c
-        (35 existing + 1 new field), added additively - every pre-existing entry in this file is
-        left untouched. See ARCHITECTURE.md's PermissionSet REPLACE-not-merge warning.
+        ⚠ ADDED 2026-09-07 - Offering / Bank Account / Property port from design repo
+        UsmanKhan47/Salesforce-DPEG-Design commit 9f678870. Added ADDITIVELY: every pre existing
+        entry in this file is untouched. A PermissionSet deploy REPLACES the whole
+        fieldPermissions set rather than merging into it, so nothing may be dropped here.
+
+        WHY THESE GRANTS ARE LOAD BEARING: a field deployed through the Metadata API arrives with
+        NO field permissions for ANY profile, System Administrator included. Every field ported in
+        this change is invisible to everyone until it is granted here.
+
+        🔴 BANK CREDENTIALS DELIBERATELY ABSENT. Bank_Account__c.Account_Number__c and
+        Bank_Account__c.Routing_Number__c are NOT granted in this set, and that omission is the
+        control, not an oversight. ARCHITECTURE.md section 3.5 names "bank/routing details" as
+        secrets alongside SSN and tax IDs, and this org has no Shield Platform Encryption, so FLS
+        is the only thing between a holder of this set and a plaintext account number. Raw
+        financial identifiers stay scoped to the IR Manager / CFO persona; in this change the sole
+        grant lives in src/app/main/default/permissionsets/DPEG_Admin_Access. The other two
+        Bank_Account__c fields (Account_Nickname__c, Entity_Name__c) carry no credential and are
+        granted normally. objects/Bank_Account__c/listViews/All excludes both credential fields as
+        columns for the same reason.
+
+        CORRECTED 2026-09-13: Offering__c.Opportunity__c DOES exist on Offering__c in this repo
+        (objects/Offering__c/fields/Opportunity__c.field-meta.xml, a Lookup to Opportunity) and IS
+        granted below (readable+editable) alongside the rest of this block's Offering__c fields -
+        the earlier note here, claiming the field did not exist, was stale and has been removed.
+        Making the lookup actually usable also required a standard-object Read grant on
+        Opportunity itself (see the new objectPermissions block further down, ADDED 2026-09-13):
+        FLS on a lookup field alone is not enough - without at least Read on the lookup's target
+        object, the field renders blank/inaccessible on both the New/Edit form and the detail view.
+        Property__c likewise gets only the seven fields that exist here, not the design repo's 36.
+        Property__c.Opportunity__c is additionally required=true, and a universally required field
+        may never appear in fieldPermissions at all.
     -->
     <fieldPermissions>
         <editable>true</editable>
@@ -227,17 +268,7 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
-        <field>Bank_Account__c.Account_Number__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
         <field>Bank_Account__c.Entity_Name__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <field>Bank_Account__c.Routing_Number__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
@@ -266,10 +297,11 @@
         <readable>true</readable>
     </fieldPermissions>
     <!--
-        ⚠ ADDED 2026-08-25 (PM follow-up) - Offering Assign to Me + Owner-Queue Gating build. FLS
-        for the new Is_Owner_Queue__c formula field - readable only, since formula fields cannot be
-        editable. Interleaved here to preserve this block's alphabetical ordering (between
-        Investment_Time_Horizon__c and Minimum_Investment__c). Added additively.
+        Is_Owner_Queue__c is a FORMULA field (Checkbox), so editable is false here and MUST stay
+        false - editable=true on a formula field is a hard deploy failure. Read access is still
+        required: flexipages/Offering_Record_Page reads it as the second AND criterion of both
+        Dynamic Action visibility rules, so without it those rules silently never evaluate true
+        for this persona.
     -->
     <fieldPermissions>
         <editable>false</editable>
@@ -283,7 +315,7 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
-        <field>Offering__c.Offering_Name__c</field>
+        <field>Offering__c.Price_Per_Share__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
@@ -291,16 +323,17 @@
         <field>Offering__c.Opportunity__c</field>
         <readable>true</readable>
     </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <field>Offering__c.Price_Per_Share__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <field>Offering__c.Status__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
+
+    <!--
+        ⚠ Offering__c.Status__c IS DELIBERATELY NOT GRANTED HERE, and the omission is required
+        rather than optional. Status__c is universally required (required=true on
+        objects/Offering__c/fields/Status__c.field-meta.xml, restored 2026-09-07 by user decision
+        after code review W-4). A universally required field MAY NOT appear in fieldPermissions at
+        all - the platform rejects the deploy. Required fields are readable and editable for every
+        user who holds object access, so no grant is needed and none is possible. This is the same
+        reason Property__c.Opportunity__c is absent from this file. If Status__c is ever relaxed
+        back to required=false, an explicit grant must be added here or the field goes invisible.
+    -->
     <fieldPermissions>
         <editable>true</editable>
         <field>Offering__c.Target_Cash_on_Cash__c</field>
@@ -321,14 +354,6 @@
         <field>Offering__c.Type__c</field>
         <readable>true</readable>
     </fieldPermissions>
-    <!--
-        ⚠ ADDED 2026-08-25 (PM follow-up) - Acquisition/Valuation/Loan fields build. Full CRUD FLS
-        on 4 new Property__c fields: Acquisition_Date__c, Valuation__c, Loan_to_Value__c,
-        Loan_Balance__c. Interleaved at their correct alphabetical positions within the existing
-        Property__c run below (this comment marks the first of the four; the others are Loan_
-        Balance__c/Loan_to_Value__c between Days_On_Market_Avg__c and Lot_Size_Acres__c, and
-        Valuation__c between Unit_Count__c and Visitor_Demographics__c). Added additively.
-    -->
     <fieldPermissions>
         <editable>true</editable>
         <field>Property__c.Acquisition_Date__c</field>
@@ -346,15 +371,9 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
-        <field>Property__c.Offering__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
         <field>Property__c.Valuation__c</field>
         <readable>true</readable>
     </fieldPermissions>
-    <!-- ⚠ ADDED 2026-08-21 - "Add" sorts before "Lead" alphabetically, hence first. -->
     <flowAccesses>
         <enabled>true</enabled>
         <flow>IR_Add_Investor_Investing_Entity</flow>
@@ -375,24 +394,20 @@
         <enabled>true</enabled>
         <flow>IR_Manage_Investing_Entity</flow>
     </flowAccesses>
-    <!-- ⚠ ADDED 2026-08-25 (PM follow-up) - Offering Assign to Me + Owner-Queue Gating build.
-         Grants access to the new IR_Offering_Assign_to_Me screen flow, launched from the
-         Offering__c.Assign_to_Me quick action. Placed here (before IR_Offering_PreLaunch) to
-         preserve this section's alphabetical ordering ("IR_Offering_Assign..." sorts before
-         "IR_Offering_PreLaunch" - 'A' < 'P'). API name corrected to capital M 2026-08-25 (code
-         review, minor warning) to match this flow's own label and the quick action that
-         references it - see flows/IR_Offering_Assign_to_Me.flow-meta.xml header comment. -->
+    <!-- ⚠ ADDED 2026-09-13 - IR_New_Offering_Launch, the screen flow launched by the new
+         Offering__c.Send_New_Offering_Launch quick action. Sorts here (N before O) to keep this
+         section alphabetical, same convention as the two Offering flows immediately below. -->
+    <flowAccesses>
+        <enabled>true</enabled>
+        <flow>IR_New_Offering_Launch</flow>
+    </flowAccesses>
+    <!-- ⚠ ADDED 2026-09-07 - the two new Offering screen flows, launched by the
+         Offering__c.Assign_to_Me and Offering__c.Pre_Launch quick actions. Placed here to keep
+         this section alphabetical (IR_Offering_Assign sorts before IR_Offering_PreLaunch). -->
     <flowAccesses>
         <enabled>true</enabled>
         <flow>IR_Offering_Assign_to_Me</flow>
     </flowAccesses>
-    <!-- ⚠ ADDED 2026-08-25 - Offering PreLaunch declarative build. Grants access to the new
-         IR_Offering_PreLaunch screen flow, launched from the Offering__c.Pre_Launch quick action.
-         Placed last to preserve this section's alphabetical ordering ("IR_Offering..." sorts
-         after "IR_Manage..."). Offering__c object CRUD and Status__c FLS already exist elsewhere
-         in this file (see the 2026-08-25 Offering/Bank Account/Property block above) - no
-         quick-action-specific grant exists in PermissionSet metadata, so flow access is the only
-         new grant this feature needs. -->
     <flowAccesses>
         <enabled>true</enabled>
         <flow>IR_Offering_PreLaunch</flow>
@@ -401,35 +416,11 @@
     <label>DPEG IR Default Access</label>
     <objectPermissions>
         <allowCreate>true</allowCreate>
-        <allowDelete>false</allowDelete>
+        <allowDelete>true</allowDelete>
         <allowEdit>true</allowEdit>
         <allowRead>true</allowRead>
         <modifyAllRecords>false</modifyAllRecords>
         <object>Lead</object>
-        <viewAllRecords>false</viewAllRecords>
-    </objectPermissions>
-    <!--
-        ⚠ ADDED (Account/Contact junction change, follow-up 2026-08-20) - AccountContactRelation
-        object CRUD, mirroring this same permission set's Contact block immediately below
-        (Create/Read/Edit true, Delete false) since that was the closest comparable pattern and
-        nothing broader was requested.
-    -->
-    <objectPermissions>
-        <allowCreate>true</allowCreate>
-        <allowDelete>false</allowDelete>
-        <allowEdit>true</allowEdit>
-        <allowRead>true</allowRead>
-        <modifyAllRecords>false</modifyAllRecords>
-        <object>AccountContactRelation</object>
-        <viewAllRecords>false</viewAllRecords>
-    </objectPermissions>
-    <objectPermissions>
-        <allowCreate>true</allowCreate>
-        <allowDelete>false</allowDelete>
-        <allowEdit>true</allowEdit>
-        <allowRead>true</allowRead>
-        <modifyAllRecords>false</modifyAllRecords>
-        <object>Contact</object>
         <viewAllRecords>false</viewAllRecords>
     </objectPermissions>
     <objectPermissions>
@@ -438,7 +429,32 @@
         <allowEdit>true</allowEdit>
         <allowRead>true</allowRead>
         <modifyAllRecords>false</modifyAllRecords>
+        <object>Contact</object>
+        <viewAllRecords>true</viewAllRecords>
+    </objectPermissions>
+    <objectPermissions>
+        <allowCreate>true</allowCreate>
+        <allowDelete>true</allowDelete>
+        <allowEdit>true</allowEdit>
+        <allowRead>true</allowRead>
+        <modifyAllRecords>false</modifyAllRecords>
         <object>Account</object>
+        <viewAllRecords>false</viewAllRecords>
+    </objectPermissions>
+    <!--
+        ⚠ ADDED (Account/Contact junction change, follow-up 2026-08-20) -
+        AccountContactRelation object CRUD, mirroring this same permission set's Contact block
+        (Create/Read/Edit true, Delete false) since that was the closest comparable pattern and
+        nothing broader was requested. Requires Contacts to Multiple Accounts to be enabled in
+        the target org.
+    -->
+    <objectPermissions>
+        <allowCreate>true</allowCreate>
+        <allowDelete>false</allowDelete>
+        <allowEdit>true</allowEdit>
+        <allowRead>true</allowRead>
+        <modifyAllRecords>false</modifyAllRecords>
+        <object>AccountContactRelation</object>
         <viewAllRecords>false</viewAllRecords>
     </objectPermissions>
     <objectPermissions>
@@ -460,9 +476,11 @@
         <viewAllRecords>false</viewAllRecords>
     </objectPermissions>
     <!--
-        ⚠ ADDED 2026-08-25 - Offering/Bank Account/Property declarative build. Full CRUD
-        (Create/Read/Edit/Delete, no viewAll/modifyAll) on the two existing objects and the new
-        Bank_Account__c object.
+        ⚠ ADDED 2026-09-07 - full CRUD (no viewAll / modifyAll) on the new Bank_Account__c
+        object and on Offering__c and Property__c, neither of which this set previously reached.
+        Property__c is owned by src/acquisitions; shared ACCESS to it is delivered by this
+        permission set rather than by relocating the object, which is how a single module object
+        is made usable by another team without violating the module placement table.
     -->
     <objectPermissions>
         <allowCreate>true</allowCreate>
@@ -480,7 +498,7 @@
         <allowRead>true</allowRead>
         <modifyAllRecords>false</modifyAllRecords>
         <object>Offering__c</object>
-        <viewAllRecords>false</viewAllRecords>
+        <viewAllRecords>true</viewAllRecords>
     </objectPermissions>
     <objectPermissions>
         <allowCreate>true</allowCreate>
@@ -489,6 +507,35 @@
         <allowRead>true</allowRead>
         <modifyAllRecords>false</modifyAllRecords>
         <object>Property__c</object>
+        <viewAllRecords>false</viewAllRecords>
+    </objectPermissions>
+    <!--
+        ⚠ ADDED 2026-09-13 - Read-only object permission on the standard Opportunity object, to fix
+        "the Opportunity lookup is not visible when creating an Offering." Offering__c.Opportunity__c
+        is a Lookup(Opportunity) field already granted FLS above, but FLS on a lookup field is not
+        sufficient by itself: a user also needs at least Read on the lookup's TARGET object, or the
+        lookup field renders blank/inaccessible on both the New/Edit form and the detail view even
+        though the field itself is on the layout and FLS-granted. Neither this permission set nor
+        profiles/DPEG-IR-SF-Minimum Access.profile-meta.xml (src/app) carried any Opportunity object
+        permission before this change (confirmed by searching both files for "Opportunity" and
+        finding zero objectPermissions grants) - that is the actual root cause of the reported
+        symptom, alongside the field's earlier absence from the page layout (fixed separately,
+        already applied). SCOPED TO READ ONLY, DELIBERATELY: allowCreate, allowEdit and allowDelete
+        are all false, and viewAllRecords/modifyAllRecords are both false. This persona looks up an
+        EXISTING Opportunity to link it to an Offering; it does not create, edit, delete, or see
+        Opportunities beyond whatever sharing (role hierarchy / sharing rules) already grants it.
+        Opportunity is a standard object extended by src/core; granting Read here from an IR-scoped
+        permission set does not move or duplicate ownership of the object, it only extends this
+        persona's reach to it - the intended way one module's permission set reaches an object it
+        does not own (module-boundaries-rule.md).
+    -->
+    <objectPermissions>
+        <allowCreate>false</allowCreate>
+        <allowDelete>false</allowDelete>
+        <allowEdit>false</allowEdit>
+        <allowRead>true</allowRead>
+        <modifyAllRecords>false</modifyAllRecords>
+        <object>Opportunity</object>
         <viewAllRecords>false</viewAllRecords>
     </objectPermissions>
     <recordTypeVisibilities>
@@ -503,6 +550,35 @@
         <recordType>Lead.Investor_Onboarding</recordType>
         <visible>true</visible>
     </recordTypeVisibilities>
+    <!--
+        ⚠ ADDED 2026-09-06 - tab visibility, DELIBERATELY duplicating the layer-2 set
+        DPEG_App_IR so that a user holding only this set still gets the IR navigation instead of
+        depending on DPEG_App_IR also being assigned. Tokens copied verbatim from
+        DPEG_App_IR.permissionset-meta.xml. standard-report is deliberately NOT duplicated here;
+        reporting access stays a layer-2 concern.
+    -->
+    <tabSettings>
+        <tab>standard-Lead</tab>
+        <visibility>Visible</visibility>
+    </tabSettings>
+    <tabSettings>
+        <tab>standard-Account</tab>
+        <visibility>Visible</visibility>
+    </tabSettings>
+    <tabSettings>
+        <tab>standard-Contact</tab>
+        <visibility>Visible</visibility>
+    </tabSettings>
+    <!--
+        ⚠ ADDED 2026-09-07 - Bank_Account__c tab, the only new tab in this port. The design
+        repo's version of this file also granted Offering__c and Property__c tabs; both are
+        omitted because neither CustomTab exists in this repo, and a tabSettings entry naming a
+        non existent tab is a hard deploy failure.
+    -->
+    <tabSettings>
+        <tab>Bank_Account__c</tab>
+        <visibility>Visible</visibility>
+    </tabSettings>
     <!--
         AccessContentBuilder ("Access drag-and-drop content builder") + CreateLtngTempInPub
         ("Manage Public Lightning Email Templates") are the pair needed to build AND edit a
@@ -571,9 +647,16 @@
         <enabled>true</enabled>
         <name>ManageTranslation</name>
     </userPermissions>
+    <userPermissions>
+        <enabled>true</enabled>
+        <name>RunFlow</name>
+    </userPermissions>
     <!--
-        ⚠ ADDED 2026-08-20 - ViewEncryptedData, needed for this persona to see Account.Tax_ID__c
-        (now Text (Encrypted)) in clear text rather than masked to its last four characters.
+        ⚠ ADDED 2026-08-20 - ViewEncryptedData, needed for this persona to see
+        Account.Tax_ID__c (Text (Encrypted)) in clear text rather than masked to its last four
+        characters. Note this is an org-wide unmask for every holder of this set, not a
+        per-field grant: it is the only mechanism the platform offers for Classic encrypted
+        fields.
     -->
     <userPermissions>
         <enabled>true</enabled>
